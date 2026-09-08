@@ -1,0 +1,2 @@
+- momentum — 운동량과 충격량 (최초 근거: LEC-20260908-01)
+- classical-mechanics — 고전역학 전반 (최초 근거: CON-20260908-01)
