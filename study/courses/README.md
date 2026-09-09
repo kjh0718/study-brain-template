@@ -1,3 +1,24 @@
-﻿# Courses
+# Courses
 
-학기별 과목의 Dashboard 및 Course Note를 보관합니다.
+학기·분반 단위 과목 노트다. 내용 저장소가 아니라 그 과목의 **대시보드**다.
+
+## 여기 두는 것
+
+- 과목당 CRS 노트 하나
+- 과목 전체에 적용되는 기준 정보와 관련 노트 링크
+
+## 여기 두지 않는 것
+
+- 수업 회차별 내용 → `study/lectures/`
+- 과제·시험의 정식 근거. 대시보드는 링크와 짧은 상태만 표시한다
+- 같은 과목의 다른 학기. 별도 CRS로 만든다
+
+## 규격
+
+[`course.md`](../../_system/schemas/course.md)
+
+## 관련 워크플로
+
+각 레이어가 변경 후 대시보드를 갱신한다. 갱신 대상 판정은 [`SECOND-BRAIN.md`](../../SECOND-BRAIN.md)의 Course 대시보드 절이 정한다.
+
+본문 `## Related Notes`의 `AUTO-MANAGED` 구간은 자동 관리 영역이다. 사람이 직접 쓴 내용을 그 안에 두지 않는다.

@@ -20,6 +20,8 @@ concepts:
   - CON-20260908-01
 ---
 
+<!-- id 권장 형태: EXM-<과목 slug>-<term>-<exam_type>. 예: EXM-general-physics-2-2026-2-midterm -->
+<!-- term에 연도만 넣지 않는다. 같은 해 두 학기의 시험이 구분되지 않는다. 형식 계약은 schemas/common.md의 id 절을 따른다. -->
 <!-- exam_type: midterm, final, quiz, practical, other -->
 <!-- date: 확인된 날짜만 넣는다. 모르면 null을 유지한다. -->
 <!-- date_status는 일정, scope_status는 확정 범위에만 적용한다. 아래 AI 예상 절에는 적용하지 않는다. -->

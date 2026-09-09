@@ -34,7 +34,7 @@
 
 | 자리표시자 | 넣을 값 |
 |---|---|
-| `{{id}}` | 해당 타입 접두사를 쓴 영구 ID. 예: `LEC-20260908-01` |
+| `{{id}}` | 해당 타입 접두사를 쓴 영구 ID. 형식 계약과 Type별 권장 형태는 [common](../schemas/common.md)의 `id` 절을 따른다. 예: `LEC-20260908-01`, `CON-momentum` |
 | `{{title}}` | 사람이 읽을 제목 |
 | `{{created}}` / `{{updated}}` | `YYYY-MM-DD` |
 | `{{course_id}}` | 실제 존재하는 `CRS-` ID |

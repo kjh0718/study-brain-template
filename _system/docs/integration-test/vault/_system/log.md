@@ -1,0 +1,15 @@
+<!-- 통합 시험용 가상 데이터. 실제 학습 자료가 아니다. -->
+- 2026-09-08 18:32 | L1 | preserve-source | raw/transcripts/2026-09-08-general-physics-2-01.md | done | 전사 원본 보존
+- 2026-09-08 18:35 | L1 | create-note | LEC-20260908-01 | done | 일반물리학2 09-08 1교시
+- 2026-09-08 18:38 | L2 | create-note | RES-general-physics-2-ch03-slides | done | 3장 슬라이드 신규 등록
+- 2026-09-08 18:40 | L1 | sync-relations | LEC-20260908-01 + RES-general-physics-2-ch03-slides | done | pages 21-38 양방향
+- 2026-09-08 18:41 | L4 | register-topic | impulse | done | 최초 근거 LEC-20260908-01
+- 2026-09-08 18:42 | L4 | create-note | CON-impulse | done | 근거 2개
+- 2026-09-08 18:42 | L4 | update-note | CON-momentum | done | sources에 LEC-20260908-01 추가
+- 2026-09-08 18:44 | L5 | reconcile-fact | ASM-general-physics-2-20260908-02 | held | 마감 "다음 주까지" 모호. due null 유지
+- 2026-09-08 18:45 | L5 | reconcile-fact | FAC-general-physics-2-20260901-01 | done | 명시적 변경으로 superseded
+- 2026-09-08 18:45 | L5 | create-note | FAC-general-physics-2-20260908-01 | done | supersedes FAC-general-physics-2-20260901-01
+- 2026-09-08 18:46 | L1 | refresh-dashboard | CRS-2026-2-general-physics-2 | done | Related Notes 재구성
+- 2026-09-08 18:47 | L1 | finalize-run | LEC-20260908-01 | partial | 대시보드 갱신 직전 중단 (Scenario K 재현용)
+- 2026-09-09 10:02 | L1 | refresh-dashboard | CRS-2026-2-general-physics-2 | done | Scenario K 재개. 남은 단계만 수행
+- 2026-09-09 10:03 | L1 | finalize-run | LEC-20260908-01 | done | 재개 완료

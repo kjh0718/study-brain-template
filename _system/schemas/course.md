@@ -74,10 +74,9 @@ Course는 [Common Note Schema](./common.md)의 공통 필드를 모두 가진다
 
 ## Related Notes
 
-- Lectures:
-- Assignments:
-- Exams:
-- Course facts:
+<!-- AUTO-MANAGED:start -->
+<!-- 이 구간은 자동 관리 영역이다. 사람이 직접 쓴 내용을 여기 두지 않는다. -->
+<!-- AUTO-MANAGED:end -->
 
 ## Sources
 
@@ -103,10 +102,11 @@ Course는 [Common Note Schema](./common.md)의 공통 필드를 모두 가진다
 ## Course Identity and Dashboard
 
 - Course는 특정 학기·분반의 수강 단위다. 같은 과목을 다른 학기나 분반에서 수강하면 별도 CRS로 구분한다.
-- 새 CRS-YYYYMMDD-NN의 날짜는 생성일이다. 동일 Prefix·날짜의 번호는 저장소 전체에서 충돌을 확인한다.
+- 권장 ID 형태는 `CRS-<term>-<과목 slug>`다. 예: `CRS-2026-2-general-physics-2`. 과목은 학기·분반으로 특정되므로 의미 기반 ID를 쓴다. 같은 과목을 다른 학기에 들으면 term이 달라 자연히 다른 ID가 된다. 같은 학기에 분반이 갈리면 뒤에 분반 구분자를 덧붙인다. 형식 계약은 [common.md](common.md)의 `id` 절을 따른다.
 - term과 code는 문자열이다. 같은 학기의 분반·담당자·기관 구분은 본문에 확인된 범위로 남긴다.
 - Dashboard에는 관련 노트 링크와 짧은 상태만 표시한다. 과제 마감, 시험 범위와 교수 발언의 정식 근거를 복제해 별도 사실처럼 관리하지 않는다.
 - 관련 노트는 course 필드로 찾아 Dashboard에 반영한다. 모든 하위 노트를 related에 반복 등록할 필요는 없다.
 - 여러 과목이 공유하는 노트는 course에 주 과목만 들어가고 추가 과목은 related에 들어간다. Dashboard 조회는 course가 이 CRS인 노트와 related에 이 CRS를 포함한 노트를 함께 찾는다. 두 경우를 구분해 표시하고, 공유 노트를 과목마다 복제하지 않는다.
 - 예시의 과목명·강사명은 실제 데이터가 아니다. 템플릿을 개인 Brain으로 사용할 때 확인된 값으로 교체한다.
+- 본문의 Related Notes는 자동 관리 영역이다. `<!-- AUTO-MANAGED:start -->`와 `<!-- AUTO-MANAGED:end -->` 사이만 갱신 대상이며 사람이 직접 쓴 내용을 그 안에 두지 않는다. 갱신 대상 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다.
 - 본문의 My Notes는 사용자 영역이다. common.md의 Protected User Sections 규칙을 적용한다.

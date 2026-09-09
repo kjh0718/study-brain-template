@@ -1,5 +1,11 @@
 """템플릿에 가상 값을 채워 임시 검증용 노트를 만든다. 실제 학습 폴더는 건드리지 않는다."""
-import pathlib, re, shutil
+import pathlib, re, shutil, sys
+
+# Windows 콘솔 기본 인코딩(cp949)에서는 em dash 등이 UnicodeEncodeError를 낸다.
+# 검사 결과가 인코딩 때문에 끊기지 않도록 출력 스트림을 UTF-8로 맞춘다.
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = pathlib.Path(__file__).resolve().parent
 TPL = HERE.parents[2]/"_system/templates"

@@ -67,4 +67,6 @@ members: []
 
 ## Identity
 
-새 ID는 CLU-YYYYMMDD-NN 형식으로 만들며 날짜는 노트 생성일이다. 저장소 전체에서 동일 Prefix·날짜의 번호 충돌을 확인한다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID를 유지한다.
+권장 형태는 `CLU-<topic slug>`다. 예: `CLU-classical-mechanics`. Cluster는 주제 하나에 대응하므로 의미 기반 ID를 쓴다. topic slug와 CLU ID는 서로 다른 식별자이며, 같은 문자열을 쓰더라도 어휘표의 topic이 곧 Cluster인 것은 아니다.
+
+형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.

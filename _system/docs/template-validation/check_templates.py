@@ -1,6 +1,12 @@
 """A. 템플릿 자체 검사. 스키마와 대조만 하며 완성 노트 검증이 아니다."""
 import pathlib, re, sys, yaml
 
+# Windows 콘솔 기본 인코딩(cp949)에서는 em dash 등이 UnicodeEncodeError를 낸다.
+# 검사 결과가 인코딩 때문에 끊기지 않도록 출력 스트림을 UTF-8로 맞춘다.
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SCH, TPL = ROOT/"_system/schemas", ROOT/"_system/templates"
 OPTIONAL = {"course":{"code","term","instructor"}, "lecture":{"week"}, "resource":{"page_count"},

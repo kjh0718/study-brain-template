@@ -97,6 +97,7 @@ Core Type과 접두사, 저장 위치는 [`_system/schemas/common.md`](_system/s
 ### 2.5 ID는 불변이고, 만들기 전에 검색한다
 
 - ID는 생성 후 바뀌지 않는다. 제목, 파일명, 날짜가 바뀌어도 유지한다.
+- ID의 형식 계약과 Type별 권장 형태는 [`common.md`](_system/schemas/common.md)의 `id` 절이 정본이다. 모든 Type을 한 패턴으로 통일하지 않으며, 자연 키가 있는 Type은 의미 기반 ID를, 같은 날 반복되는 세션·사건은 날짜+일련번호를 쓴다.
 - 새 노트를 만들기 전에 반드시 기존 노트를 검색한다. 타입별 검색 키는 아래와 같고, 상세 판정 규칙은 각 스키마의 Identity·Rules 절이 기준이다.
 
 | Type | 검색 키 |
@@ -569,7 +570,7 @@ L1, L2, L5는 모두 CRS ID를 필요로 한다. 저장소가 비어 있어 CRS�
 
 복습 회차 하나를 계획하고 수행하고 기록한다. 규격은 [`review.md`](_system/schemas/review.md)를 따른다.
 
-**입력**: 복습 요청(일간, 주간, 시험, 개념) 또는 기존 REV 이어하기.
+**입력**: 복습 요청(일간, 주간, 시험 대비, 개념) 또는 기존 REV 이어하기. `review_type`의 허용 값은 [`review.md`](_system/schemas/review.md)가 정한다.
 
 **선행조건**: 복습 대상 노트가 존재한다. 새 회차인지 기존 회차의 연속인지 확정할 수 있다.
 
@@ -732,10 +733,10 @@ L1, L2, L5는 모두 CRS ID를 필요로 한다. 저장소가 비어 있어 CRS�
 
 이 문서가 전제하지만 아직 만들어지지 않은 것들이다. 없다는 이유로 규칙을 우회하지 않는다.
 
-- `_system/templates/`가 비어 있다. 현재는 각 스키마의 Body Structure가 템플릿 역할을 한다.
-- `_system/workflows/`에 실행 예시와 체크리스트가 없다.
-- `.claude/`와 `.agents/`의 스킬·훅이 없다.
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `HOME.md`, 루트 `README.md`, `wiki/index.md`가 비어 있다.
-- `wiki/clusters/_topics.md`가 비어 있다. 최초 등록은 공통 운영 원칙의 topics 절차를 따른다.
+- `.claude/`와 `.agents/`의 스킬·훅이 없다. 스킬이 있다고 가정하고 호출하지 않는다.
+- `wiki/clusters/_topics.md`에 등록된 topic이 아직 없다. 파일에는 형식과 등록 규칙만 있다. 최초 등록은 공통 운영 원칙의 topics 절차를 따르며, 등록 전에 `topics`에 값을 쓰지 않는다.
 - `_system/log.md`가 비어 있다. 첫 기록부터 append-only 형식을 지킨다.
 - 무결성 검사를 자동화한 도구가 없다. L8은 현재 수동 절차다.
+- L1~L9를 실제 입력으로 끝까지 수행한 통합 시험을 아직 하지 않았다. 현재 검증은 템플릿과 가상 노트의 규격 검사까지다.
+
+현재 구현 상태는 [`PROJECT-STATUS.md`](PROJECT-STATUS.md)가 기록한다.

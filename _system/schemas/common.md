@@ -2,7 +2,7 @@
 
 Study Brain의 모든 구조화 노트가 따르는 공통 규칙이다.
 
-이 문서는 공통 필드와 식별 규칙만 정의한다. 각 Note Type의 구체적인 필드와 상태값은 해당 Type Schema에서 정의한다. 장기적으로 전체 운영 규칙은 루트의 `SECOND-BRAIN.md`가 단일 기준점이 되며, 이 문서는 스키마 영역의 공통 규칙을 설명한다.
+이 문서는 공통 필드와 식별 규칙만 정의한다. 각 Note Type의 구체적인 필드와 상태값은 해당 Type Schema에서 정의한다. 전체 운영 규칙은 루트의 `SECOND-BRAIN.md`가 단일 기준점이며, 이 문서는 스키마 영역의 공통 규칙을 설명한다.
 
 ## Core Types
 
@@ -56,16 +56,59 @@ updated: 2026-09-08
 
 ### `id`
 
-노트의 영구 식별자다.
+노트의 영구 식별자다. 모든 Type을 하나의 패턴으로 통일하지 않고, Type의 성격에 맞는 결정적이고 사람이 읽을 수 있는 ID를 쓴다.
 
-- 생성 후 변경하지 않는다.
-- 파일명이 변경되어도 ID는 유지한다.
-- Type Prefix를 포함한다.
-- 사람이 읽을 수 있는 ASCII-safe 값을 사용한다.
-- 공백을 사용하지 않는다.
-- 날짜와 일련값을 조합할 때는 같은 날짜 안에서 충돌하지 않게 한다.
+#### 형식 계약
 
-예: `CRS-20260908-01`, `LEC-20260908-01`
+이 계약은 기계적으로 검사할 수 있다.
+
+```text
+^(CRS|LEC|CON|ASM|EXM|PEX|FAC|QST|RES|REV|CLU)-[a-z0-9]+(-[a-z0-9]+)*$
+```
+
+- 접두사는 대문자 Core Type Prefix이며 노트의 `type`과 반드시 대응한다.
+- 접두사 뒤는 ASCII 소문자, 숫자, 하이픈만 쓴다. 대문자, 밑줄, 공백, 한글, 그 밖의 비 ASCII 문자를 쓰지 않는다.
+- 구분자는 하이픈 하나다. 연속 하이픈을 쓰지 않고, 하이픈으로 시작하거나 끝나지 않는다.
+- 저장소 전체에서 유일해야 한다.
+- **생성 후 변경하지 않는다.** 제목, 파일명, 날짜, 학기가 바뀌어도 유지한다.
+
+#### 두 가지 형태
+
+| 형태 | 언제 | 모양 |
+|---|---|---|
+| **의미 기반(semantic)** | 대상을 특정하는 자연 키가 있을 때 | `PREFIX-<의미 slug>` |
+| **날짜+일련번호** | 같은 날 여러 번 일어날 수 있는 세션·사건일 때 | `PREFIX-YYYYMMDD-NN` |
+
+**의미 기반을 우선한다.** 같은 사실에서 같은 ID가 나오므로 Desktop과 Laptop이 각자 노트를 만들어도 충돌하지 않고, 나중에 같은 대상임을 알아보기 쉽다.
+
+날짜+일련번호는 `NN`이 앞선 노트의 존재에 의존하므로 두 기기가 동시에 만들면 충돌할 수 있다. 그런 성격의 Type에만 쓰고, 만들기 전에 저장소 전체에서 같은 접두사·날짜의 번호를 확인한다. **전역 카운터 하나에 의존하지 않는다.** 번호는 (접두사, 날짜) 또는 (접두사, 과목, 날짜) 범위 안에서만 센다.
+
+#### Type별 권장 형태
+
+권장이며 강제 알고리즘이 아니다. 재료를 확인할 수 없으면 확인된 부분까지만 쓰고, 형식 계약만 지키면 된다.
+
+| Type | 권장 형태 | 예 |
+|---|---|---|
+| course | `CRS-<term>-<과목 slug>` | `CRS-2026-2-general-physics-2` |
+| lecture | `LEC-<수업일>-<NN>` | `LEC-20260908-01` |
+| concept | `CON-<개념 slug>` | `CON-momentum` |
+| assignment | `ASM-<과목 slug>-<날짜>-<NN>` | `ASM-general-physics-2-20260908-01` |
+| exam | `EXM-<과목 slug>-<term>-<exam_type>` | `EXM-general-physics-2-2026-2-midterm` |
+| past-exam | `PEX-<과목 slug>-<연도>-<학기>-<exam_type>` | `PEX-general-physics-2-2024-2-midterm` |
+| course-fact | `FAC-<과목 slug>-<날짜>-<NN>` | `FAC-general-physics-2-20260908-01` |
+| question | `QST-<과목 slug>-<날짜>-<NN>` | `QST-general-physics-2-20260908-01` |
+| resource | `RES-<과목 slug>-<자료 slug>` | `RES-general-physics-2-ch03-slides` |
+| review | `REV-<과목 slug>-<날짜>-<review_type>` | `REV-general-physics-2-20260913-weekly` |
+| cluster | `CLU-<topic slug>` | `CLU-classical-mechanics` |
+
+- `<날짜>`는 `YYYYMMDD`다. Lecture만 **수업일**을 쓰고 나머지는 노트 생성일이나 해당 사실의 날짜를 쓴다. 세부 예외는 각 Type Schema를 따른다.
+- `<과목 slug>`는 그 과목 CRS의 과목 부분과 같은 slug를 쓴다. 학기까지 넣지 않는다. 같은 과목을 여러 학기 들어도 하위 노트 ID가 학기 때문에 달라지지 않게 한다.
+- **ID slug와 topic 어휘는 서로 다른 namespace다.** `topics` 필드에 쓰는 값만 `wiki/clusters/_topics.md`에 등록돼 있어야 한다. `CON-<개념 slug>`나 `CLU-<topic slug>`의 slug 부분이 어휘표에 등록된 topic일 필요는 없고, 반대로 등록된 topic마다 대응하는 CON이나 CLU가 있어야 하는 것도 아니다. Concept는 지식 객체이고 topic은 분류·검색 어휘이므로 개수와 경계가 다르다. 다만 같은 대상을 가리키는데 표기만 다른 slug를 만들지는 않는다.
+- 재료를 확인할 수 없으면 지어내지 않는다. 예를 들어 과목이 불명확하면 그 노트를 만들지 않거나, Type Schema가 허용하는 범위에서 과목 부분을 뺀다.
+
+#### 기존 ID
+
+이미 만들어진 ID는 형식 계약을 지키는 한 그대로 둔다. 권장 형태로 바꾸려고 **기존 ID를 재발급하지 않는다.** `PREFIX-YYYYMMDD-NN` 형태의 기존 노트도 계약을 만족하므로 유효하다.
 
 ### `title`
 
@@ -124,8 +167,8 @@ ISO 8601 날짜 형식인 `YYYY-MM-DD`를 사용한다.
 
 - 공통 필드의 schema는 정수 1, type·id·title·status는 비어 있지 않은 문자열이다. topics와 related는 중복 없는 문자열 목록이다.
 - topics, related 및 각 타입의 관계 목록은 값이 없으면 []다. null 허용 여부는 해당 필드 표를 따른다. 선택 필드는 모르면 생략한다.
-- 새 ID의 접두사는 대문자 Core Type Prefix다. 이후 의미 기반 식별자를 사용할 때는 ASCII 소문자 kebab-case를 사용한다. 기존 ID는 유지한다.
-- PREFIX-YYYYMMDD-NN 형식의 날짜는 기본적으로 노트 생성일이다. Lecture만 예외로 수업일을 사용하며, 수업일이 미확인이면 생성일을 쓰고 date는 null로 남긴다. 예외의 세부 규칙은 lecture.md를 따른다.
+- ID의 형식 계약과 Type별 권장 형태는 위 `id` 절이 정본이다. 여기서 다른 패턴을 만들지 않는다.
+- PREFIX-YYYYMMDD-NN 형태를 쓸 때 날짜는 기본적으로 노트 생성일이다. Lecture만 예외로 수업일을 사용하며, 수업일이 미확인이면 생성일을 쓰고 date는 null로 남긴다. 예외의 세부 규칙은 lecture.md를 따른다.
 - 같은 Prefix와 날짜의 일련번호는 저장소 전체에서 충돌을 확인한다. 제목·파일명·날짜가 바뀌어도 기존 ID는 유지한다.
 - sources와 answer_sources는 구조화 노트 ID 목록이다. source는 원본 경로 또는 외부 참조다. 둘을 혼용하지 않는다.
 - sources에서 참조하는 노트가 없고 직접 원문만 있는 경우 Sources 본문에 원본 경로와 위치를 기록한다. 목록을 채우기 위해 가짜 ID를 만들지 않는다.
@@ -155,4 +198,4 @@ My Notes, My Understanding, My Questions, Personal Reflection 제목 아래는 �
 
 이 스키마 규칙은 구조화된 학습 노트에 적용한다. README, 스키마 문서, HOME, SECOND-BRAIN, 로그, topic 어휘표와 raw 원본에는 학습 노트 frontmatter를 강제하지 않는다.
 
-SECOND-BRAIN.md가 작성되면 운영 원칙과 문서 우선순위의 단일 기준점이 된다. 각 스키마는 세부 데이터 규격을 제공하며, 충돌을 발견하면 표시하고 일관되게 수정한다.
+운영 원칙과 문서 우선순위의 단일 기준점은 SECOND-BRAIN.md다. 각 스키마는 세부 데이터 규격을 제공하며, 충돌을 발견하면 표시하고 일관되게 수정한다.

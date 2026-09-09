@@ -33,7 +33,7 @@ next_review: null
 | 필드 | 필수 | 규칙 |
 |---|---|---|
 | `course` | 예 | 주 관련 CRS ID. 여러 과목 공용이면 null |
-| `review_type` | 예 | daily, weekly, exam, concept, custom |
+| `review_type` | 예 | daily, weekly, exam-prep, concept, custom |
 | `targets` | 예 | 복습 대상 LEC·CON·EXM·PEX·QST 등 ID 목록 |
 | `scheduled_on` | 예 | 복습 예정일 YYYY-MM-DD 또는 null |
 | `completed_on` | 예 | 실제 완료일 YYYY-MM-DD 또는 null. 완료 이력이 있으면 archived로 전환해도 유지한다 |
@@ -77,6 +77,7 @@ next_review: null
 - 실제 복습을 시작할 때 targets는 하나 이상이어야 한다. 계획 초안에서는 []를 허용한다.
 - 점수·숙련도·이해도를 응답 없이 추정하지 않는다. 미응답 문항은 미평가로 표시한다.
 - next_review는 계획 데이터이며 알림 자동화를 생성했다는 뜻이 아니다.
+- exam-prep은 시험을 앞두고 준비하는 회차다. 시험 이후의 결과 분석은 이 타입이 아니며, 오답과 오개념은 해당 EXM·QST와 본문 기록으로 남긴다.
 - 같은 회차의 재처리는 기존 REV를 갱신하고, 다른 날짜의 실제 복습 회차는 별도 REV로 기록한다.
 - 전용 관계 필드에 기록한 ID는 related에 중복하지 않는다. 실제로 존재하지 않는 후보는 본문에 둔다.
 - 날짜·출처·답변을 임의로 확정하지 않는다. 원문 위치와 확인하지 못한 부분을 명시한다.
@@ -84,4 +85,6 @@ next_review: null
 
 ## Identity
 
-새 ID는 REV-YYYYMMDD-NN 형식으로 만들며 날짜는 노트 생성일이다. 저장소 전체에서 동일 Prefix·날짜의 번호 충돌을 확인한다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID를 유지한다.
+권장 형태는 `REV-<과목 slug>-<날짜>-<review_type>`이다. 예: `REV-general-physics-2-20260913-weekly`. 날짜는 그 회차의 예정일 또는 수행일이다. 여러 과목 공용 회차는 과목 부분을 빼고 `REV-<날짜>-<review_type>`을 쓴다. 같은 날 같은 유형을 두 번 하면 뒤에 일련번호를 덧붙인다.
+
+형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.

@@ -1,6 +1,12 @@
 """B. 값을 채운 가상 노트 검사. 템플릿 검증이며 L1~L9 실행 테스트가 아니다."""
 import pathlib, re, sys, yaml
 
+# Windows 콘솔 기본 인코딩(cp949)에서는 em dash 등이 UnicodeEncodeError를 낸다.
+# 검사 결과가 인코딩 때문에 끊기지 않도록 출력 스트림을 UTF-8로 맞춘다.
+for _s in (sys.stdout, sys.stderr):
+    if hasattr(_s, "reconfigure"):
+        _s.reconfigure(encoding="utf-8", errors="replace")
+
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 SCH  = ROOT/"_system/schemas"
@@ -10,6 +16,8 @@ OPTIONAL = {"course":{"code","term","instructor"},"lecture":{"week"},"resource":
 PREFIX = {"course":"CRS","lecture":"LEC","concept":"CON","assignment":"ASM","exam":"EXM",
           "past-exam":"PEX","course-fact":"FAC","question":"QST","resource":"RES",
           "review":"REV","cluster":"CLU"}
+# _system/schemas/common.md의 `id` 형식 계약. 접두사 뒤는 ASCII 소문자/숫자/단일 하이픈만 허용한다.
+ID_CONTRACT = r"^(?:CRS|LEC|CON|ASM|EXM|PEX|FAC|QST|RES|REV|CLU)-[a-z0-9]+(?:-[a-z0-9]+)*$"
 DATE_FIELDS = {"created","updated","date","assigned","due","effective_from","resolved_on",
                "scheduled_on","completed_on","next_review"}
 REL_FIELDS = {"related","concepts","questions","assignments","exams","course_facts","sources",
@@ -49,6 +57,8 @@ for nid,(f,fm,body,raw) in notes.items():
     if ext: problems.append(f"{tag}: 스키마에 없는 필드 {sorted(ext)}")
     if fm["status"] not in s["status"]: problems.append(f"{tag}: status {fm['status']} 불허")
     if not str(nid).startswith(PREFIX[t]+"-"): problems.append(f"{tag}: ID 접두사 불일치 {nid}")
+    # common.md의 id 형식 계약. Type별 권장 형태는 강제하지 않고 계약만 검사한다.
+    if not re.match(ID_CONTRACT, str(nid)): problems.append(f"{tag}: ID 형식 계약 위반 {nid}")
     if fm.get("schema")!=1: problems.append(f"{tag}: schema != 1")
     for k in DATE_FIELDS & set(fm):
         v=fm[k]

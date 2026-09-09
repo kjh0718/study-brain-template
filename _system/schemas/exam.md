@@ -84,4 +84,16 @@ concepts: []
 
 ## Identity
 
-새 ID는 EXM-YYYYMMDD-NN 형식으로 만들며 날짜는 노트 생성일이다. 저장소 전체에서 동일 Prefix·날짜의 번호 충돌을 확인한다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID를 유지한다.
+권장 형태는 `EXM-<과목 slug>-<term>-<exam_type>`이다. 예: `EXM-general-physics-2-2026-2-midterm`. 시험은 과목·학기·종류로 특정되므로 의미 기반 ID를 쓴다.
+
+**`<term>`에는 연도만 넣지 않는다.** 같은 과목을 한 해에 두 학기 이상 수강하면 연도만으로는 시험이 구분되지 않는다. 대상 CRS의 `term` 값을 그대로 쓴다.
+
+```text
+EXM-general-physics-2-2026-1-midterm
+EXM-general-physics-2-2026-2-midterm
+EXM-general-physics-2-2026-summer-midterm
+```
+
+같은 종류를 여러 번 보는 quiz는 뒤에 회차를 덧붙인다. 예: `EXM-general-physics-2-2026-1-quiz-03`. 일정이 바뀌어도 ID는 유지하고 `date`만 고친다.
+
+형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.
