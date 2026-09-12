@@ -74,7 +74,8 @@ rg -ln "^status: (open|investigating|answered)" study/questions -g "*.md"
 - [ ] **5. 오개념·미해결 질문 정리.** QST 생성·갱신은 L7이 직접 한다. 해결 처리는 아래 표를 따른다.
 - [ ] **6. 완료 처리.** 실제 수행 근거와 `completed_on`이 있을 때만 `completed`로 바꾼다.
 - [ ] **7. `next_review` 기록.** 계획값이다.
-- [ ] **8. 로그 기록.**
+- [ ] **8. 대시보드 갱신.** REV에 `course`가 있으면 그 CRS의 표시가 달라진다. 회차 상태가 바뀐 경우도 포함한다. 표시가 실제로 달라지는 CRS만 갱신한다. 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다.
+- [ ] **9. 로그 기록.**
 
 ### 1단계 회차 판정표
 
