@@ -8,7 +8,7 @@
 
 **설계·규격 계층과 실행 문서 계층은 작성됐고, 자동 실행 계층은 아직 없다.**
 
-데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. 다만 Hook이 아직 없고, 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
+데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. Hook은 세션 시작 컨텍스트 core까지 만들었고 플랫폼 등록은 아직 하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
 
 이 저장소는 `study-brain-template` **개발 저장소**로 쓴다. 실제 학습 자료는 템플릿 완성 후 별도 비공개 저장소에 담는다.
 
@@ -22,7 +22,7 @@
 | P4 Workflows | **complete** | `_system/workflows/`에 L1~L9 실행 문서 9개 + README |
 | P5 Note Templates | **complete** | 11개 템플릿 + 사용 안내. 자동 검사 통과 |
 | P6 Skills | **complete** | Core Skill 8개. `.agents/skills/` 정본 + `.claude/skills/` discovery stub. 구조 검사와 런타임 A~H 통과 |
-| P7 Hooks | **not started** | `.agents/hooks/`, `.claude/hooks/`에 README만 |
+| P7 Hooks | **partial** | SessionStart 컨텍스트 core `_system/hooks/session_context.py`와 검사 통과. 플랫폼 등록 파일은 없음 |
 | P8 Obsidian UX | **partial** | `HOME.md`, `wiki/index.md`는 있음. 자동 갱신 뷰·Bases·Graph 설정 없음 |
 | P9 Tests | **partial** | 템플릿 검증 + Scenario A~K 통합 시험 통과(FAIL 0). 에이전트 실행 시험과 Git 동기화 시험은 미실행 |
 | P10 GitHub Template | **not started** | Template Repository 설정, LICENSE, 공개 검토 남음 |
@@ -157,13 +157,21 @@ Skill은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)와 [`_system/workflows/`](_system/
 
 `_system/docs/skill-validation/`이 두 가지를 검사한다. 구조 검사(`check_skills.py`)는 정본이 SECOND-BRAIN을 참조하는지, 워크플로 매핑이 맞는지, 규칙이 복제되지 않았는지를 본다. 런타임 시험(`verify_runtime.py`)은 격리된 workspace에서 실제 호출 결과를 본다. 2026-09-09 결과는 구조 검사 문제 0건, **런타임 A~H 모두 PASS / FAIL 0**이며 8개 Skill 전부 직접 호출을 확인했다. 보고서는 [`runtime-test.md`](_system/docs/skill-validation/runtime-test.md)에 있다.
 
-Hook은 아직 없다. `.agents/hooks/`와 `.claude/hooks/`에는 README만 있다.
+### 3.11 Hook 계층
+
+세션 시작 컨텍스트를 만드는 공통 core가 [`_system/hooks/session_context.py`](_system/hooks/README.md)에 있다. Claude Code와 Codex가 같은 파일을 쓴다.
+
+`wiki/clusters/_topics.md`의 registry 항목과 `_system/log.md`의 완전한 기록 마지막 10줄, 두 가지만 읽는다. 해석하지 않고 읽은 줄을 그대로 옮긴다. 출력은 4 KiB UTF-8 이하이고 지시문이 아니라 사실 진술로 쓴다. 일반 runtime 오류는 fail-open으로 처리하며 `KeyboardInterrupt`와 `SystemExit`는 보존한다. 표준 라이브러리만 쓰고 network·subprocess·캐시·쓰기가 없다.
+
+`_system/docs/hook-validation/`의 `test_session_context.py`가 A~M과 경계 조건, 기계적 검사 8개, 예외 처리, 성능을 본다. 2026-09-12 재검증 결과: **PASS 43 / FAIL 0**, core p95 300 ms 이내. 결함 5개를 주입해 검사가 실제로 걸러내는지도 확인했다.
+
+플랫폼 등록 파일(`.claude/settings.json`, `.codex/hooks.json`)은 아직 없다. Antigravity 어댑터는 보류했다.
 
 ## 4. 아직 없는 것
 
 | 영역 | 현재 | 다음 작업 |
 |---|---|---|
-| `.agents/hooks/`, `.claude/hooks/` | README만 | 세션 시작 시 최소 컨텍스트 로드 |
+| Hook 플랫폼 등록 | core만 있음 | `.claude/settings.json`, `.codex/hooks.json` 작성과 실제 SessionStart 실행 확인 |
 | `wiki/clusters/_topics.md` | 형식·규칙만 있고 registry 비어 있음 | 실제 자료 처리 시 점진적으로 등록 |
 | `_system/log.md` | 비어 있음 | 첫 실제 쓰기부터 append-only 기록 |
 | L8 자동 검사 | 수동 절차 | 스키마·관계·ID·topic·source 검사 도구 |
@@ -231,7 +239,7 @@ git status
 
 ### 단계 A — Hooks (P7)
 
-세션 시작 시 저장소 전체가 아니라 최소 컨텍스트만 로드한다. 활성 Course, 최근 로그, 관련 topics 정도다.
+공통 core는 만들었다. 남은 것은 `.claude/settings.json`과 `.codex/hooks.json`에 등록하고 실제 세션 시작에서 확인하는 것이다. V1이 싣는 것은 등록된 topic과 최근 로그 두 가지뿐이며 활성 Course는 추론하지 않는다.
 
 ### 단계 B — 에이전트 실행 시험 (P9 잔여)
 
@@ -265,9 +273,13 @@ Course 대시보드 뷰, Open Questions, Active Assignments, Review 뷰. 플러�
 ```text
 remote:         https://github.com/kjh0718/study-brain-template.git
 default branch: main
-최근 checkpoint: 516e556 feat: add core skills layer with runtime validation
 ```
 
-`516e556`은 Phase 6까지를 담은 안정 checkpoint다. 그 이전 checkpoint는 `44a34c9`(Phase 1~5)다.
+Milestone commits (과거 구현 이력):
 
-현재 브랜치, working tree의 clean 여부, 로컬과 remote의 차이는 이 문서에 적지 않는다. 시점에 따라 달라지므로 `git status`와 `git branch -vv`로 확인한다.
+- `44a34c9` — core architecture
+- `516e556` — core skills + runtime validation
+- `95e394e` — Phase 6 documentation sync
+- `9007a1c` — README rewrite
+
+현재 HEAD와 작업 트리 상태는 `git log -1 --oneline`과 `git status`로 확인한다. 브랜치와 로컬·remote 추적 상태는 `git branch -vv`로 확인한다. 위 hash는 역사적 milestone이며 현재 또는 최신 checkpoint를 뜻하지 않는다.
