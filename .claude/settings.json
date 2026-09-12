@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python",
+            "args": [
+              "-B",
+              "${CLAUDE_PROJECT_DIR}/_system/hooks/session_context.py"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

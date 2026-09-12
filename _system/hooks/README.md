@@ -75,8 +75,68 @@ Claude Code와 Codex가 같은 JSON 형식을 받는다.
 - 같은 입력에 대해 stdout 바이트가 항상 같다. 시각·난수·환경값을 섞지 않는다.
 - 사용자 전역 설정이나 다른 저장소의 hook을 건드리지 않는다.
 
+## 플랫폼 등록
+
+| 파일 | 대상 | 상태 |
+|---|---|---|
+| `.claude/settings.json` | Claude Code | Windows에서 runtime 확인함 |
+| `.codex/hooks.json` | Codex | Windows에서 runtime 확인함 |
+
+### Claude Code
+
+exec form(`command` + `args`)으로 `${CLAUDE_PROJECT_DIR}` 아래의 core를 부른다. args가 있으면 shell을 거치지 않고 PATH에서 실행 파일을 직접 찾는다.
+
+launcher 이름은 `python`으로 뒀다. **이 Windows 개발 환경에서 PATH의 `python`이 Python 3임을 확인한 값이다.** macOS와 Linux에서 `python`이라는 실행 파일이 있는지는 확인하지 않았다. launcher를 자동으로 찾는 wrapper는 두지 않는다. 크로스 플랫폼 launcher 구성은 템플릿 배포(P10) 단계에서 다룬다.
+
+2026-09-13 Windows 확인: `SessionStart:startup`에서 hook이 실행되고 `additionalContext`가 전달됐다. script 경로를 없는 파일로 바꾼 실패 fixture에서는 hook만 오류로 끝나고 세션 초기화는 정상 종료했다.
+
+### Codex
+
+`SessionStart`의 source 네 가지(`startup`, `resume`, `clear`, `compact`)에 걸고, POSIX는 `python3`, Windows는 `commandWindows`를 쓴다. 두 경로 모두 Git root에서 script를 찾는다.
+
+Codex는 hook command를 **세션 환경의 shell로 실행한다.** 그 shell이 PowerShell일 수도, cmd일 수도 있다. `commandWindows`는 shell에 argv 원소 하나로 전달되며 Windows의 argv 조립 규칙이 문자열 안의 `"`를 `\"`로 바꾼다. cmd는 `\"`를 이해하지 못하므로, 따옴표가 들어간 표현은 cmd 쪽에서 **오류 없이 조용히** 명령 텍스트를 그대로 출력한다. 반대로 따옴표를 빼면 바깥 PowerShell이 `( )`를 먼저 평가해 공백이 든 경로에서 토큰이 쪼개진다.
+
+그래서 Windows는 `-EncodedCommand`를 쓴다. Base64는 두 shell 모두에서 **평범한 토큰 하나**라 dialect 차이를 타지 않고, 모든 평가가 안쪽 PowerShell에서만 일어난다.
+
+```
+powershell.exe -NoProfile -EncodedCommand <BASE64>
+```
+
+**정본은 Base64가 아니라 아래 payload다.** Base64는 이것을 UTF-16LE로 인코딩한 파생물이며, 고칠 때는 payload를 고치고 다시 생성한다.
+
+```powershell
+$ProgressPreference = 'SilentlyContinue'
+$r = git rev-parse --show-toplevel 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $r) { exit 0 }
+& py -3 -B (Join-Path $r '_system/hooks/session_context.py')
+exit $LASTEXITCODE
+```
+
+생성 규칙은 PowerShell `-EncodedCommand` 규격 그대로다. **UTF-16LE로 인코딩한 뒤 Base64.** 손으로 옮기지 않는다.
+
+```bash
+python -c "import base64,io;print(base64.b64encode(io.open('payload.ps1',encoding='utf-8').read().encode('utf-16-le')).decode())"
+```
+
+payload 각 줄의 이유.
+
+| 줄 | 이유 |
+|---|---|
+| `$ProgressPreference = 'SilentlyContinue'` | Windows PowerShell 5.1에서 `-EncodedCommand`로 네이티브 명령을 부르고 stderr가 파이프면 progress 레코드가 CLIXML로 stderr에 섞인다. 오류가 아니지만 hook 출력은 깨끗해야 하므로 끈다 |
+| `git rev-parse --show-toplevel` | Codex는 하위 디렉터리에서 시작될 수 있다. cwd가 아니라 Git root에서 core를 찾는다. `2>$null`로 git의 오류 메시지를 흘리지 않는다 |
+| `if (…) { exit 0 }` | Git 저장소가 아니거나 git이 실패하면 stdout·stderr 없이 종료 코드 0으로 끝난다. 세션을 막지 않는다 |
+| `& py -3 -B` | Windows Python Launcher로 Python 3을 고른다. 이 환경의 `python`은 3.11, `py -3`은 3.13을 가리켰다. `-B`로 `__pycache__`를 만들지 않는다 |
+| `Join-Path $r '…'` | 경로 결합을 안쪽 PowerShell에서 처리한다. repo 경로에 공백이 있어도 인자 하나로 유지된다 |
+| `exit $LASTEXITCODE` | core의 종료 코드를 그대로 올린다 |
+
+개인 절대경로나 개인 Python 설치 경로는 넣지 않는다. `.cmd`·`.ps1` wrapper도 두지 않는다. wrapper를 두면 그 wrapper를 찾는 문제가 그대로 남고(`CreateProcess`는 `.cmd`를 직접 실행하지 못한다), 파일만 하나 늘 뿐 Git root 문제를 해결하지 못한다.
+
+전제는 hook 환경 PATH에 `git`과 `py`가 있는 것이다. 둘 다 실제 Codex hook 환경에서 확인했다.
+
+2026-09-13 Windows 확인(`codex-cli 0.153.4`): repo root와 **하위 디렉터리(`wiki/clusters`)** 양쪽에서 세션을 시작해 `SessionStart` hook이 실행되고 `additionalContext`가 모델까지 전달됐다. 직접 실행 검사에서는 PowerShell·cmd × root·하위 디렉터리 × 공백 있는 repo 경로 조합이 모두 통과했고, Git 저장소가 아닌 cwd에서는 stdout·stderr 없이 종료 코드 0이었다.
+
 ## 아직 없는 것
 
-플랫폼 등록 파일(`.claude/settings.json`, `.codex/hooks.json`)은 아직 만들지 않았다. core와 검사가 먼저다. Antigravity 어댑터는 보류했다.
+Antigravity 어댑터는 보류했다.
 
 `raw/` 원본을 만든 뒤 바뀌지 않게 지키는 PreToolUse guard는 V1 다음 후보다. ingest가 원본을 새로 만드는 것은 정상이므로 `raw/` 전체 쓰기를 막는 방식은 쓰지 않는다.

@@ -6,9 +6,9 @@
 
 ## 1. 현재 결론
 
-**설계·규격 계층과 실행 문서 계층은 작성됐고, 자동 실행 계층은 아직 없다.**
+**설계·규격 계층과 실행 문서 계층이 작성됐고, 자동 실행 계층은 Windows에서 동작한다.**
 
-데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. Hook은 세션 시작 컨텍스트 core까지 만들었고 플랫폼 등록은 아직 하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
+데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. 세션 시작 컨텍스트 Hook은 Claude Code와 Codex 양쪽에 등록했고 Windows에서 실제 세션으로 확인했다. POSIX는 아직 확인하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
 
 이 저장소는 `study-brain-template` **개발 저장소**로 쓴다. 실제 학습 자료는 템플릿 완성 후 별도 비공개 저장소에 담는다.
 
@@ -22,7 +22,7 @@
 | P4 Workflows | **complete** | `_system/workflows/`에 L1~L9 실행 문서 9개 + README |
 | P5 Note Templates | **complete** | 11개 템플릿 + 사용 안내. 자동 검사 통과 |
 | P6 Skills | **complete** | Core Skill 8개. `.agents/skills/` 정본 + `.claude/skills/` discovery stub. 구조 검사와 런타임 A~H 통과 |
-| P7 Hooks | **partial** | SessionStart 컨텍스트 core `_system/hooks/session_context.py`와 검사 통과. 플랫폼 등록 파일은 없음 |
+| P7 Hooks | **partial** | 공통 core + 등록 파일 2개. Claude Code·Codex 모두 Windows runtime 확인. POSIX 미확인 |
 | P8 Obsidian UX | **partial** | `HOME.md`, `wiki/index.md`는 있음. 자동 갱신 뷰·Bases·Graph 설정 없음 |
 | P9 Tests | **partial** | 템플릿 검증 + Scenario A~K 통합 시험 통과(FAIL 0). 에이전트 실행 시험과 Git 동기화 시험은 미실행 |
 | P10 GitHub Template | **not started** | Template Repository 설정, LICENSE, 공개 검토 남음 |
@@ -165,13 +165,23 @@ Skill은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)와 [`_system/workflows/`](_system/
 
 `_system/docs/hook-validation/`의 `test_session_context.py`가 A~M과 경계 조건, 기계적 검사 8개, 예외 처리, 성능을 본다. 2026-09-12 재검증 결과: **PASS 43 / FAIL 0**, core p95 300 ms 이내. 결함 5개를 주입해 검사가 실제로 걸러내는지도 확인했다.
 
-플랫폼 등록 파일(`.claude/settings.json`, `.codex/hooks.json`)은 아직 없다. Antigravity 어댑터는 보류했다.
+등록 파일은 `.claude/settings.json`과 `.codex/hooks.json` 두 개다. **둘 다 2026-09-13 Windows에서 확인했다.**
+
+| 대상 | 확인한 것 |
+|---|---|
+| Claude Code / Windows | `SessionStart:startup` 실행과 `additionalContext` 전달을 debug log로 확인. 경로를 깨뜨린 fixture에서 fail-open 확인 |
+| Codex / Windows | 격리 fixture에서 실제 TUI로 확인. repo root와 **하위 디렉터리 시작** 모두 통과. `additionalContext`가 모델까지 전달됨. 로컬 runtime은 `codex-cli 0.153.4` |
+| Codex / 직접 실행 검사 | PowerShell·cmd × root·하위 디렉터리 조합 전부 통과. **repo 경로에 공백이 있는 경우도 통과.** Git 저장소가 아닌 cwd에서는 stdout·stderr 없이 종료 코드 0 |
+| POSIX (macOS·Linux) | **미확인.** 두 플랫폼 모두 runtime을 돌리지 않았다 |
+| Antigravity | 보류 |
+
+Codex의 Windows 등록은 `powershell.exe -NoProfile -EncodedCommand`를 쓴다. Codex가 hook을 세션 환경의 shell(PowerShell 또는 cmd)로 실행하는데, 따옴표가 든 표현은 argv 조립 규칙 때문에 cmd에서 조용히 깨지고, 따옴표를 빼면 PowerShell에서 공백 경로가 깨지기 때문이다. Base64는 두 shell 모두에서 토큰 하나라 그 차이를 타지 않는다. **정본은 Base64가 아니라 PowerShell payload 원문이며** [`_system/hooks/README.md`](_system/hooks/README.md)에 적어 뒀다.
 
 ## 4. 아직 없는 것
 
 | 영역 | 현재 | 다음 작업 |
 |---|---|---|
-| Hook 플랫폼 등록 | core만 있음 | `.claude/settings.json`, `.codex/hooks.json` 작성과 실제 SessionStart 실행 확인 |
+| POSIX Hook runtime | 미확인 | macOS·Linux에서 launcher 이름과 SessionStart 실행 확인 |
 | `wiki/clusters/_topics.md` | 형식·규칙만 있고 registry 비어 있음 | 실제 자료 처리 시 점진적으로 등록 |
 | `_system/log.md` | 비어 있음 | 첫 실제 쓰기부터 append-only 기록 |
 | L8 자동 검사 | 수동 절차 | 스키마·관계·ID·topic·source 검사 도구 |

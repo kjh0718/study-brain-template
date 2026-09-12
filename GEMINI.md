@@ -32,7 +32,7 @@ Study Brain의 규칙에 관해서는 **`SECOND-BRAIN.md`가 이 파일과 상�
 
 ## Skills와 Hooks
 
-`.agents/skills/`에 Core Skill 8개의 정본이 있다. `.agents/hooks/`는 **아직 비어 있다.** 훅이 있다고 가정하지 않는다.
+`.agents/skills/`에 Core Skill 8개의 정본이 있다. `.agents/hooks/`에는 구현을 두지 않는다. 훅 구현은 [`_system/hooks/`](_system/hooks/README.md) 하나이고, Antigravity 자동 등록은 보류했다.
 
 ## Git
 
