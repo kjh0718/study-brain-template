@@ -25,7 +25,9 @@ Study Brain의 규칙에 관해서는 **`SECOND-BRAIN.md`가 이 파일과 전�
 
 ## Skills와 Hooks
 
-`.claude/skills/`와 `.claude/hooks/`는 **아직 비어 있다.** 스킬이 있다고 가정하고 호출하지 않는다. 앞으로 만들 스킬도 규칙을 다시 정의하지 않고 `SECOND-BRAIN.md`와 해당 워크플로 문서를 읽어 실행하는 얇은 진입점으로 둔다.
+`.claude/skills/`에 Core Skill 8개의 discovery stub이 있다. 스텁은 규칙을 담지 않고 `.agents/skills/`의 정본을 가리킨다. 정본도 규칙을 다시 정의하지 않고 `SECOND-BRAIN.md`와 해당 워크플로 문서를 읽어 실행하는 얇은 진입점이다.
+
+`.claude/hooks/`는 **아직 비어 있다.** 훅이 있다고 가정하지 않는다.
 
 ## Git
 

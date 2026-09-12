@@ -77,7 +77,9 @@ Base directory: .claude/skills/recall
 | G ingest-resource 재등록 | PASS |
 | H ingest-past-exam | PASS |
 
-**PASS 9 / FAIL 0**
+**A~H 모두 PASS / FAIL 0**
+
+위 표는 공통 검사와 A~H를 9행으로 나눠 적었다. `verify_runtime.py`는 B와 F를 한 그룹으로 합쳐 검사하므로 `PASS: 8`로 출력한다. 같은 실행을 세는 기준만 다르며 FAIL은 0이다. 혼동을 줄이기 위해 문서에서는 개수 대신 범위로 적는다.
 
 ### A — capture 라우팅
 

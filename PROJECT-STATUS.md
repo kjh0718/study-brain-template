@@ -1,6 +1,6 @@
 # Study Brain Template — 현재 상태
 
-최종 확인일: 2026-09-09
+최종 확인일: 2026-09-12
 
 이 문서는 무엇이 실제로 만들어졌고 무엇이 아직 없는지를 기록한다. 운영 규칙은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)에, 소개는 [`README.md`](README.md)에 있다.
 
@@ -8,7 +8,7 @@
 
 **설계·규격 계층과 실행 문서 계층은 작성됐고, 자동 실행 계층은 아직 없다.**
 
-데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점이 있다. 사람이나 에이전트가 이 문서들을 읽고 절차를 따라 수업 전사를 처리할 수는 있다. Scenario A~K 통합 시험으로 그 문서들이 서로 일관되는지도 확인했다. 하지만 명령 한 번으로 자동 처리하는 Skill과 Hook은 없고, 에이전트가 실제로 그 문서를 읽고 같은 결과를 내는지는 검증되지 않았다.
+데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. 다만 Hook이 아직 없고, 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
 
 이 저장소는 `study-brain-template` **개발 저장소**로 쓴다. 실제 학습 자료는 템플릿 완성 후 별도 비공개 저장소에 담는다.
 
@@ -21,7 +21,7 @@
 | P3 SECOND-BRAIN.md | **complete** | 운영 원칙과 L1~L9 판단 기준 |
 | P4 Workflows | **complete** | `_system/workflows/`에 L1~L9 실행 문서 9개 + README |
 | P5 Note Templates | **complete** | 11개 템플릿 + 사용 안내. 자동 검사 통과 |
-| P6 Skills | **not started** | `.agents/skills/`, `.claude/skills/`에 README만 |
+| P6 Skills | **complete** | Core Skill 8개. `.agents/skills/` 정본 + `.claude/skills/` discovery stub. 구조 검사와 런타임 A~H 통과 |
 | P7 Hooks | **not started** | `.agents/hooks/`, `.claude/hooks/`에 README만 |
 | P8 Obsidian UX | **partial** | `HOME.md`, `wiki/index.md`는 있음. 자동 갱신 뷰·Bases·Graph 설정 없음 |
 | P9 Tests | **partial** | 템플릿 검증 + Scenario A~K 통합 시험 통과(FAIL 0). 에이전트 실행 시험과 Git 동기화 시험은 미실행 |
@@ -144,11 +144,25 @@ _system/  schemas, templates, workflows, docs, log.md
 
 **한계**: 문서대로 만든 결과물이 규칙과 일관되는지를 본다. 에이전트가 실제로 그 문서를 읽고 같은 결과를 내는지는 검증하지 않는다.
 
+### 3.10 Skill 계층
+
+Core Skill 8개가 있다. `capture`, `recall`, `maintain`, `ingest-lecture`, `ingest-resource`, `ingest-past-exam`, `review`, `check-conflict`.
+
+| 위치 | 역할 |
+|---|---|
+| [`.agents/skills/`](.agents/skills/README.md) | 정본. 도구 중립 |
+| `.claude/skills/` | Claude Code discovery stub. 정본을 가리키기만 한다 |
+
+Skill은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)와 [`_system/workflows/`](_system/workflows/README.md)를 호출하는 얇은 인터페이스다. 규칙을 스스로 정의하지 않는다. Skill별 워크플로 매핑과 작성 규약은 [`.agents/skills/README.md`](.agents/skills/README.md)에 있다.
+
+`_system/docs/skill-validation/`이 두 가지를 검사한다. 구조 검사(`check_skills.py`)는 정본이 SECOND-BRAIN을 참조하는지, 워크플로 매핑이 맞는지, 규칙이 복제되지 않았는지를 본다. 런타임 시험(`verify_runtime.py`)은 격리된 workspace에서 실제 호출 결과를 본다. 2026-09-09 결과는 구조 검사 문제 0건, **런타임 A~H 모두 PASS / FAIL 0**이며 8개 Skill 전부 직접 호출을 확인했다. 보고서는 [`runtime-test.md`](_system/docs/skill-validation/runtime-test.md)에 있다.
+
+Hook은 아직 없다. `.agents/hooks/`와 `.claude/hooks/`에는 README만 있다.
+
 ## 4. 아직 없는 것
 
 | 영역 | 현재 | 다음 작업 |
 |---|---|---|
-| `.agents/skills/`, `.claude/skills/` | README만 | `capture`, `recall`, `maintain` + ingest 계열 Skill |
 | `.agents/hooks/`, `.claude/hooks/` | README만 | 세션 시작 시 최소 컨텍스트 로드 |
 | `wiki/clusters/_topics.md` | 형식·규칙만 있고 registry 비어 있음 | 실제 자료 처리 시 점진적으로 등록 |
 | `_system/log.md` | 비어 있음 | 첫 실제 쓰기부터 append-only 기록 |
@@ -215,31 +229,23 @@ git status
 
 ## 8. 다음 개발 계획
 
-### 단계 A — Skills (P6)
-
-- `capture`: 입력 종류를 판별해 적절한 레이어로 연결
-- `recall`, `maintain`
-- `ingest-lecture`, `ingest-resource`, `ingest-past-exam`, `review`, `check-conflict`
-
-스킬은 규칙을 다시 정의하지 않는다. `SECOND-BRAIN.md`와 해당 워크플로 문서를 읽어 실행하는 얇은 진입점으로 둔다.
-
-### 단계 B — Hooks (P7)
+### 단계 A — Hooks (P7)
 
 세션 시작 시 저장소 전체가 아니라 최소 컨텍스트만 로드한다. 활성 Course, 최근 로그, 관련 topics 정도다.
 
-### 단계 C — 에이전트 실행 시험 (P9 잔여)
+### 단계 B — 에이전트 실행 시험 (P9 잔여)
 
 Scenario A~K 통합 시험은 통과했다. 남은 것은 에이전트가 `SECOND-BRAIN.md`와 워크플로 문서를 실제로 읽고 같은 결과를 내는지 확인하는 것이다. Skills 구현 이후에 가능하며, `integration-test/vault/`를 기대 출력으로 재사용한다.
 
-### 단계 D — L8 자동 검사 도구
+### 단계 C — L8 자동 검사 도구
 
 현재 `l8-maintenance.md`의 검사 항목 10개를 스크립트로 만든다. 새 의존성 없이 표준 라이브러리와 PyYAML만 쓴다.
 
-### 단계 E — Obsidian UX (P8)
+### 단계 D — Obsidian UX (P8)
 
 Course 대시보드 뷰, Open Questions, Active Assignments, Review 뷰. 플러그인 의존을 최소화한다.
 
-### 단계 F — 공개 준비 (P10~P12)
+### 단계 E — 공개 준비 (P10~P12)
 
 개인정보 검토, LICENSE, GitHub Template Repository 설정, 실제 비공개 Brain 생성과 이관.
 
@@ -257,9 +263,11 @@ Course 대시보드 뷰, Open Questions, Active Assignments, Review 뷰. 플러�
 ## 10. Git 상태
 
 ```text
-remote: https://github.com/kjh0718/study-brain-template.git
+remote:         https://github.com/kjh0718/study-brain-template.git
 default branch: main
-최초 커밋: 8f4c421 Initialize Study Brain template
+최근 checkpoint: 516e556 feat: add core skills layer with runtime validation
 ```
 
-이 문서를 갱신한 시점의 작업은 아직 커밋되지 않았다. 작업 브랜치와 커밋 여부는 `git status`로 확인한다.
+`516e556`은 Phase 6까지를 담은 안정 checkpoint다. 그 이전 checkpoint는 `44a34c9`(Phase 1~5)다.
+
+현재 브랜치, working tree의 clean 여부, 로컬과 remote의 차이는 이 문서에 적지 않는다. 시점에 따라 달라지므로 `git status`와 `git branch -vv`로 확인한다.
