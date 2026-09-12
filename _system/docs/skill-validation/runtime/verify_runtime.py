@@ -184,8 +184,15 @@ if not ci:
 elif len(ci["fm"]["sources"] or []) < 2:
     fails.append("CON-impulse의 독립 근거가 2개 미만인데 생성됐다")
 # topic 등록
-reg = set(re.findall(r"^- ([a-z0-9-]+) — ",
-                     (WS / "wiki/clusters/_topics.md").read_text(encoding="utf-8"), re.M))
+registry_text = (WS / "wiki/clusters/_topics.md").read_text(encoding="utf-8")
+start_marker, end_marker = "<!-- REGISTRY:start -->", "<!-- REGISTRY:end -->"
+if (registry_text.count(start_marker) != 1 or registry_text.count(end_marker) != 1
+        or registry_text.index(start_marker) >= registry_text.index(end_marker)):
+    fails.append("topic registry 경계가 없거나 중복·역순이다")
+    reg = set()
+else:
+    registry_body = registry_text.split(start_marker, 1)[1].split(end_marker, 1)[0]
+    reg = set(re.findall(r"^- ([a-z0-9-]+) — ", registry_body, re.M))
 for n in notes.values():
     for tp in (n["fm"].get("topics") or []):
         if tp not in reg:

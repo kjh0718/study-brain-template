@@ -98,8 +98,10 @@ mom.write_text(t, encoding="utf-8")
 (WS / "wiki/clusters/_topics.md").write_text(
     "<!-- Runtime Test용 가상 데이터. 실제 학습 자료가 아니다. -->\n"
     "# Topic Vocabulary (runtime fixture)\n\n"
+    "<!-- REGISTRY:start -->\n"
     "- momentum — 질량과 속도의 곱으로 정의되는 벡터량 (최초 근거: CON-momentum)"
-    " 별칭: 운동량, linear momentum\n", encoding="utf-8")
+    " 별칭: 운동량, linear momentum\n"
+    "<!-- REGISTRY:end -->\n", encoding="utf-8")
 
 # 빈 로그. 첫 기록부터 append-only.
 (WS / "_system").mkdir(parents=True, exist_ok=True)

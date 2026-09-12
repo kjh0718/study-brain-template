@@ -1,3 +1,5 @@
 ﻿# Agent Hooks
 
-범용 AI Agent에서 사용하는 Study Brain hook을 보관합니다.
+Antigravity의 V1 자동 등록은 보류했다.
+
+공통 구현은 [`_system/hooks/`](../../_system/hooks/README.md)에 있다. `.agents/hooks/`는 현재 platform implementation 위치가 아니며, 이 README는 그 상태를 안내한다.

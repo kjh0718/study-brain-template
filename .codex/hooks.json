@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -B \"$(git rev-parse --show-toplevel)/_system/hooks/session_context.py\"",
+            "commandWindows": "powershell.exe -NoProfile -EncodedCommand JABQAHIAbwBnAHIAZQBzAHMAUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAJwAKACQAcgAgAD0AIABnAGkAdAAgAHIAZQB2AC0AcABhAHIAcwBlACAALQAtAHMAaABvAHcALQB0AG8AcABsAGUAdgBlAGwAIAAyAD4AJABuAHUAbABsAAoAaQBmACAAKAAkAEwAQQBTAFQARQBYAEkAVABDAE8ARABFACAALQBuAGUAIAAwACAALQBvAHIAIAAtAG4AbwB0ACAAJAByACkAIAB7ACAAZQB4AGkAdAAgADAAIAB9AAoAJgAgAHAAeQAgAC0AMwAgAC0AQgAgACgASgBvAGkAbgAtAFAAYQB0AGgAIAAkAHIAIAAnAF8AcwB5AHMAdABlAG0ALwBoAG8AbwBrAHMALwBzAGUAcwBzAGkAbwBuAF8AYwBvAG4AdABlAHgAdAAuAHAAeQAnACkACgBlAHgAaQB0ACAAJABMAEEAUwBUAEUAWABJAFQAQwBPAEQARQAKAA==",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
