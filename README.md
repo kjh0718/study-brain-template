@@ -209,7 +209,7 @@ cd _system/docs/template-validation && python check_templates.py
 - P1~P6 complete — 골격, 스키마, 운영 기준서, L1~L9 워크플로, 템플릿, Core Skill 8개
 - P7 Hooks — 세션 시작 컨텍스트 Hook. Claude Code·Codex 모두 Windows에서 확인, POSIX 미확인
 - P8 Obsidian UX — complete. HOME과 Bases 표 뷰 2개, 실제 Obsidian에서 확인
-- P9 Tests — partial
+- P9 Tests — complete. 검증 스위트 6개는 `python _system/docs/run_all.py`로 한 번에 돌린다
 - 실제 사용자 학습 자료로 한 end-to-end 검증은 아직 하지 않았다
 
 자세한 내용은 [`PROJECT-STATUS.md`](PROJECT-STATUS.md)에 있다.

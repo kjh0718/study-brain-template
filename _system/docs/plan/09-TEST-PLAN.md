@@ -125,3 +125,30 @@ pull → B 확인
 - evidence recall 정상
 - duplicate concept/topic 억제
 - Desktop/Laptop Git sync 정상
+
+## P9 완료 기준
+
+- core architecture regression 없음
+- workflow integration A~K 통과
+- Claude Code 실제 Skill runtime 검증
+- 보호 영역 실제 agent 재실행 후 보존
+- evidence/provenance 유지
+- conflict 처리 검증
+- duplicate Concept 처리 검증
+- broken relative link 0
+- fixture와 production 데이터 격리
+- fixture만으로 재현 가능
+- run_all 일괄 실행 가능
+- Codex project Skill discovery + 실제 invocation 확인
+- 문서 상태와 실제 구현 상태 일치
+
+P8의 HOME·Bases·Knowledge Browser 결과는 회귀 확인의 참고 근거로만 사용하며 P9 acceptance criteria 자체로 재사용하지 않는다. fixture 재현에는 runtime workspace 생성과 실제 Skill 호출이 포함되며, `run_all.py`가 그 준비를 대신하지 않는다.
+
+## 결정 기록 — Git 동기화 시험을 P11로 옮긴다 (2026-09-13)
+
+위 V1 완료 기준의 마지막 항목 `Desktop/Laptop Git sync 정상`은 **P9 complete 조건에서 제외한다.** 기준 자체를 지우지 않고 수행 시점만 옮긴다.
+
+- **어디로**: P11 Private Brain 직전 또는 초기 검증
+- **왜**: 나머지 P9 항목은 이 저장소의 규칙·문서·Skill을 검증하지만, 이 항목은 **Git과 사용자 기기 두 대**를 검증한다. 템플릿 자체 테스트가 아니라 실제 2-device 사용자 환경 검증이다.
+- **부수 이유**: 기기 2대가 없으면 재현할 수 없어, P9에 묶어 두면 기기가 생길 때까지 P9가 닫히지 않는다. 실제 비공개 Brain을 두 기기에서 쓰기 시작하는 시점이 이 시험의 자연스러운 자리다.
+- Phase 번호를 새로 만들지 않았다.

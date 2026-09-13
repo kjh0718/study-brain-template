@@ -79,7 +79,9 @@ def by_type(t):
 
 def section(body, title):
     """## <title> 절의 본문을 반환한다. 다음 동급 제목 직전까지."""
-    m = re.search(rf"^## {re.escape(title)}\s*$", body, re.M)
+    # 제목 줄 안의 공백만 허용한다. \s*$ 로 두면 다음 줄까지 먹어
+    # 보호 영역 맨 앞의 공백 변경을 놓친다.
+    m = re.search(rf"^## {re.escape(title)}[ \t\r]*$", body, re.M)
     if not m:
         return None
     rest = body[m.end():]

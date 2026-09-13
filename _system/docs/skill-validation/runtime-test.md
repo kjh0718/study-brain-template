@@ -76,10 +76,11 @@ Base directory: .claude/skills/recall
 | F review | PASS |
 | G ingest-resource 재등록 | PASS |
 | H ingest-past-exam | PASS |
+| I 보호 영역 보존 | PASS |
 
-**A~H 모두 PASS / FAIL 0**
+**A~I 모두 PASS / FAIL 0**
 
-위 표는 공통 검사와 A~H를 9행으로 나눠 적었다. `verify_runtime.py`는 B와 F를 한 그룹으로 합쳐 검사하므로 `PASS: 8`로 출력한다. 같은 실행을 세는 기준만 다르며 FAIL은 0이다. 혼동을 줄이기 위해 문서에서는 개수 대신 범위로 적는다.
+위 표는 공통 검사와 A~I를 10행으로 나눠 적었다. `verify_runtime.py`는 B와 F를 한 그룹으로 합쳐 검사하므로 `PASS: 9`로 출력한다. 같은 실행을 세는 기준만 다르며 FAIL은 0이다. 혼동을 줄이기 위해 문서에서는 개수 대신 범위로 적는다.
 
 ### A — capture 라우팅
 
@@ -266,6 +267,81 @@ canonical의 첫 단계는 **중복 검색**이다. 검색 결과 같은 자료�
 | `review` | 노트 2개 생성 | log 4줄 |
 | `ingest-resource` | 원본 보존 + 기존 RES 갱신 (**신규 생성 없음**) | log 3줄 |
 | `ingest-past-exam` | 노트 1개 생성 + 대시보드 | log 4줄 |
+
+## I — 보호 영역 보존 (2026-09-13 추가)
+
+사용자가 직접 쓴 절(`## My Notes`, `## My Understanding`, `## My Questions`, `## Personal Reflection`)이 에이전트 실행 뒤에도 **바이트 단위로** 같은지 본다. A~H의 seed와 기대값은 건드리지 않고 독립 검사로 붙였다.
+
+| | 비교 대상 | 잡는 것 |
+|---|---|---|
+| I-1 | seed 원본인 [`integration-test/vault/`](../integration-test/README.md) | seed된 노트의 보호 절이 원본과 다른 경우 |
+| I-2 | 직전 `verify_runtime.py` 실행 시 기록한 `protected-runtime.json` | 이전 실행 이후 바뀌거나 사라진 보호 절 |
+
+I-1의 baseline을 fixture에서 가져올 수 있는 이유는, seed가 가하는 변형이 CRS 대시보드 영역과 frontmatter `sources`뿐이어서 보호 절에 닿지 않기 때문이다. 실측으로 확인했다.
+
+`protected-runtime.json`은 재생성물이라 추적하지 않는다. FAIL 상태를 baseline으로 굳히지 않도록 **통과했을 때만** 기록하며, `seed_workspace.py`가 workspace를 다시 만들면 함께 지운다.
+
+에이전트가 만든 노트에 보호 절이 없으면 note로만 남긴다. L8이 탐지하는 항목이며 여기서 새 규칙을 만들지 않는다.
+
+현재 기록된 보호 절은 **15개**이고 네 제목이 모두 들어 있다 (My Notes 9 · My Questions 2 · My Understanding 2 · Personal Reflection 2).
+
+### 실제 에이전트 재실행으로 확인 (2026-09-13)
+
+검사기의 능력이 아니라 **실제 재실행 뒤 보존 여부**를 봐야 하므로, snapshot을 기록한 뒤 Claude Code로 Skill을 다시 호출했다.
+
+| 호출 | 결과 |
+|---|---|
+| `ingest-resource` (G 경로 재실행) | 중복 검색 결과 기존 RES가 이미 완전한 상태였다. 규칙상 갱신할 것이 없어 **파일을 쓰지 않았다** (0건). |
+| `review` (F 경로, 기존 회차 이어하기) | 사용자 응답 7/8을 기록했다. 미평가 1건이 남아 `in-progress`와 `completed_on: null`을 유지했다. |
+
+에이전트가 실제로 수정한 파일은 **2개**다.
+
+```text
+수정  study/reviews/2026-09-13-weekly.md
+수정  _system/log.md
+```
+
+REV의 상태·제목이 그대로라 대시보드 표시가 달라지지 않았고, 규칙대로 CRS를 다시 쓰지 않았다.
+
+재실행 뒤 보호 절 **15개가 전부 바이트 단위로 같았다.** 갱신한 REV 노트의 `## Personal Reflection`도 그대로다. `verify_runtime.py` 재실행 결과는 A~I 전부 PASS다.
+
+### 결함 주입
+
+검사가 실제로 잡는지 5종을 하나씩 넣어 확인했고 모두 FAIL로 걸렸다.
+
+| 주입 | 걸린 곳 |
+|---|---|
+| seed 노트 보호 절에 한 줄 추가 | I-1, I-2 |
+| seed 노트 보호 절 제목 제거 | I-1, I-2 |
+| 에이전트 생성 노트 보호 절 내용 변경 | I-2 |
+| 에이전트 생성 노트 보호 절 제목 제거 | I-2 |
+| 보호 절 맨 앞에 **공백 한 칸** | I-1, I-2 |
+
+마지막 항목이 처음에는 잡히지 않았다. 제목 정규식 `^## <제목>\s*$`의 `\s*`가 개행을 넘어가 보호 절 맨 앞 공백을 먹었기 때문이다. `[ \t\r]*$`로 고쳐 제목 줄 안의 공백만 허용하도록 했다. 같은 결함이 [`integration-test/check_scenarios.py`](../integration-test/README.md)의 Scenario G에도 있어 함께 고쳤다.
+
+## Codex에서의 Skill 실행 (2026-09-13)
+
+`.agents/skills/`는 Claude Code 전용이 아니다. Codex 공식 문서가 **저장소 범위 Skill 경로로 `.agents/skills`를 지정한다.**
+
+> Codex scans `.agents/skills` in every directory from your current working directory up to the repository root.
+
+실제로 확인했다. `codex debug prompt-input`(모델 호출 없음)에서 이 저장소가 skill root로 등록되고 8개가 모두 노출됐다.
+
+```text
+r3 = <repo>/.agents/skills
+capture · check-conflict · ingest-lecture · ingest-past-exam
+ingest-resource · maintain · recall · review
+```
+
+이어서 `codex exec --sandbox read-only`로 `recall`을 한 번 호출해 **실행까지** 확인했다 (`codex-cli 0.153.4`, Windows). 발견만이 아니라 적용됐다는 근거는 실행 로그에 남았다.
+
+- `.agents/skills/recall/SKILL.md`를 실제로 읽었다 (로그에 6회 참조)
+- 그 지시대로 `SECOND-BRAIN.md`와 `_system/workflows/l6-recall.md`를 이어서 읽었다
+- 지정한 격리 workspace 안에서만 조회했고 근거 ID(`LEC-20260908-01`, `RES-general-physics-2-ch03-slides`)와 페이지 범위 21–38을 답했다
+- 페이지 기준의 불확실성까지 그대로 옮겼다
+- 파일 변경 0건. 실행 전후 `git status`가 같았다
+
+repo 범위 Skill에 별도 trust 승인 단계는 나타나지 않았다. Hook과 달리 Skill은 승인 게이트 없이 목록에 오르고 실행됐다. **Codex용 adapter나 `.codex/skills/`를 만들지 않았다. 저장소에 추가한 파일이 없다.**
 
 ## 발견된 문제
 
