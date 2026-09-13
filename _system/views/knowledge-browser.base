@@ -1,0 +1,82 @@
+properties:
+  file.name:
+    displayName: 노트
+  note.status:
+    displayName: 상태
+  note.course:
+    displayName: 과목
+  note.topics:
+    displayName: 주제
+  note.updated:
+    displayName: 수정일
+  note.date:
+    displayName: 수업일
+  note.aliases:
+    displayName: 다른 표기
+  note.resource_type:
+    displayName: 자료 종류
+  note.authority:
+    displayName: 권위
+  note.provenance:
+    displayName: 입수 경로
+  note.year:
+    displayName: 연도
+  note.exam_type:
+    displayName: 시험 종류
+
+filters:
+  or:
+    - 'file.inFolder("study")'
+    - 'file.inFolder("wiki")'
+
+views:
+  - type: table
+    name: 강의
+    filters:
+      and:
+        - 'note.type == "lecture"'
+    groupBy:
+      property: note.course
+      direction: ASC
+    order:
+      - file.name
+      - note.date
+      - note.status
+      - note.topics
+
+  - type: table
+    name: 개념
+    filters:
+      and:
+        - 'note.type == "concept"'
+    order:
+      - file.name
+      - note.status
+      - note.topics
+      - note.aliases
+      - note.updated
+
+  - type: table
+    name: 자료
+    filters:
+      and:
+        - 'note.type == "resource"'
+    order:
+      - file.name
+      - note.resource_type
+      - note.authority
+      - note.status
+      - note.course
+
+  - type: table
+    name: 기출
+    filters:
+      and:
+        - 'note.type == "past-exam"'
+    order:
+      - file.name
+      - note.year
+      - note.exam_type
+      - note.authority
+      - note.provenance
+      - note.status

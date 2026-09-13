@@ -10,6 +10,10 @@ Study Brain 시작 화면이다. 각 영역으로 이동하는 지도이며 데�
 
 ## 지금 할 일
 
+Obsidian에서는 [`study-overview`](_system/views/study-overview.base) 표 뷰가 아래 다섯 가지를 자동으로 모아 준다. 열어서 상단 탭으로 전환한다.
+
+아래 표는 Obsidian이 없을 때도 쓰는 이동 경로다.
+
 | | 어디 | 무엇을 본다 |
 |---|---|---|
 | 마감 | [Assignments](study/assignments/README.md) | `status: open`, `in-progress`인 과제 |
@@ -44,6 +48,7 @@ Study Brain 시작 화면이다. 각 영역으로 이동하는 지도이며 데�
 | [Patterns](wiki/patterns/README.md) | 여러 근거에서 반복 확인된 패턴. L9에서만 만든다 |
 | [Topic 어휘표](wiki/clusters/_topics.md) | 쓸 수 있는 `topics` 값의 정본 |
 | [Wiki 색인](wiki/index.md) | 장기 지식 영역 안내 |
+| [Knowledge Browser](_system/views/knowledge-browser.base) | 강의·개념·자료·기출을 표로 훑는 뷰 (Obsidian 전용) |
 
 ## 입력
 
@@ -78,4 +83,6 @@ type: lecture         강의 노트만
 course: CRS-...       한 과목의 노트 전부
 ```
 
-특정 플러그인을 전제하지 않는다. 위 검색은 Obsidian 기본 검색과 일반 텍스트 검색 모두에서 동작한다. 자동 갱신되는 목록 뷰는 이후 단계에서 추가한다.
+커뮤니티 플러그인을 전제하지 않는다. 위 검색은 Obsidian 기본 검색과 일반 텍스트 검색 모두에서 동작한다.
+
+자동 갱신되는 목록 뷰는 [`_system/views/`](_system/views/README.md)에 있다. Obsidian 코어 플러그인 Bases를 쓰며, 없어도 이 화면의 링크만으로 모든 영역에 갈 수 있다.
