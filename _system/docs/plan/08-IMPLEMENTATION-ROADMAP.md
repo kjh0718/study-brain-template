@@ -158,7 +158,7 @@ check-conflict
 ## Phase 11 — Private Brain
 Template에서 실제 Private repo 생성 후 Desktop/Laptop에 clone한다.
 
-## Phase 12 — DEVSTUDY Migration
+## Phase 12 — 기존 학습 자료 Migration
 기존 자료를 한꺼번에 덤프하지 않고:
 ```text
 Course
@@ -171,4 +171,4 @@ Course
 ```
 순으로 옮긴다.
 
-검증 후 기존 OneDrive DEVSTUDY를 정리한다.
+검증 후 기존 OneDrive 자료 폴더를 정리한다.

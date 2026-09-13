@@ -17,7 +17,7 @@ OneDrive 대신 GitHub Private repo를 실제 Brain의 주 동기화 수단으�
 상태: **확정**
 
 ## D-004 — OneDrive는 핵심 구조에서 제거
-기존 DEVSTUDY는 migration 검증 전까지 백업 가능하지만 새 구조의 핵심 의존성은 아니다.  
+기존 학습 자료는 migration 검증 전까지 백업 가능하지만 새 구조의 핵심 의존성은 아니다.\
 상태: **확정**
 
 ## D-005 — Git LFS V1 강제 안 함
