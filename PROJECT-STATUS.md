@@ -1,6 +1,6 @@
 # Study Brain Template — 현재 상태
 
-최종 확인일: 2026-09-12
+최종 확인일: 2026-09-13
 
 이 문서는 무엇이 실제로 만들어졌고 무엇이 아직 없는지를 기록한다. 운영 규칙은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)에, 소개는 [`README.md`](README.md)에 있다.
 
@@ -25,9 +25,9 @@
 | P7 Hooks | **partial** | 공통 core + 등록 파일 2개. Claude Code·Codex 모두 Windows runtime 확인. POSIX 미확인 |
 | P8 Obsidian UX | **complete** | `HOME.md`, `wiki/index.md`, Bases 표 뷰 2개(뷰 9개). 실제 Obsidian에서 렌더링 확인 |
 | P9 Tests | **complete** | 검증 스위트 6개 통과. Claude Code·Codex 실제 실행으로 Skill 경로와 보호 영역 보존 확인. Git 동기화 시험은 P11로 옮김 |
-| P10 GitHub Template | **not started** | Template Repository 설정, LICENSE, 공개 검토 남음 |
+| P10 GitHub Template | **complete** | 개인 흔적 일반화, runtime/cache/local 설정 ignore, 기존 구조 유지와 validation 회귀 없음. 웹 설정은 사용자가 별도로 수행 |
 | P11 Private Brain | **not started** | 실제 비공개 저장소 미생성 |
-| P12 DEVSTUDY Migration | **not started** | 기존 자료 이관 미착수 |
+| P12 기존 학습 자료 Migration | **not started** | 기존 자료 이관 미착수 |
 
 P9는 `python _system/docs/run_all.py`로 6개 스위트를 한 번에 돌린다. 완료 판정은 [P9 완료 기준](_system/docs/plan/09-TEST-PLAN.md#p9-완료-기준)을 따른다. P8의 HOME·Bases·Knowledge Browser 결과는 회귀 확인의 참고 근거이며 P9 acceptance criteria 자체가 아니다.
 
@@ -47,13 +47,7 @@ _system/  schemas, templates, workflows, docs, log.md
 
 각 주요 폴더의 `README.md`는 목적, 여기 두는 것, 여기 두지 않는 것, 규격, 관련 워크플로를 명시한다. `.gitkeep`을 쓰지 않는다.
 
-현재 `.gitignore`:
-
-```gitignore
-.DS_Store
-**/.obsidian/workspace*.json
-.claude/worktrees/
-```
+현재 [`.gitignore`](.gitignore)는 Obsidian workspace·graph, Claude worktree, Skill runtime workspace·manifest·보호 snapshot, Python cache, `.claude/settings.local.json`, `.env`를 제외한다. 공유 Hook·Skill 설정과 검증용 fixture는 유지한다.
 
 ### 3.2 데이터 스키마
 
@@ -207,7 +201,7 @@ Codex의 Windows 등록은 `powershell.exe -NoProfile -EncodedCommand`를 쓴다
 | Gemini 실행 시험 | 미실행 | `GEMINI.md`는 있으나 Skill 계층 확인 안 함 |
 | Git 동기화 시험 | 미실행 | Desktop/Laptop 2대 필요. **P11 직전 검증으로 옮겼다** |
 | L8 자동 검사 도구 | 수동 절차 | 아래 단계 C |
-| LICENSE | 없음 | 공개 전 결정 |
+| LICENSE | 없음 | 이번 P10에서는 추가하지 않음. 완료 조건에서 제외 |
 
 ## 5. 알려진 제한과 주의점
 
@@ -233,7 +227,7 @@ my-study-brain                ← 아직 만들지 않음
 └─ 실제 전사, 과제, 시험, 복습 데이터
 ```
 
-현재는 미완성 개발본이다. 공개 전환은 개인정보 검토, LICENSE, 사용법 문서를 마친 뒤에 한다.
+P10의 Template 파일 정리는 완료했다. GitHub Template Repository 웹 설정은 파일 정리 후 사용자가 직접 켜는 별도 단계이며, 이번 작업에서는 변경하지 않았다. 실제 비공개 Brain 생성과 이관은 아직 남아 있다.
 
 ## 7. 데스크탑·노트북 전환 방법
 
@@ -241,7 +235,7 @@ my-study-brain                ← 아직 만들지 않음
 
 ```powershell
 Set-Location "$HOME/Projects"
-git clone https://github.com/kjh0718/study-brain-template.git
+git clone "<저장소 URL>" study-brain-template
 Set-Location study-brain-template
 git status
 ```
@@ -288,7 +282,16 @@ Bases 표 뷰 2개로 마무리했다. 남은 후보는 Graph인데, frontmatter
 
 ### 단계 E — 공개 준비 (P10~P12)
 
-개인정보 검토, LICENSE, GitHub Template Repository 설정, 실제 비공개 Brain 생성과 이관.
+P10은 다음 최소 기준으로 완료했다.
+
+- tracked 파일에 개인 사용자명·개인 경로·session URL·secret 없음
+- 개인 기존 자료명 일반화 완료
+- 실제 개인 학습 자료 없음
+- runtime/cache/local 설정 파일이 tracked되지 않도록 ignore
+- 기존 template 구조 유지
+- 기존 validation 회귀 없음
+
+LICENSE 추가, GitHub 운영 설정, Obsidian Sync 변경, POSIX/Gemini 추가 검증은 이번 P10 범위가 아니다. GitHub Template Repository 웹 설정은 사용자가 직접 켜며, 이후 실제 비공개 Brain 생성과 기존 학습 자료 이관을 진행한다.
 
 ## 9. 다음 작업자가 읽을 순서
 
@@ -304,7 +307,7 @@ Bases 표 뷰 2개로 마무리했다. 남은 후보는 Graph인데, frontmatter
 ## 10. Git 상태
 
 ```text
-remote:         https://github.com/kjh0718/study-brain-template.git
+remote:         각 복제 저장소의 원격 URL (git remote -v로 확인)
 default branch: main
 ```
 
