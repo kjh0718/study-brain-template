@@ -1,5 +1,6 @@
 ﻿.DS_Store
 **/.obsidian/workspace*.json
+**/.obsidian/graph.json
 .claude/worktrees/
 
 # Skill Runtime Test의 재생성 가능한 작업 공간. seed_workspace.py가 다시 만든다.

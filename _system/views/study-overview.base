@@ -1,0 +1,105 @@
+properties:
+  file.name:
+    displayName: 노트
+  note.type:
+    displayName: 타입
+  note.status:
+    displayName: 상태
+  note.course:
+    displayName: 과목
+  note.created:
+    displayName: 생성일
+  note.updated:
+    displayName: 수정일
+  note.due:
+    displayName: 마감
+  note.due_status:
+    displayName: 마감 확정
+  note.date:
+    displayName: 시험일
+  note.date_status:
+    displayName: 날짜 확정
+  note.scope_status:
+    displayName: 범위 확정
+  note.question_type:
+    displayName: 질문 종류
+  note.review_type:
+    displayName: 복습 종류
+  note.scheduled_on:
+    displayName: 예정일
+  note.next_review:
+    displayName: 다음 복습
+
+filters:
+  and:
+    - 'file.inFolder("study")'
+
+views:
+  - type: table
+    name: 진행 중인 과제
+    filters:
+      and:
+        - 'note.type == "assignment"'
+        - or:
+            - 'note.status == "open"'
+            - 'note.status == "in-progress"'
+    order:
+      - file.name
+      - note.due
+      - note.due_status
+      - note.status
+      - note.course
+
+  - type: table
+    name: 예정된 시험
+    filters:
+      and:
+        - 'note.type == "exam"'
+        - 'note.status == "planned"'
+    order:
+      - file.name
+      - note.date
+      - note.date_status
+      - note.scope_status
+      - note.course
+
+  - type: table
+    name: 열린 질문
+    filters:
+      and:
+        - 'note.type == "question"'
+        - or:
+            - 'note.status == "open"'
+            - 'note.status == "investigating"'
+    order:
+      - file.name
+      - note.status
+      - note.question_type
+      - note.course
+      - note.created
+
+  - type: table
+    name: 진행/예정 복습
+    filters:
+      and:
+        - 'note.type == "review"'
+        - or:
+            - 'note.status == "planned"'
+            - 'note.status == "in-progress"'
+    order:
+      - file.name
+      - note.scheduled_on
+      - note.next_review
+      - note.review_type
+      - note.course
+
+  - type: table
+    name: 확인 필요
+    filters:
+      and:
+        - 'note.status == "needs-review"'
+    order:
+      - file.name
+      - note.type
+      - note.updated
+      - note.course

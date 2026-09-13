@@ -164,6 +164,7 @@ _system/
   schemas/      11개 타입의 데이터 규격
   templates/    새 노트 작성 양식
   workflows/    L1~L9 실행 문서
+  views/        Obsidian Bases 표 뷰
   docs/         설계 문서와 검증 자료
   log.md        작업 이력 (append-only)
 .agents/        도구 중립 Skill 정본
@@ -171,7 +172,7 @@ _system/
 ```
 
 각 폴더의 `README.md`가 그 폴더에 무엇을 두고 무엇을 두지 않는지 정한다.
-[`HOME.md`](HOME.md)는 Obsidian에서 열었을 때의 시작 화면이다.
+[`HOME.md`](HOME.md)는 Obsidian에서 열었을 때의 시작 화면이고, [`_system/views/`](_system/views/README.md)에 자동 갱신되는 표 뷰가 있다.
 
 ## Documentation
 
@@ -206,8 +207,9 @@ cd _system/docs/template-validation && python check_templates.py
 ## Project Status
 
 - P1~P6 complete — 골격, 스키마, 운영 기준서, L1~L9 워크플로, 템플릿, Core Skill 8개
-- P7 Hooks — not started
-- P8 Obsidian UX, P9 Tests — partial
+- P7 Hooks — 세션 시작 컨텍스트 Hook. Claude Code·Codex 모두 Windows에서 확인, POSIX 미확인
+- P8 Obsidian UX — complete. HOME과 Bases 표 뷰 2개, 실제 Obsidian에서 확인
+- P9 Tests — partial
 - 실제 사용자 학습 자료로 한 end-to-end 검증은 아직 하지 않았다
 
 자세한 내용은 [`PROJECT-STATUS.md`](PROJECT-STATUS.md)에 있다.

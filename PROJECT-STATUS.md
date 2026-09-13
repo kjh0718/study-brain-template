@@ -23,13 +23,13 @@
 | P5 Note Templates | **complete** | 11개 템플릿 + 사용 안내. 자동 검사 통과 |
 | P6 Skills | **complete** | Core Skill 8개. `.agents/skills/` 정본 + `.claude/skills/` discovery stub. 구조 검사와 런타임 A~H 통과 |
 | P7 Hooks | **partial** | 공통 core + 등록 파일 2개. Claude Code·Codex 모두 Windows runtime 확인. POSIX 미확인 |
-| P8 Obsidian UX | **partial** | `HOME.md`, `wiki/index.md`는 있음. 자동 갱신 뷰·Bases·Graph 설정 없음 |
+| P8 Obsidian UX | **complete** | `HOME.md`, `wiki/index.md`, Bases 표 뷰 2개(뷰 9개). 실제 Obsidian에서 렌더링 확인 |
 | P9 Tests | **partial** | 템플릿 검증 + Scenario A~K 통합 시험 통과(FAIL 0). 에이전트 실행 시험과 Git 동기화 시험은 미실행 |
 | P10 GitHub Template | **not started** | Template Repository 설정, LICENSE, 공개 검토 남음 |
 | P11 Private Brain | **not started** | 실제 비공개 저장소 미생성 |
 | P12 DEVSTUDY Migration | **not started** | 기존 자료 이관 미착수 |
 
-P8을 partial로 둔 이유는 시작 화면과 색인이 plain Markdown 수준으로만 있기 때문이다. P9는 문서 간 일관성 시험은 통과했지만 에이전트 실행 시험과 Git 동기화 시험이 남아 partial이다.
+P9는 문서 간 일관성 시험은 통과했지만 에이전트 실행 시험과 Git 동기화 시험이 남아 partial이다.
 
 ## 3. 만들어진 것
 
@@ -117,6 +117,23 @@ _system/  schemas, templates, workflows, docs, log.md
 
 `README.md`(소개·구조·현재 상태), `HOME.md`(Obsidian 시작 화면), `wiki/index.md`(장기 지식 색인), `wiki/clusters/_topics.md`(topic 어휘 registry, 아직 비어 있음).
 
+### 3.12 Obsidian 뷰
+
+[`_system/views/`](_system/views/README.md)에 Obsidian Bases 표 뷰 두 개가 있다. 커뮤니티 플러그인을 쓰지 않으며 Obsidian이 없어도 저장소는 그대로 동작한다.
+
+| 파일 | 뷰 |
+|---|---|
+| `study-overview.base` | 진행 중인 과제 · 예정된 시험 · 열린 질문 · 진행/예정 복습 · 확인 필요 |
+| `knowledge-browser.base` | 강의(과목별) · 개념 · 자료 · 기출 |
+
+과목 단위 화면은 CRS 노트의 대시보드가 정본이고 Base로 대체하지 않았다. Cluster와 Course 뷰는 만들지 않았다.
+
+2026-09-13 확인: 통합 시험 fixture 노트 26개를 임시 vault에 넣고 **실제 Obsidian에서 열어** 두 Base가 모두 로드되고 뷰 9개가 예상 행 수(과제 4 · 시험 1 · 질문 2 · 복습 1 · 확인 필요 5 · 강의 4 · 개념 2 · 자료 1 · 기출 3)로 표시되는 것을 확인했다. 강의 뷰의 과목별 묶음, HOME의 이동 링크, CRS 노트 대시보드도 함께 확인했다. production 저장소에서는 뷰 9개가 모두 0행이다.
+
+어떤 뷰도 `due`·`date`로 거르지 않는다. 대신 `due_status`·`date_status`·`scope_status`를 열로 노출해 미확정 일정이 화면에서 사라지지 않게 한다. 최상위 `filters`로 대상 폴더를 `study/`와 `wiki/`로 제한해 `_system/` 아래의 검증용 fixture 56건이 뷰에 잡히지 않는다.
+
+`.obsidian/graph.json`은 개인 UI 값이 섞이므로 저장소에 두지 않고 권장 필터만 문서로 남겼다. frontmatter의 ID 관계는 Obsidian 링크가 아니므로 Graph의 쓸모는 아직 제한적이며, 이 구조는 P8에서 바꾸지 않았다.
+
 ### 3.8 검증 자료
 
 `_system/docs/template-validation/`:
@@ -185,7 +202,6 @@ Codex의 Windows 등록은 `powershell.exe -NoProfile -EncodedCommand`를 쓴다
 | `wiki/clusters/_topics.md` | 형식·규칙만 있고 registry 비어 있음 | 실제 자료 처리 시 점진적으로 등록 |
 | `_system/log.md` | 비어 있음 | 첫 실제 쓰기부터 append-only 기록 |
 | L8 자동 검사 | 수동 절차 | 스키마·관계·ID·topic·source 검사 도구 |
-| Obsidian 뷰 | 없음 | Course 대시보드 뷰, Open Questions, Active Assignments |
 | 에이전트 실행 시험 | 미실행 | 에이전트가 문서를 읽고 같은 결과를 내는지 확인. Skills 구현 이후 |
 | Git 동기화 시험 | 미실행 | Desktop/Laptop 2대 필요 |
 | LICENSE | 없음 | 공개 전 결정 |
@@ -259,9 +275,9 @@ Scenario A~K 통합 시험은 통과했다. 남은 것은 에이전트가 `SECON
 
 현재 `l8-maintenance.md`의 검사 항목 10개를 스크립트로 만든다. 새 의존성 없이 표준 라이브러리와 PyYAML만 쓴다.
 
-### 단계 D — Obsidian UX (P8)
+### 단계 D — Obsidian UX (P8) — 완료
 
-Course 대시보드 뷰, Open Questions, Active Assignments, Review 뷰. 플러그인 의존을 최소화한다.
+Bases 표 뷰 2개로 마무리했다. 남은 후보는 Graph인데, frontmatter의 ID 관계가 Obsidian 링크가 아니어서 아직 탐색 가치가 없다. ID 관계를 클릭 가능한 링크로 바꾸는 것은 스키마·워크플로 계약을 건드리는 별도 과제이며 Phase 번호를 붙이지 않았다.
 
 ### 단계 E — 공개 준비 (P10~P12)
 
