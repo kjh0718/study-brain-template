@@ -19,6 +19,9 @@ SCH = ROOT / "_system/schemas"
 WS = HERE / "workspace"
 SEED = json.loads((HERE / "seed-manifest.json").read_text(encoding="utf-8"))
 CANON = ROOT / ".agents/skills"
+FIXTURE = HERE.parents[1] / "integration-test/vault"   # seed의 원본. 보호 영역 baseline
+PSNAP = HERE / "protected-runtime.json"                # 재실행 간 보호 영역 비교용
+PROTECTED = ("My Notes", "My Understanding", "My Questions", "Personal Reflection")
 
 ID_CONTRACT = re.compile(
     r"^(?:CRS|LEC|CON|ASM|EXM|PEX|FAC|QST|RES|REV|CLU)-[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -401,13 +404,98 @@ for wf, layer in (("l3-past-exam-ingestion.md", "L3"), ("l7-review.md", "L7"),
         fails.append(f"{layer} 워크플로에 대시보드 갱신 단계가 없다")
 record("H ingest-past-exam", fails, warn)
 
+# ---------------------------------------------------------- I: 보호 영역 보존
+# 사용자가 직접 쓴 절이 에이전트 실행 뒤에도 바이트 단위로 같은지 본다.
+# I-1은 seed 시점 대비, I-2는 이전 verify 실행 대비로 비교한다.
+fails, warn = [], []
+
+
+def protected_blocks(text):
+    """## <제목> 절의 본문을 제목별로 뽑는다. 다음 동급 제목 직전까지."""
+    out = {}
+    for title in PROTECTED:
+        # 제목 줄만 잡는다. \s*$ 로 두면 다음 줄의 공백까지 먹어
+        # 보호 영역 앞부분이 바뀌어도 놓친다.
+        m = re.search(rf"^## {re.escape(title)}[ \t\r]*$", text, re.M)
+        if not m:
+            continue
+        rest = text[m.end():]
+        nxt = re.search(r"^## ", rest, re.M)
+        out[title] = rest[:nxt.start()] if nxt else rest
+    return out
+
+
+def digest(t):
+    return hashlib.sha256(t.encode("utf-8")).hexdigest()
+
+
+# I-1 seed된 노트: 원본 fixture와 바이트 단위로 같아야 한다.
+n_seed = 0
+for rel in sorted(SEED):
+    if not rel.endswith(".md"):
+        continue
+    src, cur_p = FIXTURE / rel, WS / rel
+    if not src.exists():
+        continue
+    if not cur_p.exists():
+        fails.append(f"seed된 노트가 사라졌다: {rel}")
+        continue
+    base = protected_blocks(src.read_text(encoding="utf-8"))
+    now = protected_blocks(cur_p.read_text(encoding="utf-8"))
+    for title, blk in base.items():
+        n_seed += 1
+        if title not in now:
+            fails.append(f"보호 영역이 삭제됐다: {rel} :: {title}")
+        elif digest(now[title]) != digest(blk):
+            fails.append(f"보호 영역이 변경됐다: {rel} :: {title}")
+    for title in now:
+        if title not in base:
+            warn.append(f"seed에 없던 보호 영역이 생겼다: {rel} :: {title}")
+if n_seed == 0:
+    fails.append("seed된 노트에서 보호 영역을 하나도 찾지 못했다")
+
+# I-2 workspace 전체: 이전 verify 실행 이후 바뀌지 않았는지.
+cur_snap = {}
+for f in sorted(WS.rglob("*.md")):
+    rel = str(f.relative_to(WS)).replace("\\", "/")
+    if rel.split("/")[0] in ("raw", "_system"):
+        continue
+    for title, blk in protected_blocks(f.read_text(encoding="utf-8")).items():
+        cur_snap[f"{rel}::{title}"] = digest(blk)
+if PSNAP.exists():
+    prev = json.loads(PSNAP.read_text(encoding="utf-8"))
+    for k, v in prev.items():
+        if k not in cur_snap:
+            fails.append(f"이전 실행에 있던 보호 영역이 사라졌다: {k}")
+        elif cur_snap[k] != v:
+            fails.append(f"이전 실행 이후 보호 영역이 변경됐다: {k}")
+    new = [k for k in cur_snap if k not in prev]
+    if new:
+        warn.append(f"새로 생긴 보호 영역 {len(new)}개 (신규 노트면 정상)")
+else:
+    warn.append(f"첫 실행이라 비교 대상이 없다. 보호 영역 {len(cur_snap)}개를 기록한다")
+# FAIL 상태를 baseline으로 굳히지 않는다. 통과했을 때만 기록한다.
+if not fails:
+    PSNAP.write_text(json.dumps(cur_snap, ensure_ascii=False, indent=2, sort_keys=True),
+                     encoding="utf-8")
+
+# 에이전트가 만든 노트의 보호 영역 유무는 정보로만 남긴다. L8이 탐지하는 항목이며
+# 여기서 새 규칙을 만들지 않는다.
+created = [n for nid, n in notes.items()
+           if str(n["rel"]).replace("\\", "/") not in SEED]
+missing_p = [str(n["rel"]).replace("\\", "/") for n in created
+             if not protected_blocks(n["body"])]
+if missing_p:
+    warn.append(f"보호 영역이 없는 신규 노트 {len(missing_p)}개: {missing_p[:3]}")
+record("I 보호 영역 보존", fails, warn)
+
 # ---------------------------------------------------------- 출력
 print("=" * 66)
 print("Runtime Test 검증")
 print("=" * 66)
 order = ["공통 스키마 적합성", "A capture 라우팅", "C maintain 읽기 전용",
          "D ingest-lecture", "E check-conflict", "B/F recall·review 분기 규칙",
-         "G ingest-resource 재등록", "H ingest-past-exam"]
+         "G ingest-resource 재등록", "H ingest-past-exam", "I 보호 영역 보존"]
 nfail = 0
 for k in order:
     v, det = results[k]

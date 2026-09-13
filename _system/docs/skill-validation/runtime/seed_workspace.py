@@ -17,6 +17,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 FIXTURE = HERE.parents[1] / "integration-test/vault"
 WS = HERE / "workspace"
 MANIFEST = HERE / "seed-manifest.json"
+PSNAP = HERE / "protected-runtime.json"   # verify_runtime의 보호 영역 baseline
 
 # ingest 이전에 이미 있어야 하는 것만 가져온다.
 SEED = [
@@ -36,6 +37,8 @@ ABSENT = [
 
 if WS.exists():
     shutil.rmtree(WS)
+# workspace를 새로 만들면 이전 실행의 보호 영역 baseline은 무효다.
+PSNAP.unlink(missing_ok=True)
 
 for rel in SEED:
     src = FIXTURE / rel

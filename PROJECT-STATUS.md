@@ -8,7 +8,7 @@
 
 **설계·규격 계층과 실행 문서 계층이 작성됐고, 자동 실행 계층은 Windows에서 동작한다.**
 
-데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~H로 문서들이 서로 일관되는지 확인했다. 세션 시작 컨텍스트 Hook은 Claude Code와 Codex 양쪽에 등록했고 Windows에서 실제 세션으로 확인했다. POSIX는 아직 확인하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
+데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~I로 문서들이 서로 일관되는지 확인했고, Claude Code와 Codex에서 실제로 Skill을 호출해 실행 경로도 확인했다. 세션 시작 컨텍스트 Hook은 Claude Code와 Codex 양쪽에 등록했고 Windows에서 실제 세션으로 확인했다. POSIX는 아직 확인하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
 
 이 저장소는 `study-brain-template` **개발 저장소**로 쓴다. 실제 학습 자료는 템플릿 완성 후 별도 비공개 저장소에 담는다.
 
@@ -24,12 +24,12 @@
 | P6 Skills | **complete** | Core Skill 8개. `.agents/skills/` 정본 + `.claude/skills/` discovery stub. 구조 검사와 런타임 A~H 통과 |
 | P7 Hooks | **partial** | 공통 core + 등록 파일 2개. Claude Code·Codex 모두 Windows runtime 확인. POSIX 미확인 |
 | P8 Obsidian UX | **complete** | `HOME.md`, `wiki/index.md`, Bases 표 뷰 2개(뷰 9개). 실제 Obsidian에서 렌더링 확인 |
-| P9 Tests | **partial** | 템플릿 검증 + Scenario A~K 통합 시험 통과(FAIL 0). 에이전트 실행 시험과 Git 동기화 시험은 미실행 |
+| P9 Tests | **complete** | 검증 스위트 6개 통과. Claude Code·Codex 실제 실행으로 Skill 경로와 보호 영역 보존 확인. Git 동기화 시험은 P11로 옮김 |
 | P10 GitHub Template | **not started** | Template Repository 설정, LICENSE, 공개 검토 남음 |
 | P11 Private Brain | **not started** | 실제 비공개 저장소 미생성 |
 | P12 DEVSTUDY Migration | **not started** | 기존 자료 이관 미착수 |
 
-P9는 문서 간 일관성 시험은 통과했지만 에이전트 실행 시험과 Git 동기화 시험이 남아 partial이다.
+P9는 `python _system/docs/run_all.py`로 6개 스위트를 한 번에 돌린다. 완료 판정은 [P9 완료 기준](_system/docs/plan/09-TEST-PLAN.md#p9-완료-기준)을 따른다. P8의 HOME·Bases·Knowledge Browser 결과는 회귀 확인의 참고 근거이며 P9 acceptance criteria 자체가 아니다.
 
 ## 3. 만들어진 것
 
@@ -172,7 +172,9 @@ Core Skill 8개가 있다. `capture`, `recall`, `maintain`, `ingest-lecture`, `i
 
 Skill은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)와 [`_system/workflows/`](_system/workflows/README.md)를 호출하는 얇은 인터페이스다. 규칙을 스스로 정의하지 않는다. Skill별 워크플로 매핑과 작성 규약은 [`.agents/skills/README.md`](.agents/skills/README.md)에 있다.
 
-`_system/docs/skill-validation/`이 두 가지를 검사한다. 구조 검사(`check_skills.py`)는 정본이 SECOND-BRAIN을 참조하는지, 워크플로 매핑이 맞는지, 규칙이 복제되지 않았는지를 본다. 런타임 시험(`verify_runtime.py`)은 격리된 workspace에서 실제 호출 결과를 본다. 2026-09-09 결과는 구조 검사 문제 0건, **런타임 A~H 모두 PASS / FAIL 0**이며 8개 Skill 전부 직접 호출을 확인했다. 보고서는 [`runtime-test.md`](_system/docs/skill-validation/runtime-test.md)에 있다.
+`_system/docs/skill-validation/`이 두 가지를 검사한다. 구조 검사(`check_skills.py`)는 정본이 SECOND-BRAIN을 참조하는지, 워크플로 매핑이 맞는지, 규칙이 복제되지 않았는지를 본다. 런타임 시험(`verify_runtime.py`)은 격리된 workspace에서 실제 호출 결과를 본다. 2026-09-09 결과는 구조 검사 문제 0건, 런타임 8개 Skill 전부 직접 호출 확인이다. 2026-09-13에 보호 영역 검사(I)를 더해 **A~I 모두 PASS / FAIL 0**이다. 보고서는 [`runtime-test.md`](_system/docs/skill-validation/runtime-test.md)에 있다.
+
+`.agents/skills/`는 Claude Code 전용이 아니다. Codex 공식 문서가 저장소 범위 Skill 경로로 `.agents/skills`를 지정하며, 2026-09-13에 Codex(`codex-cli 0.153.4`, Windows)에서 8개가 모두 발견되고 `recall`이 실제로 실행되는 것을 확인했다. Codex용 adapter나 `.codex/skills/`는 만들지 않았다.
 
 ### 3.11 Hook 계층
 
@@ -202,13 +204,14 @@ Codex의 Windows 등록은 `powershell.exe -NoProfile -EncodedCommand`를 쓴다
 | `wiki/clusters/_topics.md` | 형식·규칙만 있고 registry 비어 있음 | 실제 자료 처리 시 점진적으로 등록 |
 | `_system/log.md` | 비어 있음 | 첫 실제 쓰기부터 append-only 기록 |
 | L8 자동 검사 | 수동 절차 | 스키마·관계·ID·topic·source 검사 도구 |
-| 에이전트 실행 시험 | 미실행 | 에이전트가 문서를 읽고 같은 결과를 내는지 확인. Skills 구현 이후 |
-| Git 동기화 시험 | 미실행 | Desktop/Laptop 2대 필요 |
+| Gemini 실행 시험 | 미실행 | `GEMINI.md`는 있으나 Skill 계층 확인 안 함 |
+| Git 동기화 시험 | 미실행 | Desktop/Laptop 2대 필요. **P11 직전 검증으로 옮겼다** |
+| L8 자동 검사 도구 | 수동 절차 | 아래 단계 C |
 | LICENSE | 없음 | 공개 전 결정 |
 
 ## 5. 알려진 제한과 주의점
 
-1. **에이전트가 문서를 그대로 수행하는지는 검증되지 않았다.** 통합 시험은 문서대로 만든 결과물의 일관성을 볼 뿐, 에이전트의 실제 동작을 보지 않는다.
+1. **에이전트 실행은 Claude Code와 Codex에서 확인했지만 범위가 제한적이다.** Claude Code는 Skill 8개 직접 호출과 보호 영역 보존까지, Codex는 Skill 발견과 `recall` 실행까지 봤다. Gemini는 확인하지 않았고, 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 없다.
 2. 검증 스크립트는 가상 fixture만 본다. 실제 `study/`·`wiki/` 노트를 검사하는 L8 도구는 아직 없다.
 3. 실행 환경은 Python 3.13.3 + PyYAML 6.0.3에서 확인했다. 의존성 선언 파일은 없다. 다른 PC에서는 PyYAML 설치가 필요할 수 있다.
 4. 검증 스크립트는 Windows 기본 콘솔(cp949)에서 출력이 깨지지 않도록 stdout을 UTF-8로 맞춘다. 이 처리를 지우면 한글·em dash 출력에서 `UnicodeEncodeError`가 난다.
@@ -267,9 +270,13 @@ git status
 
 공통 core는 만들었다. 남은 것은 `.claude/settings.json`과 `.codex/hooks.json`에 등록하고 실제 세션 시작에서 확인하는 것이다. V1이 싣는 것은 등록된 topic과 최근 로그 두 가지뿐이며 활성 Course는 추론하지 않는다.
 
-### 단계 B — 에이전트 실행 시험 (P9 잔여)
+### 단계 B — 에이전트 실행 시험 (P9) — 완료
 
-Scenario A~K 통합 시험은 통과했다. 남은 것은 에이전트가 `SECOND-BRAIN.md`와 워크플로 문서를 실제로 읽고 같은 결과를 내는지 확인하는 것이다. Skills 구현 이후에 가능하며, `integration-test/vault/`를 기대 출력으로 재사용한다.
+Claude Code에서 Skill 8개를 직접 호출해 결과를 검증했고(A~I), 실제 재실행 뒤에도 사용자 보호 영역이 바이트 단위로 유지되는 것을 확인했다. Codex에서도 `.agents/skills/`가 저장소 범위 Skill 경로로 발견되고 `recall`이 실행되는 것을 확인했다.
+
+남은 것은 Gemini 실행 시험과 실제 학습 자료 end-to-end이며, 후자는 P11에서 자연스럽게 수행된다.
+
+향후 개선 후보: `verify_runtime.py`의 QST 개수 exact-2 검사는 미래 L7이 정당하게 새 QST를 생성할 때 워크플로를 과도하게 제약할 수 있다. 현재 deterministic scenario에서는 통과하므로 P9 blocker로 보지 않고 검사 동작은 유지한다. L7 시나리오 확장 시 검토한다.
 
 ### 단계 C — L8 자동 검사 도구
 
