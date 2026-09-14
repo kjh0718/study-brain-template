@@ -108,18 +108,45 @@ cap = (CANON / "capture/SKILL.md").read_text(encoding="utf-8")
 rows = re.findall(r"^\s*\| (.+?) \| \[(.+?)\]\(.+?\) — (L\d) \|", cap, re.M)
 if len(rows) < 4:
     fails.append(f"capture 라우팅 표 행이 {len(rows)}개다. 4개 이상이어야 한다")
-KEYS = {r[1]: [k.strip() for k in r[0].replace("·", " ").split()] for r in rows}
+KEYS = {r[1]: {k.strip() for k in r[0].replace("·", " ").split() if k.strip()} for r in rows}
+# PDF·외부·참조처럼 여러 행에 함께 있는 낱말은 형식·연결어라 종류를 가르지 못한다.
+# 한 행에만 있는 낱말(종류어)로만 판정한다.
+KIND = {s: {k for k in ks if not any(k in o for t, o in KEYS.items() if t != s)}
+        for s, ks in KEYS.items()}
+# 비표준 형식은 capture의 표준 입력 형식 규칙 줄에 적힌 형식 중 라우팅 표에 없는 것이다.
+nonstd_line = next((l for l in cap.splitlines() if "표준 입력 형식이 아니면" in l), "")
+NONSTD = set(re.findall(r"(?<![A-Za-z])[A-Z]{3,4}(?![A-Za-z])", nonstd_line)) - set().union(*KEYS.values())
+
+
+def route(text):
+    if any(re.search(rf"(?<![A-Za-z]){f}(?![A-Za-z])", text) for f in NONSTD):
+        return []   # 비표준 형식은 어느 Skill로도 보내지 않고 PDF 준비를 요청한다
+    return [s for s, ks in KIND.items() if any(k in text for k in ks)]
+
+
+if "PDF" not in KEYS.get("ingest-resource", set()):
+    fails.append("capture 라우팅 표에서 PDF가 ingest-resource의 정상 입력이 아니다")
+if any("PPT" in k for ks in KEYS.values() for k in ks):
+    fails.append("capture 라우팅 표에 PPT가 정상 입력으로 남아 있다")
+if "PPT" not in NONSTD:
+    fails.append("capture의 비표준 입력 형식 규칙에 PPT가 없다")
+if not all(p in nonstd_line for p in ("PDF", "변환하지 않", "요청")):
+    fails.append("capture에 비표준 입력을 변환하지 않고 PDF 준비를 요청하는 규칙이 없다")
+PPT_INPUT = "교수님이 올린 Chapter 3 강의자료 PPT야. 등록해줘."
+if not [s for s, ks in KIND.items() if any(k in PPT_INPUT for k in ks)]:
+    fails.append("PPT 케이스에 종류어가 없어 형식 차단을 검증하지 못한다")
 CASES = [
     ("A 전사", "일반물리학2 전체 전사본", "ingest-lecture"),
-    ("B 자료", "교수님이 올린 Chapter 3 PPT", "ingest-resource"),
+    ("B 자료 PDF", "교수님이 올린 Chapter 3 강의자료 PDF야. 등록해줘.", "ingest-resource"),
+    ("B' 자료 PPT", PPT_INPUT, None),
     ("C 기출", "2024년 중간고사 족보", "ingest-past-exam"),
     ("D 모호", "이거 넣어줘", None),
 ]
 for label, text, expect in CASES:
-    hit = [skill for skill, keys in KEYS.items() if any(k and k in text for k in keys)]
+    hit = route(text)
     if expect is None:
         if hit:
-            fails.append(f"{label}: 종류가 불명확한데 {hit}로 라우팅됐다. 물어야 한다")
+            fails.append(f"{label}: 라우팅하면 안 되는 입력인데 {hit}로 라우팅됐다. 멈추고 물어야 한다")
     elif hit != [expect]:
         fails.append(f"{label}: {hit}로 라우팅. {expect} 하나여야 한다")
 if "여기서 멈춘다" not in cap or "묻는다" not in cap:
