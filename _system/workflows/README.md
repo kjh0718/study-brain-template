@@ -41,13 +41,37 @@ L1~L9의 실행 예시, 체크리스트, 도구별 절차를 보관한다.
 
 `study/`와 `wiki/`만 검색하고 `raw/`는 넣지 않는다. `raw/` 확장은 L6의 근거 확인과 L1~L3의 원본 처리에서만 한다.
 
+### 저장 위치와 검색 범위
+
+저장 경로의 정본은 [`common.md`](../schemas/common.md)의 Storage Paths 절이다. course-scoped 노트는 `study/<term>/<course-slug>/<kind>/`에 있으므로 타입별 고정 루트 폴더(`study/lectures` 같은)를 검색 인자로 주지 않는다.
+
+| 대상 | 저장소 전체에서 찾기 | 과목을 이미 알 때 |
+|---|---|---|
+| CRS | `study -g "**/course.md"` | `study/<term>/<course-slug>/course.md` |
+| LEC | `study -g "**/lectures/*.md"` | `study/<term>/<course-slug>/lectures` |
+| RES | `study -g "**/resources/*.md"` | 중복 확인은 좁히지 않는다 |
+| ASM | `study -g "**/assignments/*.md"` | `study/<term>/<course-slug>/assignments` |
+| EXM | `study -g "**/exams/*.md"` | `study/<term>/<course-slug>/exams` |
+| PEX | `study -g "**/past-exams/*.md"` | 중복 확인은 좁히지 않는다 |
+| FAC | `study -g "**/course-facts/*.md"` | `study/<term>/<course-slug>/course-facts` |
+| QST | `study -g "**/questions/*.md"` | `study/<term>/<course-slug>/questions` |
+| REV | `study -g "**/reviews/*.md"` | `study/<term>/<course-slug>/reviews` |
+| CON | `wiki/concepts -g "*.md"` | 전역 구조라 좁히지 않는다 |
+| CLU | `wiki/clusters -g "*.md"` | 전역 구조라 좁히지 않는다 |
+
+- `<term>`, `<course-slug>`는 자리표시자다. 실제 값은 대상 CRS의 `course.md`가 있는 폴더에서 읽는다.
+- RES와 PEX는 canonical home이 다른 과목 폴더에 있을 수 있으므로 중복 확인은 항상 `study/` 전체에서 한다.
+- 과목 폴더가 아직 없으면 좁힌 경로는 `rg`가 경로 없음 오류를 낸다. 그 과목의 기존 노트가 없다는 뜻이다.
+- `study/*/*/lectures` 같은 셸 glob에 기대지 않는다. PowerShell은 이를 펼치지 않는다. 경로 조건은 따옴표로 감싼 `rg -g` glob으로 준다.
+- 에이전트 도구의 Glob에는 `study/**/lectures/*.md`처럼 같은 조건을 넣는다.
+
 **C1. 타입별 노트 목록과 핵심 frontmatter**
 
 ```bash
-rg -n "^(id|title|status|course|date):" study/lectures -g "*.md"
+rg -n "^(id|title|status|course|date):" study -g "**/lectures/*.md"
 ```
 
-폴더 이름만 바꾸면 모든 타입에 쓴다. 본문을 읽지 않고 frontmatter만 본다.
+`-g`의 종류 폴더 이름만 위 표대로 바꾸면 모든 타입에 쓴다. 본문을 읽지 않고 frontmatter만 본다.
 
 **C2. ID 중복 확인 (저장소 전체)**
 

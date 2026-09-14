@@ -9,7 +9,7 @@
 | 항목 | 값 |
 |---|---|
 | 목적 | 과제(ASM), 시험(EXM), 운영 사실(FAC)의 생성과 충돌 조정 |
-| 입력 | L1이 넘긴 공지·마감·시험 언급. 사용자 입력. LMS 공지 원본 |
+| 입력 | L1이 넘긴 공지·마감·시험 언급. 사용자 입력. LMS 공지 원본(`raw/<term>/<course-slug>/notices/`)과 과제 원본(`raw/<term>/<course-slug>/assignments/`) |
 | 저장소 쓰기 | 예 |
 | 호출할 수 있는 레이어 | **없다.** 특히 **L5는 L1을 호출하지 않는다** |
 | 주 생성물 | ASM, EXM, FAC |
@@ -21,36 +21,38 @@ L5는 L1이 호출하거나 사용자가 직접 실행한다. **L2와 L3은 과�
 ## 0. 시작 전 확인
 
 - [ ] 근거 노트 또는 원본 경로가 있다.
-- [ ] 대상 CRS가 확정됐다. 없고 식별이 충분하면 SECOND-BRAIN.md의 `공통 준비 절차 — 대상 Course 확보`를 수행한다.
-- [ ] 과목이 불명확하면 **처리하지 않고 보류한다.**
+- [ ] 대상 CRS와 그 `<term>`, `<course-slug>`가 확정됐다. 없고 식별이 충분하면 SECOND-BRAIN.md의 `공통 준비 절차 — 대상 Course 확보`를 수행한다.
+- [ ] 과목이나 학기가 불명확하면 **처리하지 않고**, 입력을 옮기지 않은 채 보류한다.
 
 ## 1. 검색 방법
 
 공통 명령은 [`README.md`](README.md)에 있다.
 
+ASM·EXM·FAC는 같은 course 안에서 중복을 판단하므로 대상 CRS의 과목 폴더로 좁힌다. 과목 폴더가 아직 없으면 기존 노트도 없다.
+
 **기존 ASM 찾기** — 검색 키는 course + 과제 번호·요구사항.
 
 ```bash
-rg -n "^(id|title|course|due|due_status|status):" study/assignments -g "*.md"
+rg -n "^(id|title|course|due|due_status|status):" study/<term>/<course-slug>/assignments -g "*.md"
 ```
 
 **기존 EXM 찾기** — 검색 키는 course + `exam_type` + 회차. **Lecture마다 새 EXM을 만들지 않는다.**
 
 ```bash
-rg -n "^(id|title|course|exam_type|date|date_status|scope_status|status):" study/exams -g "*.md"
+rg -n "^(id|title|course|exam_type|date|date_status|scope_status|status):" study/<term>/<course-slug>/exams -g "*.md"
 ```
 
 **기존 FAC 찾기** — 검색 키는 course + `subject` + 세부 사실 + 적용 기간. `fact_type`만으로 중복을 판단하지 않는다.
 
 ```bash
-rg -n "^(id|title|course|fact_type|subject|value|status|effective_from):" study/course-facts -g "*.md"
+rg -n "^(id|title|course|fact_type|subject|value|status|effective_from):" study/<term>/<course-slug>/course-facts -g "*.md"
 ```
 
-**supersede 사슬 확인** — 이 사실을 이미 대체한 FAC가 있는지 본다.
+**supersede 사슬 확인** — 이 사실을 이미 대체한 FAC가 있는지 본다. 역참조는 ID로 찾으므로 `study/` 전체를 본다.
 
 ```bash
-rg -n -A3 "^supersedes:" study/course-facts -g "*.md"
-rg -ln "FAC-20260908-01" study/course-facts -g "*.md"
+rg -n -A3 "^supersedes:" study/<term>/<course-slug>/course-facts -g "*.md"
+rg -ln "FAC-20260908-01" study -g "**/course-facts/*.md"
 ```
 
 읽는 범위는 근거 노트의 해당 부분, 같은 course의 기존 ASM·EXM·FAC, 관련 원본까지다.
@@ -58,7 +60,7 @@ rg -ln "FAC-20260908-01" study/course-facts -g "*.md"
 ## 2. 실행 체크리스트
 
 - [ ] **1. 항목 단위로 분해.** 마감 하나, 시험 하나가 각각 별개 항목이다.
-- [ ] **2. 대상 타입 결정.** 과제 → ASM, 시험 → EXM, 그 밖의 운영 사실과 **변경** → FAC.
+- [ ] **2. 대상 타입 결정.** 과제 → ASM, 시험 → EXM, 그 밖의 운영 사실과 **변경** → FAC. 새 노트는 대상 CRS의 `study/<term>/<course-slug>/` 아래 `assignments/`, `exams/`, `course-facts/`에 만든다.
 - [ ] **3. 기존 노트 검색.** 같은 항목이면 근거를 누적한다.
 - [ ] **4. 충돌 판정.** 아래 판정표를 쓴다.
 - [ ] **5. 모호한 표현 처리.** 아래 표현별 처리표를 쓴다.
@@ -113,7 +115,7 @@ rg -ln "FAC-20260908-01" study/course-facts -g "*.md"
 | 명시적 변경인지 불명확 | 자동 supersede 금지. 양쪽 근거 보존 + `needs-review` |
 | 발화 권한·적용 범위 불명 | FAC를 `needs-review`로 두고 **대상 ASM·EXM은 고치지 않는다** |
 | 시간대를 모름 | 날짜만 기록하고 확인 필요로 남긴다 |
-| 과목이 불명확 | 처리하지 않고 보류 |
+| 과목이나 학기가 불명확 | 처리하지 않고 입력을 옮기지 않은 채 보류 |
 | L2·L3이 남긴 운영 후보 | 후보 목록을 제시하고 처리 여부를 묻는다 |
 
 항목 하나가 보류돼도 다른 항목과 L1의 강의 요약은 계속한다. **모호한 마감 하나 때문에 전체 처리를 중지하지 않는다.**
@@ -144,7 +146,7 @@ rg -ln "FAC-20260908-01" study/course-facts -g "*.md"
 ```text
 L5 Fact reconciliation 완료
 
-- 근거: LEC-20260908-01 (raw/transcripts/2026-09-08-physics-01.md)
+- 근거: LEC-20260908-01 (raw/<term>/<course-slug>/transcripts/2026-09-08-physics-01.md)
 - 분해한 항목: 3
 
 [1] 과제 HW3 → ASM-20260908-01 (신규) / status: open

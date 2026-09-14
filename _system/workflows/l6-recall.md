@@ -53,6 +53,8 @@ rg -n "^(id|type|title|status|course|topics):" study wiki -g "*.md"
 rg -ln "^course: CRS-20260908-01" study -g "*.md"
 ```
 
+과목 폴더를 알면 `study/<term>/<course-slug>`만 봐도 주 과목 노트가 모인다. `related`로만 연결된 공유 노트는 다른 과목 폴더에 있으므로 README의 C6을 함께 쓴다.
+
 topic으로 좁힐 때는 어휘표에서 정확한 slug를 먼저 확인한다(C5). 등록되지 않은 표기로는 찾을 수 없다.
 
 ```bash
@@ -89,9 +91,11 @@ rg -ln "CON-20260415-01" study wiki -g "*.md"
 확장 방법은 구조화 노트의 `source`·`sources`를 따라간다. `raw/`를 통째로 grep하지 않는다.
 
 ```bash
-rg -n "^source:" study/lectures/2026-09-08-physics.md
-rg -n "다음 주까지" raw/transcripts/2026-09-08-physics-01.md
+rg -n "^source:" study/<term>/<course-slug>/lectures/2026-09-08-physics.md
+rg -n "다음 주까지" raw/<term>/<course-slug>/transcripts/2026-09-08-physics-01.md
 ```
+
+`source` 값은 저장소 루트 기준 경로다. 읽은 값을 그대로 두 번째 명령의 경로로 쓰고, 원본 경로를 따로 조립하지 않는다.
 
 ## 2. 실행 체크리스트
 
@@ -156,7 +160,7 @@ Evidence Recall이면 마지막 절을 바꾼다.
 
 ```text
 [원문 근거]
-raw/transcripts/2026-09-08-physics-01.md, 00:41:12
+raw/<term>/<course-slug>/transcripts/2026-09-08-physics-01.md, 00:41:12
 > "이 부분은 중간고사에 나옵니다"
 
 [읽은 범위]
@@ -185,9 +189,9 @@ LEC-20260908-01의 source를 따라 원문 1건을 열었다.
 
 > 교수님이 과제 마감일을 정확히 뭐라고 했어?
 
-1. `study/assignments/`에서 해당 ASM을 찾는다. `due: null`, `due_status: needs-review`.
+1. 해당 과목의 `study/<term>/<course-slug>/assignments/`에서 ASM을 찾는다. 과목을 모르면 `study -g "**/assignments/*.md"`로 찾는다. `due: null`, `due_status: needs-review`.
 2. **구조화 노트만으로 확정하지 않는다.** `due`가 비어 있는 것 자체가 원문 확인이 필요하다는 신호다.
-3. `ASM.sources` → `LEC-20260908-01` → `LEC.source` → `raw/transcripts/2026-09-08-physics-01.md`.
+3. `ASM.sources` → `LEC-20260908-01` → `LEC.source` → `raw/<term>/<course-slug>/transcripts/2026-09-08-physics-01.md`.
 4. 그 파일에서 해당 부분을 찾아 **원문 그대로** 인용한다.
 
 ```text
@@ -195,7 +199,7 @@ LEC-20260908-01의 source를 따라 원문 1건을 열었다.
 교수님은 정확한 날짜를 말하지 않았다.
 
 [원문 근거]
-raw/transcripts/2026-09-08-physics-01.md, 01:02:15
+raw/<term>/<course-slug>/transcripts/2026-09-08-physics-01.md, 01:02:15
 > "HW3는 다음 주까지 제출하세요"
 
 [확인하지 못한 것]

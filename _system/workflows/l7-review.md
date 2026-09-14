@@ -22,6 +22,7 @@ L7이 만드는 질문 노트는 **L4를 호출하지 않고 L7이 직접 처리
 
 - [ ] 복습 대상 노트가 존재한다.
 - [ ] **새 회차인지 기존 회차의 연속인지 확정할 수 있다.** 확정할 수 없으면 아무것도 만들거나 되돌리지 않고 회차 확인만 요청한다.
+- [ ] 복습을 기록할 주 과목 CRS를 확정할 수 있다. 확정할 수 없으면 REV를 만들지 않고 과목 확인을 요청한다.
 
 ## 1. 검색 방법
 
@@ -30,21 +31,23 @@ L7이 만드는 질문 노트는 **L4를 호출하지 않고 L7이 직접 처리
 **같은 회차 후보인 기존 REV 찾기** — 검색 키는 회차 + 날짜.
 
 ```bash
-rg -n "^(id|title|course|review_type|status|scheduled_on|completed_on|next_review):" study/reviews -g "*.md"
+rg -n "^(id|title|course|review_type|status|scheduled_on|completed_on|next_review):" study -g "**/reviews/*.md"
 ```
 
 **복습 대상 모으기** — `review_type`에 따라 다르다.
 
 ```bash
 # daily / weekly: 기간 내 강의
-rg -n "^(id|title|date|course):" study/lectures -g "*.md"
+rg -n "^(id|title|date|course):" study -g "**/lectures/*.md"
 
 # concept: 대상 개념과 그 근거
 rg -n "^(id|title|status):" wiki/concepts -g "*.md"
 
 # exam-prep: 시험 범위 + 근거
-rg -n "^(id|title|course|exam_type|date|scope_status):" study/exams -g "*.md"
+rg -n "^(id|title|course|exam_type|date|scope_status):" study -g "**/exams/*.md"
 ```
+
+과목을 정했으면 `study -g "**/<kind>/*.md"` 대신 `study/<term>/<course-slug>/<kind>`로 좁힌다.
 
 **exam-prep 복습의 입력 모으기** — 아래를 함께 읽는다.
 
@@ -54,27 +57,27 @@ LEC(교수님 강조 포함) + EXM + CON + PEX + ASM + 열린 QST
 
 ```bash
 rg -ln "^course: CRS-20260908-01" study wiki -g "*.md"
-rg -n "^(id|title|status|question_type):" study/questions -g "*.md"
+rg -n "^(id|title|status|question_type):" study -g "**/questions/*.md"
 ```
 
 **열린 질문만 추리기**
 
 ```bash
-rg -ln "^status: (open|investigating|answered)" study/questions -g "*.md"
+rg -ln "^status: (open|investigating|answered)" study -g "**/questions/*.md"
 ```
 
 읽는 범위는 대상 LEC·CON·EXM·PEX·QST와 같은 회차 후보인 기존 REV까지다.
 
 ## 2. 실행 체크리스트
 
-- [ ] **1. 회차 판정.** 아래 판정표를 쓴다. **가장 먼저 한다.**
+- [ ] **1. 회차 판정.** 아래 판정표를 쓴다. **가장 먼저 한다.** 새 REV는 주 과목 CRS의 `study/<term>/<course-slug>/reviews/`에 만들고, 여러 과목에 걸치면 나머지 과목은 `related`에 CRS ID로 연결한다.
 - [ ] **2. `targets` 확정.** 실제 복습을 시작할 때는 **하나 이상**이어야 한다. 계획 초안에서는 `[]`를 허용한다.
 - [ ] **3. 복습 질문 생성.** **AI가 생성했음을 표시한다.**
 - [ ] **4. 사용자 응답 기록.** 응답이 없는 항목은 **미평가로 표시**하고 점수나 이해도를 추정하지 않는다.
-- [ ] **5. 오개념·미해결 질문 정리.** QST 생성·갱신은 L7이 직접 한다. 해결 처리는 아래 표를 따른다.
+- [ ] **5. 오개념·미해결 질문 정리.** QST 생성·갱신은 L7이 직접 한다. QST는 연결된 CRS의 `study/<term>/<course-slug>/questions/`에 만들고, 과목을 특정할 수 없으면 만들지 않는다. 해결 처리는 아래 표를 따른다.
 - [ ] **6. 완료 처리.** 실제 수행 근거와 `completed_on`이 있을 때만 `completed`로 바꾼다.
 - [ ] **7. `next_review` 기록.** 계획값이다.
-- [ ] **8. 대시보드 갱신.** REV에 `course`가 있으면 그 CRS의 표시가 달라진다. 회차 상태가 바뀐 경우도 포함한다. 표시가 실제로 달라지는 CRS만 갱신한다. 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다.
+- [ ] **8. 대시보드 갱신.** REV의 `course` CRS와 `related`에 연결한 CRS의 표시가 달라질 수 있다. 회차 상태가 바뀐 경우도 포함한다. 표시가 실제로 달라지는 CRS만 갱신한다. 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다.
 - [ ] **9. 로그 기록.**
 
 ### 1단계 회차 판정표
@@ -121,6 +124,7 @@ rg -ln "^status: (open|investigating|answered)" study/questions -g "*.md"
 | 회차를 확정할 수 없음 | REV를 만들지도 고치지도 않고 회차 확인만 요청 |
 | 사용자 응답이 없음 | `in-progress` 유지. `completed`로 올리지 않는다 |
 | 대상이 하나도 없음 | **시작하지 않는다** |
+| 주 과목 CRS를 확정할 수 없음 | REV를 만들지 않고 과목 확인 요청 |
 | `source-verification` 질문의 근거를 못 찾음 | `resolved`로 올리지 않는다 |
 
 ## 4. 하지 않는 것
@@ -242,7 +246,7 @@ answer_sources: []
 ## 남은 확인
 
 사용자 기억으로는 3장 전체이나 원문 근거를 찾지 못했다.
-raw/transcripts/의 해당 수업 전사에서 시험 범위 발언을 확인해야 한다.
+해당 LEC의 source가 가리키는 raw/<term>/<course-slug>/transcripts/ 전사에서 시험 범위 발언을 확인해야 한다.
 사용자 확인만으로 해결하지 않았다.
 ```
 

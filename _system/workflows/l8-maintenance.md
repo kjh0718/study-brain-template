@@ -31,7 +31,7 @@
 
 ## 1. 검사 명령
 
-공통 명령은 [`README.md`](README.md)에 있다. 아래는 검사 항목 10개에 대응한다.
+공통 명령은 [`README.md`](README.md)에 있다. 아래는 검사 항목 11개에 대응한다. 타입별 검색 범위는 README의 저장 위치와 검색 범위 표를 따른다.
 
 **허용 값은 스키마에서 읽는다.** 이 문서에 상태값을 베껴 두지 않는다. 베껴 두면 스키마가 바뀔 때 어긋난다.
 
@@ -53,17 +53,17 @@ rg -L "^status:" study wiki -g "*.md" --glob '!**/README.md'
 **2. `status`가 허용 목록 안에 있는지**
 
 ```bash
-rg -oN --no-filename "^status: .+" study/lectures -g "*.md" | sort -u
+rg -oN --no-filename "^status: .+" study -g "**/lectures/*.md" | sort -u
 ```
 
-출력을 위 `awk` 결과와 대조한다. 폴더마다 반복한다.
+출력을 위 `awk` 결과와 대조한다. `-g`의 종류 폴더 glob마다 반복한다. CRS는 `-g "**/course.md"`, CON·CLU는 `wiki/concepts`, `wiki/clusters`를 쓴다.
 
 **3. ID 형식, 접두사, 저장소 전체 중복** — C2.
 
 ```bash
 rg -oN --no-filename "^id: .+" study wiki -g "*.md" | sort | uniq -d
 # 접두사와 저장 위치가 맞는지
-rg -n "^id: (?!LEC-)" study/lectures -g "*.md" -P
+rg -n "^id: (?!LEC-)" study -g "**/lectures/*.md" -P
 ```
 
 **4. 관계 무결성** — 참조된 ID가 실재하는지, 자기 참조가 없는지, 전용 필드와 `related`가 중복되지 않는지.
@@ -82,11 +82,11 @@ comm -13 /tmp/ids.txt /tmp/refs.txt
 **5. `Lecture.resources`와 `Resource.lectures`의 양방향 일치**
 
 ```bash
-rg -n -A3 "^resources:" study/lectures -g "*.md"
-rg -n -A5 "^lectures:" study/resources -g "*.md"
+rg -n -A3 "^resources:" study -g "**/lectures/*.md"
+rg -n -A5 "^lectures:" study -g "**/resources/*.md"
 ```
 
-한쪽에만 있는 연결이 있으면 불일치다.
+한쪽에만 있는 연결이 있으면 불일치다. 공유 RES는 다른 과목의 LEC과도 이어지므로 과목 폴더로 좁히지 않는다.
 
 **6. `source`와 `sources`의 용도 구분**
 
@@ -114,12 +114,33 @@ comm -13 /tmp/vocab.txt /tmp/used.txt
 **9. `FAC.supersedes`의 자기 참조와 순환**
 
 ```bash
-rg -n -A5 "^supersedes:" study/course-facts -g "*.md"
+rg -n -A5 "^supersedes:" study -g "**/course-facts/*.md"
 ```
 
 각 FAC의 `id`가 자기 `supersedes`에 있으면 자기 참조다. 사슬을 따라가다 시작점으로 돌아오면 순환이다.
 
 **10. 보호 영역의 존재 여부** — C7. **없더라도 자동으로 삽입하지 않는다.** 보고만 한다.
+
+**11. 저장 경로 규약** — 기준은 [`common.md`](../schemas/common.md)의 Storage Paths 절이다.
+
+```bash
+# CRS 위치와 term: 출력 경로의 <term> 자리가 term 값과 같은지 본다
+rg -n "^(id|term):" study -g "**/course.md"
+# course-scoped 노트의 course: 출력 경로의 <term>/<course-slug>가 그 CRS의 폴더와 같은지 본다
+rg -n "^course:" study -g "*.md"
+# course: null 사용
+rg -n "^course:\s*(null|~)?\s*$" study -g "*.md"
+# 로컬 source: course가 가리키는 CRS(RES·PEX는 canonical home)의 raw/<term>/<course-slug>/ 아래 해당 원본 종류 폴더인지 본다
+rg -n "^source: raw/" study -g "*.md"
+# study/ 아래에 있는 CON·CLU
+rg -n "^type: (concept|cluster)\s*$" study -g "*.md"
+# raw/documents/ 사용
+rg --files raw -g "**/documents/**"
+rg -n "raw/documents/" study wiki -g "*.md"
+```
+
+- ID 속 slug와 폴더 `<course-slug>`가 다른 것은 2.13 migration의 결과일 수 있으므로 위반으로 보지 않는다. 위치 판단은 `course` 필드와 폴더로 한다.
+- 위반을 고치는 데 원본이나 노트의 과목 간 이동이 필요하면 수정 모드에서도 보고만 한다.
 
 ### 기존 검증 스크립트
 
@@ -130,7 +151,7 @@ rg -n -A5 "^supersedes:" study/course-facts -g "*.md"
 **검사 모드**
 
 - [ ] 1. 범위를 수집한다. 범위가 없으면 `study/`, `wiki/`, `_system/schemas/` 전체와 노트가 참조하는 `raw/` 경로의 존재 여부까지다.
-- [ ] 2. 위 10개 항목을 검사한다.
+- [ ] 2. 위 11개 항목을 검사한다.
 - [ ] 3. 보고서를 출력한다. 파일, 위치, 항목, 심각도를 적는다.
 - [ ] 4. **로그를 쓰지 않는다.**
 
@@ -151,6 +172,7 @@ rg -n -A5 "^supersedes:" study/course-facts -g "*.md"
 | 중복 노트 병합 | 보고만. [L9](l9-knowledge-promotion.md) 또는 사용자 판단으로 넘긴다 |
 | 상충하는 사실 | 보고만. [L5](l5-fact-conflict-reconciliation.md)로 넘긴다 |
 | 보호 영역 관련 항목 | 보고만. 없는 보호 영역을 삽입하지 않는다 |
+| 저장 경로 위반을 고치려면 과목 간 이동이 필요 | 보고만. 사용자가 SECOND-BRAIN.md 2.13의 migration을 명시적으로 요청할 때만 옮긴다 |
 | 범위가 명시되지 않은 수정 요청 | 검사 모드로 수행하고 후보 목록 제시 |
 
 ## 4. 하지 않는 것
@@ -185,27 +207,27 @@ L8 무결성 검사 보고 (검사 모드 — 저장소를 바꾸지 않았다)
 검사한 노트: 42
 
 [high] 3건
-1. 관계 무결성 — study/lectures/2026-09-10-physics.md:14
+1. 관계 무결성 — study/<term>/<course-slug>/lectures/2026-09-10-physics.md:14
    concepts에 CON-20260910-99가 있으나 그런 노트가 없다
-2. supersede 순환 — study/course-facts/exam-date-v2.md:27
+2. supersede 순환 — study/<term>/<course-slug>/course-facts/exam-date-v2.md:27
    FAC-20260908-01 → FAC-20260415-03 → FAC-20260908-01
-3. source 누락 — study/resources/ch05-slides.md:12
-   source: raw/resources/ch05.pdf 파일이 없다 (로컬 경로)
+3. source 누락 — study/<term>/<course-slug>/resources/ch05-slides.md:12
+   source: raw/<term>/<course-slug>/resources/ch05.pdf 파일이 없다 (로컬 경로)
 
 [medium] 2건
 4. 양방향 불일치 — LEC-20260915-01.resources에 RES-20260908-01이 있으나
    RES-20260908-01.lectures에 그 LEC이 없다
-5. 대시보드 불일치 — study/courses/physics2.md
+5. 대시보드 불일치 — study/<term>/<course-slug>/course.md
    조회 결과 9행, 자동 관리 영역 7행. LEC 2건 누락
 
 [low] 1건
-6. 미등록 topic — study/lectures/2026-09-15-physics.md
+6. 미등록 topic — study/<term>/<course-slug>/lectures/2026-09-15-physics.md
    topics에 collision이 있으나 _topics.md에 없다
 
 [보고만 하는 항목] 2건
 7. 중복 의심 — CON-20260415-01(운동량)과 CON-20260910-02(momentum)
    → 자동 병합하지 않았다. L9 요청 시 처리 가능
-8. 보호 영역 없음 — study/lectures/2026-09-10-physics.md에 ## My Notes 없음
+8. 보호 영역 없음 — study/<term>/<course-slug>/lectures/2026-09-10-physics.md에 ## My Notes 없음
    → 자동 삽입하지 않았다
 
 [검사 대상 제외] wiki/patterns/ 1개, README 21개, raw/ 원본
@@ -216,7 +238,7 @@ L8 무결성 검사 보고 (검사 모드 — 저장소를 바꾸지 않았다)
 ```text
 L8 정리 완료 (수정 모드)
 
-승인 범위: study/lectures/
+승인 범위: study/<term>/<course-slug>/lectures/
 안전 순서: 낮은 단계부터 수행
 
 [수정함] 2건
@@ -224,8 +246,8 @@ L8 정리 완료 (수정 모드)
 2. topic collision 어휘표 등록 후 LEC-20260915-01.topics 유지
 
 [범위 밖이라 손대지 않음] 3건
-3. study/course-facts/의 supersede 순환 → 승인 범위 밖
-4. study/resources/ch05-slides.md의 source 누락 → 승인 범위 밖
+3. study/<term>/<course-slug>/course-facts/의 supersede 순환 → 승인 범위 밖
+4. study/<term>/<course-slug>/resources/ch05-slides.md의 source 누락 → 승인 범위 밖
 
 [수정 모드에서도 보고만 함] 2건
 5. CON 중복 의심 → L9 요청 필요
@@ -244,7 +266,7 @@ L8 정리 완료 (수정 모드)
 ```text
 - 2026-09-20 14:10 | L8 | sync-relations | RES-20260908-01 | done | LEC-20260915-01 역방향 누락 복구
 - 2026-09-20 14:12 | L8 | register-topic | collision | done | LEC-20260915-01에서 사용 중이던 미등록 topic
-- 2026-09-20 14:15 | L8 | finalize-run | study/lectures/ | partial | 승인 범위 밖 3건, 보고만 2건 남음
+- 2026-09-20 14:15 | L8 | finalize-run | study/<term>/<course-slug>/lectures/ | partial | 승인 범위 밖 3건, 보고만 2건 남음
 ```
 
 ## 8. 실행 예시

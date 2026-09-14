@@ -41,8 +41,10 @@ rg -lni "운동량|momentum|linear momentum" wiki/concepts -g "*.md"
 **열린 QST 찾기** — 같은 의미·같은 맥락의 질문이 이미 있는지 본다.
 
 ```bash
-rg -n "^(id|title|status|question_type|course):" study/questions -g "*.md"
+rg -n "^(id|title|status|question_type|course):" study -g "**/questions/*.md"
 ```
+
+근거 노트의 과목을 이미 알면 `study/<term>/<course-slug>/questions`로 좁힌다.
 
 **topic 어휘표 조회** — C5.
 
@@ -64,7 +66,7 @@ rg -n "^(id|title|topics|members):" wiki/clusters -g "*.md"
 - [ ] **2. 기존 CON 검색.** title, aliases, 본문 의미를 함께 본다.
 - [ ] **3. 있으면 보강.** `sources`에 근거 노트 ID를 추가하고 설명을 덧붙인다. **새로 만들지 않는다.**
 - [ ] **4. 없으면 생성 여부 판단.** 아래 승격 기준표를 쓴다.
-- [ ] **5. 질문 처리.** 같은 의미·맥락의 열린 QST가 있으면 갱신하고, 없으면 생성한다.
+- [ ] **5. 질문 처리.** 같은 의미·맥락의 열린 QST가 있으면 갱신하고, 없으면 근거 노트의 CRS에 연결해 `study/<term>/<course-slug>/questions/`에 생성한다. 과목을 특정할 수 없으면 QST를 만들지 않고 근거 노트 본문에 후보로 남긴 뒤 과목을 확인한다.
 - [ ] **6. 정방향 관계 기록.** CON·QST의 `sources`에 실제 근거 노트 ID를 넣는다. **이 방향이 관계의 정본이다.**
 - [ ] **7. 역방향 관계 기록.** 아래 역방향 연결표의 수단만 쓴다.
 - [ ] **8. topics 처리.** 어휘표에 없으면 최초 등록 절차를 먼저 수행한 뒤에 쓴다. 순서를 뒤집지 않는다.
@@ -115,6 +117,7 @@ rg -n "^(id|title|topics|members):" wiki/clusters -g "*.md"
 | 상황 | 처리 |
 |---|---|
 | 개념의 경계가 불명확 | 만들지 않고 근거 노트 본문에 후보로 기록 |
+| 질문의 과목을 특정할 수 없음 | QST를 만들지 않고 근거 노트 본문에 후보로 기록한 뒤 과목 확인 |
 | 새 topic 후보의 의미가 모호하거나 기존 어휘와 구분되지 않음 | **그 후보만** 등록 보류하고 확인. 개수를 이유로 보류하지 않는다 |
 | 같은 이름인데 분야별 의미가 다름(예: 물리의 `field`와 DB의 `field`) | 범위를 구분할 수 없으면 기존 노트를 고치지 않고 보고 |
 | 의미상 중복으로 보이는 CON 둘 | 자동 병합하지 않는다. 후보로 보고하고 [L9](l9-knowledge-promotion.md)로 넘긴다 |

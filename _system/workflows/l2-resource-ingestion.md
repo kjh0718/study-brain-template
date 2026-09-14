@@ -9,7 +9,7 @@
 | 항목 | 값 |
 |---|---|
 | 목적 | 자료 하나를 **한 번만** 등록해 여러 강의에서 재사용한다 |
-| 입력 | 자료 파일 또는 접근 가능한 참조. [L1](l1-lecture-ingestion.md)이 넘긴 미등록 자료 |
+| 입력 | 자료 PDF 파일 또는 접근 가능한 외부 참조. [L1](l1-lecture-ingestion.md)이 넘긴 미등록 자료 |
 | 저장소 쓰기 | 예 |
 | 호출할 수 있는 레이어 | L4 — **단독 실행일 때만** |
 | 주 생성물 | RES 1개(또는 기존 RES 갱신) |
@@ -28,46 +28,53 @@
 
 ## 0. 시작 전 확인
 
-- [ ] 로컬 파일이면 원본을 `raw/resources/`에 보존할 수 있다.
+- [ ] 이 자료를 등록할 과목과 학기를 SECOND-BRAIN.md의 `공통 준비 절차 — 대상 Course 확보`로 확정할 수 있다. 공용 자료라는 이유로 `course` 없이 등록하지 않는다. 확정하지 못하면 입력을 옮기지 않고 `inbox/`에 둔 채 보류한다.
+- [ ] 로컬 파일이면 PDF이고, 원본을 `raw/<term>/<course-slug>/resources/`에 보존할 수 있다.
+- [ ] PPT/PPTX/HWP/DOCX/이미지(JPG/JPEG/PNG 등)는 직접 ingest하지 않는다. `inbox/`에 있으면 이동하거나 변환하지 않고 PDF 변환을 요청하며, PDF가 준비된 뒤 처리한다.
 - [ ] 외부 URL만 있어도 등록할 수 있다. 이때 내려받지 않고 `source`에 그 URL을 적는다.
 - [ ] 원본·참조에 접근하지 못했으면 등록만 하고 내용 분석은 보류한 채 `needs-review`로 둔다.
-- [ ] 주 사용 과목을 알 수 있거나, 공용 자료임을 확인할 수 있다. CRS가 없고 식별이 충분하면 SECOND-BRAIN.md의 `공통 준비 절차 — 대상 Course 확보`를 수행한다.
 
 ## 1. 검색 방법
 
 공통 명령은 [`README.md`](README.md)에 있다.
 
-**중복 RES 찾기 (가장 중요)** — 검색 키는 제목·작성자·판·내용이며, 가능하면 파일 해시까지 본다. **파일명만으로 판단하지 않는다.**
+**중복 RES 찾기 (가장 중요)** — 검색 키는 제목·작성자·판·내용이며, 가능하면 파일 해시까지 본다. **파일명만으로 판단하지 않는다.** canonical home이 다른 과목일 수 있으므로 과목 폴더로 좁히지 않고 **항상 `study/` 전체를 본다.**
 
 ```bash
-rg -n "^(id|title|resource_type|authority|source|course|page_count):" study/resources -g "*.md"
+rg -n "^(id|title|resource_type|authority|source|course|page_count):" study -g "**/resources/*.md"
 ```
 
-**내용 동일성 확인** — 같은 자료가 다른 이름으로 저장됐는지 본다.
+**내용 동일성 확인** — 같은 자료가 다른 이름이나 다른 과목 폴더에 저장됐는지 본다. `raw/` 전체의 자료 PDF 목록을 뽑는다.
 
 ```bash
-sha256sum raw/resources/*.pdf | sort
+rg --files raw -g "**/resources/*.pdf"
 ```
 
-`sha256sum`이 없으면 PowerShell에서 `Get-FileHash`를 쓴다. 해시가 같으면 같은 파일이고, 해시가 달라도 개정판일 수 있으므로 제목·판·페이지 수를 함께 본다.
+PowerShell에서는 같은 목록으로 해시를 구한다.
+
+```powershell
+rg --files raw -g "**/resources/*.pdf" | ForEach-Object { Get-FileHash -Algorithm SHA256 -LiteralPath $_ } | Sort-Object Hash
+```
+
+다른 셸이면 목록의 파일마다 그 셸의 해시 도구(`sha256sum` 등)를 쓴다. 해시가 같으면 같은 파일이고, 해시가 달라도 개정판일 수 있으므로 제목·판·페이지 수를 함께 본다.
 
 **RES ID 일련번호 확보** — C3에서 접두사를 `RES`로 바꾼다. 날짜 자리는 **등록일**이다(수업일이 아니다).
 
-**이 자료를 이미 쓰는 LEC 찾기**
+**이 자료를 이미 쓰는 LEC 찾기** — 공유 자료는 다른 과목의 LEC도 쓰므로 `study/` 전체를 본다.
 
 ```bash
-rg -ln "RES-20260908-01" study/lectures -g "*.md"
+rg -ln "RES-20260908-01" study -g "**/lectures/*.md"
 ```
 
-읽는 범위는 자료 원본, 기존 RES frontmatter 목록, 대상 CRS, 호출한 LEC까지다.
+읽는 범위는 자료 원본, `study/` 전체의 기존 RES frontmatter 목록(다른 과목 폴더 포함), 대상 CRS, 호출한 LEC까지다.
 
 ## 2. 실행 체크리스트
 
-- [ ] **1. 원본 처리.** 로컬 파일이면 `raw/resources/`에 보존한다. 외부 URL만 있으면 **내려받지 않고** `source`에 URL을 적는다. 사용자가 사본 보관을 요청했을 때만 `raw/`에 저장한다.
-- [ ] **2. 동일성 판단.** 위 검색으로 기존 RES가 같은 자료인지 확인한다.
-- [ ] **3. 생성 또는 갱신.** 기존 RES가 있으면 갱신하고, 없으면 생성한다.
+- [ ] **1. 원본 처리.** 로컬 PDF면 `raw/<term>/<course-slug>/resources/`에 보존한다. 같은 내용의 원본이 이미 `raw/` 아래(다른 과목 폴더 포함)에 있으면 다시 복사하지 않는다. 외부 URL만 있으면 **내려받지 않고** `source`에 URL을 적는다. 사용자가 사본 보관을 요청했을 때만 `raw/`에 저장한다.
+- [ ] **2. 동일성 판단.** 위 검색으로 `study/` 전체의 기존 RES가 같은 자료인지 확인한다.
+- [ ] **3. 생성 또는 갱신.** 기존 RES가 있으면 다른 과목 폴더에 있어도 그 노트를 갱신하고, 없으면 `study/<term>/<course-slug>/resources/`에 생성한다.
 - [ ] **4. 구조 분석.** 확인된 장·절과 페이지만 기록한다. **목차로 진도를 추정하지 않는다.**
-- [ ] **5. 과목 연결.** `course`에 주 사용 과목 하나. 추가 과목은 `related`에 CRS ID로. **과목마다 복제하지 않는다.**
+- [ ] **5. 과목 연결.** 새 RES의 `course`에는 이번에 등록하는 과목을 canonical home으로 넣는다. 다른 과목을 canonical home으로 가진 RES를 재사용하면 `course`와 저장 위치를 바꾸지 않고 `related`에 이번 과목의 CRS ID를 추가한다. **과목마다 복제하지 않는다.**
 - [ ] **6. 강의 연결.** 호출한 LEC이 있으면 `Resource.lectures`와 `Lecture.resources[]`를 양쪽 다 고친다.
 - [ ] **7. 개념 후보.** 부모 L1이 있으면 돌려주고, 단독 실행이면 [L4](l4-knowledge-extraction.md)를 호출한다. **어느 쪽이든 L2가 CON을 직접 만들지 않는다.**
 - [ ] **8. 대시보드.** 표시가 달라지는 CRS를 모은다. 부모가 있으면 목록만 돌려주고, 단독이면 직접 갱신한다.
@@ -95,7 +102,10 @@ rg -ln "RES-20260908-01" study/lectures -g "*.md"
 
 | 상황 | 처리 |
 |---|---|
+| 과목이나 학기가 불명확 | RES를 만들지 않는다. 입력을 옮기지 않고 `inbox/`에 둔 채 확인 요청 |
+| PPT/PPTX/HWP/DOCX/이미지 입력 | 이동하거나 변환하지 않고 `inbox/`에 둔 채 PDF 변환 요청 |
 | 원본·참조에 접근 불가 | `status: needs-review`. 확인된 참조만 `source`에. **내용 분석을 하지 않는다** |
+| 기존 RES를 다른 과목으로 옮겨야 할 것 같음 | 재실행에서 옮기지 않는다. SECOND-BRAIN.md 2.13의 migration 대상으로 보고한다 |
 | 개정판인지 같은 자료인지 불확실 | 새 RES를 만들지 않고 보고한다 |
 | 작성자·출처 불명 | `authority: unknown` + `needs-review` |
 | 같은 원본을 RES와 PEX 중 어디에 넣을지 불명확 | 이중 등록하지 않고 확인한다. 과거 시험 자료의 분석은 [L3](l3-past-exam-ingestion.md)이 담당한다 |
@@ -104,6 +114,9 @@ rg -ln "RES-20260908-01" study/lectures -g "*.md"
 
 - **같은 자료를 수업마다 새 RES로 만들지 않는다.** 자료 1개를 여러 날 써도 RES는 하나다.
 - 과목마다 자료를 복제하지 않는다. 추가 과목은 `related`에 넣는다.
+- 재사용하는 RES의 `course`와 저장 위치를 바꾸지 않는다.
+- 과목이 바뀌었다는 이유로 기존 RES의 `source`만 고치거나 원본을 다른 과목 폴더로 옮기지 않는다. 같은 과목 폴더 안에서 원본 경로만 바뀐 경우에만 `source`를 고친다.
+- PDF가 아닌 파일(PPT/PPTX/HWP/DOCX/이미지)을 직접 ingest하거나 변환하지 않는다.
 - 외부 URL 자료를 임의로 내려받아 `raw/`에 넣지 않는다.
 - 외부 링크가 있다는 이유만으로 원본을 검증했다고 기록하지 않는다.
 - 목차만으로 수업 진도나 사용 페이지를 추정하지 않는다.
@@ -115,7 +128,7 @@ rg -ln "RES-20260908-01" study/lectures -g "*.md"
 
 ## 5. 완료 조건
 
-- [ ] `source`가 로컬 경로면 그 파일이 실제로 있다. 외부 URL이면 형식이 유효하고 접근 여부가 `## Source`에 적혀 있다.
+- [ ] `source`가 로컬 경로면 canonical home CRS의 `raw/<term>/<course-slug>/resources/` 아래에 그 파일이 실제로 있다. 외부 URL이면 형식이 유효하고 접근 여부가 `## Source`에 적혀 있다.
 - [ ] `resource_type`과 `authority`가 [`resource.md`](../schemas/resource.md)의 허용 값 안에 있다.
 - [ ] `lectures`의 ID가 모두 존재하고 반대편 `Lecture.resources`와 일치한다.
 - [ ] 전용 필드에 넣은 ID를 `related`에 중복해 넣지 않았다.
@@ -129,9 +142,9 @@ L2 Resource ingest 완료
 - Resource: RES-20260908-01 (신규) / status: active
 - 제목: 제3장 운동량과 충돌
 - resource_type: slides / authority: professor
-- source: raw/resources/physics2-ch03.pdf (보존)
-- 동일성 판단: 기존 RES 없음 (제목·작성자·해시 비교)
-- 주 과목: CRS-20260908-01 / 공유 과목: 없음
+- source: raw/<term>/<course-slug>/resources/physics2-ch03.pdf (보존)
+- 동일성 판단: study/ 전체에 기존 RES 없음 (제목·작성자·해시 비교)
+- canonical home: CRS-20260908-01 (study/<term>/<course-slug>/resources/) / 공유 과목(related): 없음
 - 강의 연결: LEC-20260908-01 pages 21-38 (양방향)
 - 개념 후보: 3건 → 부모 L1에 반환 (단독 실행이면 L4 호출)
 - 시험·과제 후보: 시험 1건 본문 기록만 (L5 호출 안 함)
@@ -143,7 +156,7 @@ L2 Resource ingest 완료
 ## 7. 로그 기록
 
 ```text
-- 2026-09-08 18:36 | L2 | preserve-source | raw/resources/physics2-ch03.pdf | done | 교수 배포 슬라이드 원본
+- 2026-09-08 18:36 | L2 | preserve-source | raw/<term>/<course-slug>/resources/physics2-ch03.pdf | done | 교수 배포 슬라이드 원본
 - 2026-09-08 18:38 | L2 | create-note | RES-20260908-01 | done | 제3장 슬라이드 신규 등록
 - 2026-09-08 18:40 | L2 | sync-relations | RES-20260908-01 + LEC-20260908-01 | done | pages 21-38 양방향
 ```

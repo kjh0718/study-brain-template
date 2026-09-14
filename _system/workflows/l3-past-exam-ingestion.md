@@ -22,55 +22,66 @@
 |---|---|---|
 | 대상 | **현재** 과목의 실제 시험 | 과거 시험·족보 |
 | 담당 레이어 | [L5](l5-fact-conflict-reconciliation.md) | L3 |
-| 위치 | `study/exams/` | `study/past-exams/` |
+| 위치 | `study/<term>/<course-slug>/exams/` | `study/<term>/<course-slug>/past-exams/` (`<term>`은 이 기출을 사용하는 CRS의 학기) |
 | 일정·범위의 성격 | 이번 학기의 운영 사실 | 그 시험의 역사적 맥락 |
 
 **기출에 적힌 시험 일정이나 범위를 현재 학기의 운영 사실로 옮기지 않는다.** 그것은 PEX 본문에만 남는다. 현재 학기의 별도 근거와 사용자의 처리 요청이 있을 때만 L5 대상이 된다.
 
 ## 0. 시작 전 확인
 
-- [ ] 로컬 파일이면 `raw/past-exams/`에 보존할 수 있다.
+- [ ] 이 기출을 현재 사용하는 CRS를 SECOND-BRAIN.md의 `공통 준비 절차 — 대상 Course 확보`로 확정할 수 있다. **`course: null`로 시작하지 않는다.** 확정하지 못하면 입력을 옮기지 않고 `inbox/`에 둔 채 보류한다.
+- [ ] 로컬 파일이면 PDF이고 `raw/<term>/<course-slug>/past-exams/`에 보존할 수 있다. `<term>`은 과거 시험이 시행된 학기가 아니라 이 기출을 사용하는 CRS의 학기다.
+- [ ] PDF가 아닌 파일(PPT/PPTX/HWP/DOCX/이미지)은 직접 ingest하지 않는다. 이동하거나 변환하지 않고 PDF 변환을 요청한다.
 - [ ] 외부 참조만 있어도 등록할 수 있다. 이때 내려받지 않고 `source`에 그 참조를 적는다.
 - [ ] 참조에 접근하지 못했으면 등록만 하고 문항 분석은 보류한 채 `needs-review`로 둔다.
-- [ ] 대응 과목은 **없어도 시작할 수 있다.** 이때 `course: null`로 둔다. 이 점이 L1·L2와 다르다.
 
 ## 1. 검색 방법
 
 공통 명령은 [`README.md`](README.md)에 있다.
 
-**같은 회차·같은 파일의 PEX 찾기** — 검색 키는 같은 파일 또는 같은 시험 회차(연도 + 학기 + 시험 종류 + 교수)다.
+**같은 회차·같은 파일의 PEX 찾기** — 검색 키는 같은 파일 또는 같은 시험 회차(연도 + 학기 + 시험 종류 + 교수)다. 다른 CRS 폴더에 이미 등록됐을 수 있으므로 과목 폴더로 좁히지 않고 **항상 `study/` 전체를 본다.**
 
 ```bash
-rg -n "^(id|title|course|year|exam_type|authority|provenance|source):" study/past-exams -g "*.md"
+rg -n "^(id|title|course|year|exam_type|authority|provenance|source):" study -g "**/past-exams/*.md"
+```
+
+**같은 원본 파일 찾기** — `raw/` 전체의 기출 PDF 목록을 뽑아 해시를 비교한다.
+
+```bash
+rg --files raw -g "**/past-exams/*.pdf"
+```
+
+```powershell
+rg --files raw -g "**/past-exams/*.pdf" | ForEach-Object { Get-FileHash -Algorithm SHA256 -LiteralPath $_ } | Sort-Object Hash
 ```
 
 **대응 과목 후보 찾기**
 
 ```bash
-rg -n "^(id|title|code|term|instructor):" study/courses -g "*.md"
+rg -n "^(id|title|code|term|instructor):" study -g "**/course.md"
 ```
 
 **같은 개념을 다루는 다른 기출 찾기** — 반복성 판단의 근거를 모을 때 쓴다. 판단 자체는 [L9](l9-knowledge-promotion.md)가 한다.
 
 ```bash
-rg -ln "CON-20260908-01" study/past-exams -g "*.md"
+rg -ln "CON-20260908-01" study -g "**/past-exams/*.md"
 ```
 
 **PEX ID 일련번호 확보** — C3에서 접두사를 `PEX`로 바꾼다. 날짜 자리는 **등록일**이며 시험 시행일이 아니다. 시행 연도는 `year` 필드에 넣는다.
 
-읽는 범위는 기출 원본, 기존 PEX frontmatter 목록, 대응 CRS 후보까지다.
+읽는 범위는 기출 원본, `study/` 전체의 기존 PEX frontmatter 목록(다른 과목 폴더 포함), 대응 CRS 후보까지다.
 
 ## 2. 실행 체크리스트
 
-- [ ] **1. 원본 처리.** 로컬 파일이면 `raw/past-exams/`에 보존한다. 외부 참조만 있으면 `source`에 적고 접근 여부를 본문에 남긴다.
+- [ ] **1. 원본 처리.** 로컬 PDF면 `raw/<term>/<course-slug>/past-exams/`에 보존한다. 같은 내용의 원본이 이미 `raw/` 아래에 있으면 다시 복사하지 않는다. 외부 참조만 있으면 `source`에 적고 접근 여부를 본문에 남긴다.
 - [ ] **2. `provenance` 판정.** 원본 시험지는 `official`, 학생 복원본은 `reconstructed`, 확인 불가는 `unknown`.
 - [ ] **3. `authority` 판정.** 값은 [`common.md`](../schemas/common.md)의 Shared Authority Values를 따른다. 학생이 준 족보는 대개 `student-provided`다.
-- [ ] **4. 중복 확인.** 같은 파일 또는 같은 시험 회차의 PEX가 있는지 확인한다.
-- [ ] **5. 생성 또는 갱신.**
+- [ ] **4. 중복 확인.** 같은 파일 또는 같은 시험 회차의 PEX가 `study/` 전체에 있는지 확인한다. 다른 CRS 폴더에 이미 있으면 새로 만들지 않고, 그 PEX의 `course`와 위치를 유지한 채 `related`에 이번 CRS ID를 추가한다.
+- [ ] **5. 생성 또는 갱신.** 새 PEX는 `study/<term>/<course-slug>/past-exams/`에 만든다. 실제 시험 연도·학기는 새 필드를 만들지 않고 `year`, ID, 본문 출처 절에 기록한다.
 - [ ] **6. 문항별 분석.** 원본 페이지와 문항 번호를 남긴다. 번호가 없으면 로컬 표기를 쓰되 **원본 번호가 아님을 명시한다.**
 - [ ] **7. 정답 분리.** 제공된 정답, 학생 해설, AI 풀이를 **각각 다른 절에** 적는다.
 - [ ] **8. 개념 후보.** [L4](l4-knowledge-extraction.md)에 넘긴다.
-- [ ] **9. 대시보드 갱신.** PEX에 `course`가 있으면 그 CRS의 표시가 달라진다. 표시가 실제로 달라지는 CRS만 갱신한다. 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다. `course: null`이면 갱신 대상이 없다.
+- [ ] **9. 대시보드 갱신.** PEX를 만들거나 `related`를 바꾸면 그 PEX의 `course` CRS와 `related`에 추가된 CRS의 표시가 달라질 수 있다. 표시가 실제로 달라지는 CRS만 갱신한다. 판정과 정렬 규칙은 SECOND-BRAIN.md의 Course 대시보드 절을 따른다.
 - [ ] **10. 로그 기록.**
 
 ### 본문 채우기
@@ -95,7 +106,9 @@ rg -ln "CON-20260908-01" study/past-exams -g "*.md"
 | 출처를 확인할 수 없음 | `needs-review` 유지. **`analyzed`로 올리지 않는다** |
 | 복원본의 정확성 확인 불가 | 문항별로 표시한다 |
 | 같은 자료인지 다른 판본인지 불명확 | **새 PEX를 만들지 않는다.** 원본만 보존하고 식별을 보류한 뒤 확인 |
-| 대응 과목 불명확 | `course: null`로 두고 등록은 계속한다. 임의 과목에 배정하지 않는다 |
+| 대응 과목이나 학기가 불명확 | PEX를 만들지 않는다. 입력을 옮기지 않고 `inbox/`에 둔 채 확인 요청. 임의 과목에 배정하지 않는다 |
+| PDF가 아닌 파일 | 이동하거나 변환하지 않고 `inbox/`에 둔 채 PDF 변환 요청 |
+| 기존 PEX를 다른 과목으로 옮겨야 할 것 같음 | 재실행에서 옮기지 않는다. SECOND-BRAIN.md 2.13의 migration 대상으로 보고한다 |
 | 기출에 적힌 일정·범위를 반영해야 하는지 | 자동으로 반영하지 않는다. 현재 학기 근거가 따로 있는지 사용자에게 확인 |
 
 ## 4. 하지 않는 것
@@ -108,10 +121,12 @@ rg -ln "CON-20260908-01" study/past-exams -g "*.md"
 - 원본에 없는 문항 번호를 원본 번호처럼 적지 않는다.
 - 외부 참조를 임의로 내려받지 않는다.
 - 같은 원본을 RES와 PEX로 무조건 이중 등록하지 않는다.
+- `course: null`로 PEX를 만들지 않는다. 기출이 시행된 과거 학기 폴더에 두지 않는다.
+- 다른 CRS 폴더의 PEX를 재사용할 때 그 PEX의 `course`와 저장 위치를 바꾸지 않는다. 과목 간 이동은 2.13 migration으로만 한다.
 
 ## 5. 완료 조건
 
-- [ ] `source`가 로컬 경로면 파일이 실제로 있고, 외부 참조면 접근 여부가 본문에 표시돼 있다.
+- [ ] `source`가 로컬 경로면 canonical home CRS의 `raw/<term>/<course-slug>/past-exams/` 아래에 파일이 실제로 있고, 외부 참조면 접근 여부가 본문에 표시돼 있다.
 - [ ] `provenance`와 `authority`가 설정됐다.
 - [ ] 각 문항에 원본 위치 또는 로컬 표기가 있다.
 - [ ] 정답의 출처가 구분돼 있다.
@@ -126,8 +141,8 @@ L3 Past-exam ingest 완료
 - Past exam: PEX-20260909-01 (신규) / status: needs-review
 - 회차: 2024-2 중간고사 / 교수: 미확인
 - provenance: reconstructed / authority: student-provided
-- source: raw/past-exams/physics2-2024-2-midterm.pdf (보존)
-- 중복 판단: 기존 PEX 없음
+- source: raw/<term>/<course-slug>/past-exams/physics2-2024-2-midterm.pdf (보존)
+- 중복 판단: study/ 전체에 기존 PEX 없음
 - 대응 과목: CRS-20260908-01
 - 문항 분석: 12문항 (원본 번호 확인 10, 로컬 표기 2)
 - 정답: 제공된 정답 8문항 / 학생 해설 4문항 / AI 풀이 12문항 (각각 분리 기록)
@@ -140,7 +155,7 @@ L3 Past-exam ingest 완료
 ## 7. 로그 기록
 
 ```text
-- 2026-09-09 21:10 | L3 | preserve-source | raw/past-exams/physics2-2024-2-midterm.pdf | done | 학생 복원본
+- 2026-09-09 21:10 | L3 | preserve-source | raw/<term>/<course-slug>/past-exams/physics2-2024-2-midterm.pdf | done | 학생 복원본
 - 2026-09-09 21:18 | L3 | create-note | PEX-20260909-01 | done | 2024-2 중간고사 12문항 분석
 - 2026-09-09 21:22 | L3 | finalize-run | PEX-20260909-01 | held | 복원본 정확성 미확인으로 needs-review 유지
 ```
@@ -149,7 +164,7 @@ L3 Past-exam ingest 완료
 
 ### 예시 — 같은 주제가 세 회차에 반복될 때
 
-`raw/past-exams/`에 2022-2, 2023-2, 2024-2 중간고사가 있고 세 회차 모두 운동량 보존 문항이 있다.
+이 기출을 쓰는 현재 CRS의 `raw/<term>/<course-slug>/past-exams/`에 2022-2, 2023-2, 2024-2 중간고사가 있고 세 회차 모두 운동량 보존 문항이 있다.
 
 **하는 것**
 
