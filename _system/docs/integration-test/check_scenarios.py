@@ -149,7 +149,7 @@ else:
     # 교수가 강조하지 않았으나 AI가 중요하다고 본 항목은 AI 절에만 있어야 한다
     if "완전 비탄성 충돌" in emph:
         fails.append("교수가 강조하지 않은 항목이 교수님 강조 절에 있다")
-    if not re.search(r"\(raw/transcripts/[^)]+,\s*\d\d:\d\d:\d\d\)", emph):
+    if not re.search(r"\(raw/[^/)]+/[^/)]+/transcripts/[^)]+,\s*\d\d:\d\d:\d\d\)", emph):
         fails.append("교수 발언에 원본 경로+타임스탬프가 없다")
 
     asm = notes.get("ASM-general-physics-2-20260908-01")
@@ -417,8 +417,8 @@ auto = re.search(r"<!-- AUTO-MANAGED:start -->\n(.*?)<!-- AUTO-MANAGED:end -->",
 dash = re.findall(r"^- ([A-Z]{3}-[a-z0-9-]+) ", auto, re.M)
 if len(dash) != len(set(dash)):
     fails.append("Course 대시보드에 중복 항목이 있다")
-tr_dir = V / "raw/transcripts"
-tr_files = list(tr_dir.glob("*general-physics-2-01*"))
+# 원본은 raw/<term>/<course-slug>/transcripts/ 아래에 있다. 과목 폴더 전체에서 복제 여부를 본다.
+tr_files = list((V / "raw").glob("*/*/transcripts/*general-physics-2-01*"))
 if len(tr_files) != 1:
     fails.append(f"같은 전사 원본이 {len(tr_files)}개로 복제됐다")
 log = (V / "_system/log.md").read_text(encoding="utf-8")
@@ -458,7 +458,7 @@ for nid, n in notes.items():
     if str(n["fm"]["status"]) in ("partial", "failed", "error"):
         fails.append(f"{n['rel']}: 실행 실패를 status로 표현했다")
 # 부분 실패 이전 단계 결과가 남아 있는가
-if not (V / "raw/transcripts/2026-09-08-general-physics-2-01.md").exists():
+if not (V / "raw/2026-2/general-physics-2/transcripts/2026-09-08-general-physics-2-01.md").exists():
     fails.append("부분 실패 후 raw 원본이 유실됐다")
 if "LEC-20260908-01" not in notes:
     fails.append("부분 실패 후 Lecture가 유실됐다")

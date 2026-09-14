@@ -10,7 +10,7 @@ created: 2026-09-21
 updated: 2026-09-21
 course: CRS-2026-2-general-physics-2
 date: 2026-09-21
-source: raw/transcripts/x.md
+source: raw/2026-2/general-physics-2/transcripts/x.md
 resources: []
 concepts: []
 assignments: []

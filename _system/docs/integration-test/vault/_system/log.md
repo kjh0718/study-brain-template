@@ -1,5 +1,5 @@
 <!-- 통합 시험용 가상 데이터. 실제 학습 자료가 아니다. -->
-- 2026-09-08 18:32 | L1 | preserve-source | raw/transcripts/2026-09-08-general-physics-2-01.md | done | 전사 원본 보존
+- 2026-09-08 18:32 | L1 | preserve-source | raw/2026-2/general-physics-2/transcripts/2026-09-08-general-physics-2-01.md | done | 전사 원본 보존
 - 2026-09-08 18:35 | L1 | create-note | LEC-20260908-01 | done | 일반물리학2 09-08 1교시
 - 2026-09-08 18:38 | L2 | create-note | RES-general-physics-2-ch03-slides | done | 3장 슬라이드 신규 등록
 - 2026-09-08 18:40 | L1 | sync-relations | LEC-20260908-01 + RES-general-physics-2-ch03-slides | done | pages 21-38 양방향

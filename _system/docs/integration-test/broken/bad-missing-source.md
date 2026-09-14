@@ -11,7 +11,7 @@ updated: 2026-09-20
 course: CRS-2026-2-general-physics-2
 resource_type: slides
 authority: professor
-source: raw/resources/does-not-exist.pdf
+source: raw/2026-2/general-physics-2/resources/does-not-exist.pdf
 lectures: []
 ---
 

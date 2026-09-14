@@ -49,9 +49,16 @@ CRS1 = "CRS-2026-1-general-physics-2"
 RES = "RES-general-physics-2-ch03-slides"
 EXM = "EXM-general-physics-2-2026-2-midterm"   # <term> 사용. 연도만 쓰면 학기 간 충돌한다
 
+# 저장 위치는 각 노트의 course가 가리키는 CRS의 <term>/<course-slug>를 따른다 (common.md Storage Paths).
+# RES·PEX와 그 원본도 canonical home인 CRS 폴더에 한 번만 둔다. 기출의 시행 학기는 폴더로 쓰지 않는다.
+S2 = "study/2026-2/general-physics-2"   # CRS
+S1 = "study/2026-1/general-physics-2"   # CRS1
+R2 = "raw/2026-2/general-physics-2"     # CRS의 원본
+TR = f"{R2}/transcripts/2026-09-08-general-physics-2-01.md"
+
 # ---------------------------------------------------------------- Scenario A
-# 수업 전사 원본. L1의 1단계 결과물이며 이후 어떤 단계가 실패해도 남아야 한다.
-w("raw/transcripts/2026-09-08-general-physics-2-01.md", f"""
+# 수업 전사 원본. L1의 원본 보존 결과물이며 이후 어떤 단계가 실패해도 남아야 한다.
+w(TR, f"""
 {BANNER}
 # 일반물리학2 2026-09-08 1교시 전사 (가상)
 
@@ -91,11 +98,11 @@ w("raw/transcripts/2026-09-08-general-physics-2-01.md", f"""
 """)
 
 # L1이 만든 Lecture. 교수 발언 / AI 해석 / 자료 강조를 서로 다른 절에 둔다.
-w("study/lectures/2026-09-08-momentum.md", fm(
+w(f"{S2}/lectures/2026-09-08-momentum.md", fm(
     schema=1, type="lecture", id="LEC-20260908-01", title="운동량과 충격량",
     status="processed", topics=lst(["momentum", "impulse"]), related="[]",
     created="2026-09-08", updated="2026-09-08", course=CRS, date="2026-09-08",
-    week=3, source="raw/transcripts/2026-09-08-general-physics-2-01.md",
+    week=3, source=TR,
     resources=f"\n  - id: {RES}\n    pages: \"21-38\"",
     concepts=lst(["CON-momentum", "CON-impulse"]),
     assignments=lst(["ASM-general-physics-2-20260908-01"]),
@@ -121,11 +128,11 @@ w("study/lectures/2026-09-08-momentum.md", fm(
 ## 교수님 강조
 
 - "이 부분은 중간고사에 반드시 나옵니다. 충격량-운동량 정리는 꼭 이해하고 오세요."
-  (raw/transcripts/2026-09-08-general-physics-2-01.md, 00:41:12)
+  ({TR}, 00:41:12)
 - "벡터량이라는 걸 꼭 기억하세요."
-  (raw/transcripts/2026-09-08-general-physics-2-01.md, 00:03:40)
+  ({TR}, 00:03:40)
 - "로켓 추진은 참고로만 알아두세요. 시험에는 안 냅니다."
-  (raw/transcripts/2026-09-08-general-physics-2-01.md, 00:44:00)
+  ({TR}, 00:44:00)
 
 ## 공식 / 정의
 
@@ -196,16 +203,16 @@ p=mv는 외웠는데 적분 형태가 잘 안 와닿는다.
 
 ## Source
 
-- raw/transcripts/2026-09-08-general-physics-2-01.md (주 전사본)
+- {TR} (주 전사본)
 """)
 
 # ---------------------------------------------------------------- Scenario B
-w("study/resources/ch03-slides.md", fm(
+w(f"{S2}/resources/ch03-slides.md", fm(
     schema=1, type="resource", id=RES, title="제3장 운동량과 충돌 슬라이드",
     status="active", topics=lst(["momentum"]), related=lst([CRS1]),
     created="2026-09-08", updated="2026-09-17", course=CRS,
     resource_type="slides", authority="professor",
-    source="raw/resources/general-physics-2-ch03-slides.pdf", page_count=60,
+    source=f"{R2}/resources/general-physics-2-ch03-slides.pdf", page_count=60,
     lectures=lst(["LEC-20260908-01", "LEC-20260910-01", "LEC-20260915-01", "LEC-20260917-01"]),
 ) + f"""
 {BANNER}
@@ -266,10 +273,10 @@ w("study/resources/ch03-slides.md", fm(
 
 ## Source
 
-- raw/resources/general-physics-2-ch03-slides.pdf (보존됨)
+- {R2}/resources/general-physics-2-ch03-slides.pdf (보존됨)
 """)
 
-w("raw/resources/general-physics-2-ch03-slides.pdf", "가상 PDF 자리표시자. 실제 파일이 아니다.\n")
+w(f"{R2}/resources/general-physics-2-ch03-slides.pdf","가상 PDF 자리표시자. 실제 파일이 아니다.\n")
 
 _LEC_B = [
     ("LEC-20260910-01", "2026-09-10", "운동량 정의 복습", "1-20", "2026-09-10-momentum-review"),
@@ -281,10 +288,10 @@ _LEC_B = [
 _LEC_TOPICS = {"LEC-20260917-01": ["momentum", "collision"]}
 
 for lid, date, title, pages, slug in _LEC_B:
-    w(f"study/lectures/{slug}.md", fm(
+    w(f"{S2}/lectures/{slug}.md", fm(
         schema=1, type="lecture", id=lid, title=title, status="processed",
         topics=lst(_LEC_TOPICS.get(lid, ["momentum"])), related="[]", created=date, updated=date,
-        course=CRS, date=date, source="raw/transcripts/2026-09-08-general-physics-2-01.md",
+        course=CRS, date=date, source=TR,
         resources=f"\n  - id: {RES}\n    pages: \"{pages}\"",
         concepts=lst(["CON-momentum"]), assignments="[]", exams="[]",
         course_facts="[]", questions="[]",
@@ -353,7 +360,7 @@ Scenario B(Resource N:N) 전용 축약 fixture다. 같은 RES를 서로 다른 �
 
 ## Source
 
-- raw/transcripts/2026-09-08-general-physics-2-01.md
+- {TR}
 """)
 
 # ---------------------------------------------------------------- Scenario C
@@ -475,7 +482,7 @@ _ASM = [
      '"금요일쯤 제출하면 됩니다."', None, "needs-review", "hw6"),
 ]
 for case, aid, title, quote, due, dstat, slug in _ASM:
-    w(f"study/assignments/{slug}.md", fm(
+    w(f"{S2}/assignments/{slug}.md", fm(
         schema=1, type="assignment", id=aid, title=title, status="open",
         topics="[]", related="[]", created="2026-09-08", updated="2026-09-08",
         course=CRS, assigned="2026-09-08", due=(due or "null"), due_status=dstat,
@@ -491,7 +498,7 @@ for case, aid, title, quote, due, dstat, slug in _ASM:
 ## 마감 / 원문 표현
 
 교수 발언 원문: {quote}
-(raw/transcripts/2026-09-08-general-physics-2-01.md)
+({TR})
 
 {"확정된 날짜다. due를 기록했다." if due else "기준이 되는 날짜를 특정할 수 없다. due를 null로 두고 due_status를 needs-review로 표시했다. 임의의 날짜를 만들지 않았다."}
 
@@ -518,7 +525,7 @@ for case, aid, title, quote, due, dstat, slug in _ASM:
 """)
 
 # ---------------------------------------------------------------- Scenario E
-w("study/exams/2026-midterm.md", fm(
+w(f"{S2}/exams/2026-midterm.md", fm(
     schema=1, type="exam", id=EXM, title="일반물리학2 2026-2 중간고사",
     status="planned", topics=lst(["momentum"]), related="[]",
     created="2026-09-01", updated="2026-09-08", course=CRS,
@@ -578,7 +585,7 @@ w("study/exams/2026-midterm.md", fm(
 """)
 
 # 기존 Fact. Case 1(명시적 변경)에 의해 superseded 되는 쪽.
-w("study/course-facts/exam-date-v1.md", fm(
+w(f"{S2}/course-facts/exam-date-v1.md", fm(
     schema=1, type="course-fact", id="FAC-general-physics-2-20260901-01",
     title="중간고사 일정 최초 공지", status="superseded", topics="[]", related="[]",
     created="2026-09-01", updated="2026-09-08", course=CRS, fact_type="schedule",
@@ -594,7 +601,7 @@ w("study/course-facts/exam-date-v1.md", fm(
 
 ## 근거 원문
 
-raw/notices/2026-09-01-lms-midterm.md
+{R2}/notices/2026-09-01-lms-midterm.md
 
 ## 이전 정보와의 비교
 
@@ -611,18 +618,18 @@ FAC-general-physics-2-20260908-01이 이 사실을 명시적으로 대체했다.
 
 ## Sources
 
-- raw/notices/2026-09-01-lms-midterm.md
+- {R2}/notices/2026-09-01-lms-midterm.md
 
 ## My Notes
 
 <!-- AI-PROTECTED -->
 """)
 
-w("raw/notices/2026-09-01-lms-midterm.md",
+w(f"{R2}/notices/2026-09-01-lms-midterm.md",
   f"{BANNER}\n중간고사는 10월 15일에 시행합니다. (가상 LMS 공지)\n")
 
 # Case 1: 명시적 변경 → supersede 가능
-w("study/course-facts/exam-date-v2-case1.md", fm(
+w(f"{S2}/course-facts/exam-date-v2-case1.md", fm(
     schema=1, type="course-fact", id="FAC-general-physics-2-20260908-01",
     title="중간고사 일정 변경", status="active", topics="[]", related="[]",
     created="2026-09-08", updated="2026-09-08", course=CRS, fact_type="schedule",
@@ -668,7 +675,7 @@ w("study/course-facts/exam-date-v2-case1.md", fm(
 """)
 
 # Case 2: 변경 선언 없는 단순 진술 → 자동 overwrite 금지
-w("study/course-facts/exam-date-case2.md", fm(
+w(f"{S2}/course-facts/exam-date-case2.md", fm(
     schema=1, type="course-fact", id="FAC-general-physics-2-20260909-01",
     title="중간고사 일정 언급 (변경 선언 없음)", status="needs-review", topics="[]",
     related="[]", created="2026-09-09", updated="2026-09-09", course=CRS,
@@ -713,7 +720,7 @@ w("study/course-facts/exam-date-case2.md", fm(
 """)
 
 # Case 3: 추측 표현 → 확정 Fact로 만들지 않음
-w("study/course-facts/exam-date-case3.md", fm(
+w(f"{S2}/course-facts/exam-date-case3.md", fm(
     schema=1, type="course-fact", id="FAC-general-physics-2-20260910-01",
     title="중간고사 일정 추측 언급", status="needs-review", topics="[]", related="[]",
     created="2026-09-10", updated="2026-09-10", course=CRS, fact_type="schedule",
@@ -761,11 +768,11 @@ _PEX = [
     ("PEX-general-physics-2-2022-2-midterm", 2022, "2022-2", "4번", "2022-2-midterm"),
 ]
 for pid, year, term, qno, slug in _PEX:
-    w(f"study/past-exams/{slug}.md", fm(
+    w(f"{S2}/past-exams/{slug}.md", fm(
         schema=1, type="past-exam", id=pid, title=f"일반물리학2 {term} 중간고사 기출",
         status="needs-review", topics=lst(["momentum"]), related="[]",
         created="2026-09-09", updated="2026-09-09", course=CRS, year=year,
-        exam_type="midterm", source=f"raw/past-exams/general-physics-2-{term}-midterm.md",
+        exam_type="midterm", source=f"{R2}/past-exams/general-physics-2-{term}-midterm.md",
         authority="student-provided", provenance="reconstructed",
         concepts=lst(["CON-momentum"]),
     ) + f"""
@@ -806,13 +813,13 @@ AI 풀이 결과는 제공된 정답과 일치했다. 다만 공식 정답으로
 
 ## Source
 
-- raw/past-exams/general-physics-2-{term}-midterm.md (접근 확인됨)
+- {R2}/past-exams/general-physics-2-{term}-midterm.md (접근 확인됨)
 """)
-    w(f"raw/past-exams/general-physics-2-{term}-midterm.md",
+    w(f"{R2}/past-exams/general-physics-2-{term}-midterm.md",
       f"{BANNER}\n{term} 중간고사 복원본 (가상). {qno} 운동량 보존 문제.\n")
 
 # ---------------------------------------------------------------- Scenario G/J
-w("study/reviews/2026-09-13-weekly.md", fm(
+w(f"{S2}/reviews/2026-09-13-weekly.md", fm(
     schema=1, type="review", id="REV-general-physics-2-20260913-weekly",
     title="일반물리학2 주간 복습", status="in-progress", topics=lst(["momentum"]),
     related="[]", created="2026-09-13", updated="2026-09-13", course=CRS,
@@ -868,7 +875,7 @@ _QST = [
      "source-verification", "open", "q-exam-scope"),
 ]
 for qid, title, qtype, st, slug in _QST:
-    w(f"study/questions/{slug}.md", fm(
+    w(f"{S2}/questions/{slug}.md", fm(
         schema=1, type="question", id=qid, title=title, status=st, topics="[]",
         related="[]", created="2026-09-08", updated="2026-09-08", course=CRS,
         question_type=qtype, sources=lst(["LEC-20260908-01"]),
@@ -882,7 +889,7 @@ for qid, title, qtype, st, slug in _QST:
 
 ## 발생 맥락
 
-LEC-20260908-01. raw/transcripts/2026-09-08-general-physics-2-01.md의 학생 질문 구간.
+LEC-20260908-01. {TR}의 학생 질문 구간.
 
 ## 시도한 이해 / 풀이
 
@@ -907,7 +914,7 @@ AI 설명은 있으나 사용자 확인 전이다. status를 resolved로 올리�
 이거 시험에 나오면 어떻게 쓰지?
 """)
 
-w("study/courses/general-physics-2-2026-2.md", fm(
+w(f"{S2}/course.md", fm(
     schema=1, type="course", id=CRS, title="일반물리학2", status="active",
     topics=lst(["momentum"]), related="[]", created="2026-09-01",
     updated="2026-09-17", code="PHY102", term="2026-2", instructor="가상 교수",
@@ -960,7 +967,7 @@ w("study/courses/general-physics-2-2026-2.md", fm(
 
 ## Sources
 
-- raw/notices/2026-09-01-lms-midterm.md
+- {R2}/notices/2026-09-01-lms-midterm.md
 
 ## Open Questions
 
@@ -975,7 +982,7 @@ w("study/courses/general-physics-2-2026-2.md", fm(
 """)
 
 # 2026-1학기 같은 과목. Scenario I(ID 충돌) 검증용.
-w("study/courses/general-physics-2-2026-1.md", fm(
+w(f"{S1}/course.md", fm(
     schema=1, type="course", id=CRS1, title="일반물리학2", status="completed",
     topics=lst(["momentum"]), related="[]", created="2026-03-02",
     updated="2026-06-20", code="PHY102", term="2026-1", instructor="가상 교수",
@@ -1054,7 +1061,7 @@ w("wiki/clusters/classical-mechanics.md", fm(
 
 w("_system/log.md", f"""
 {BANNER}
-- 2026-09-08 18:32 | L1 | preserve-source | raw/transcripts/2026-09-08-general-physics-2-01.md | done | 전사 원본 보존
+- 2026-09-08 18:32 | L1 | preserve-source | {TR} | done | 전사 원본 보존
 - 2026-09-08 18:35 | L1 | create-note | LEC-20260908-01 | done | 일반물리학2 09-08 1교시
 - 2026-09-08 18:38 | L2 | create-note | RES-general-physics-2-ch03-slides | done | 3장 슬라이드 신규 등록
 - 2026-09-08 18:40 | L1 | sync-relations | LEC-20260908-01 + RES-general-physics-2-ch03-slides | done | pages 21-38 양방향
@@ -1086,7 +1093,7 @@ status: draft
 w("bad-prefix.md", fm(
     schema=1, type="lecture", id="RES-20260920-01", title="잘못된 접두사",
     status="draft", topics="[]", related="[]", created="2026-09-20",
-    updated="2026-09-20", course=CRS, date="2026-09-20", source="raw/transcripts/x.md",
+    updated="2026-09-20", course=CRS, date="2026-09-20", source=f"{R2}/transcripts/x.md",
     resources="[]", concepts="[]", assignments="[]", exams="[]",
     course_facts="[]", questions="[]",
 ) + "\n<!-- 고의 오류: type은 lecture인데 id 접두사가 RES -->\n", root=B)
@@ -1114,7 +1121,7 @@ w("bad-status.md", fm(
     schema=1, type="lecture", id="LEC-20260921-01", title="허용되지 않는 status",
     status="active", topics="[]", related="[]", created="2026-09-21",
     updated="2026-09-21", course=CRS, date="2026-09-21",
-    source="raw/transcripts/x.md", resources="[]", concepts="[]",
+    source=f"{R2}/transcripts/x.md", resources="[]", concepts="[]",
     assignments="[]", exams="[]", course_facts="[]", questions="[]",
 ) + "\n<!-- 고의 오류: lecture에 active는 허용 값이 아니다 -->\n", root=B)
 
@@ -1129,7 +1136,7 @@ w("bad-missing-source.md", fm(
     title="없는 원본을 가리키는 자료", status="active", topics="[]", related="[]",
     created="2026-09-20", updated="2026-09-20", course=CRS,
     resource_type="slides", authority="professor",
-    source="raw/resources/does-not-exist.pdf", lectures="[]",
+    source=f"{R2}/resources/does-not-exist.pdf", lectures="[]",
 ) + "\n<!-- 고의 오류: 로컬 source 경로의 파일이 없다 -->\n", root=B)
 
 w("bad-supersedes.md", fm(

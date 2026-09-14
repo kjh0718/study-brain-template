@@ -148,13 +148,13 @@ if not lec:
     fails.append("LEC이 생성되지 않았다")
 else:
     b = lec["body"]
-    tr = "raw/transcripts/2026-09-08-general-physics-2-01.md"
+    tr = "raw/2026-2/general-physics-2/transcripts/2026-09-08-general-physics-2-01.md"
     if lec["fm"]["source"] != tr:
         fails.append("LEC.source가 보존된 전사를 가리키지 않는다")
     if cur.get(tr) != SEED.get(tr):
         fails.append("전사 원문이 변경됐다")
     emph, ai = sec(b, "교수님 강조") or "", sec(b, "AI 해석 / 검증 필요") or ""
-    if not re.search(r"\(raw/transcripts/[^)]+,\s*\d\d:\d\d:\d\d\)", emph):
+    if not re.search(r"\(raw/[^/)]+/[^/)]+/transcripts/[^)]+,\s*\d\d:\d\d:\d\d\)", emph):
         fails.append("교수 발언에 원본 경로+타임스탬프가 없다")
     if "AI 해석" in emph:
         fails.append("교수님 강조 절에 AI 해석이 섞였다")
@@ -349,7 +349,7 @@ else:
     if r["fm"]["id"] != "RES-general-physics-2-ch03-slides":
         fails.append(f"원본 확보 후 새 ID가 발급됐다: {r['fm']['id']}")
     src = r["fm"]["source"]
-    if not src.startswith("raw/resources/"):
+    if not re.match(r"^raw/[^/]+/[^/]+/resources/", src):
         fails.append(f"원본을 확보했는데 source가 {src}다")
     elif not (WS / src).exists():
         fails.append(f"source 파일이 없다: {src}")

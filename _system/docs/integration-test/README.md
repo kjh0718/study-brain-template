@@ -160,7 +160,7 @@ A만 날짜로 확정됐다. B·C·D는 날짜를 지어내지 않았고 원문 
 
 ### H — Evidence Recall
 
-- "교수님이 과제 마감에 대해 정확히 뭐라고 했어?" → 대상 ASM의 `due`가 `null`이라 **구조화 노트만으로 확정할 수 없다.** Evidence Recall이 필요한 상황이 맞다. `ASM.sources → LEC → LEC.source → raw/transcripts/`로 원문까지 도달할 수 있고, 그 원문에 실제 발언이 있다.
+- "교수님이 과제 마감에 대해 정확히 뭐라고 했어?" → 대상 ASM의 `due`가 `null`이라 **구조화 노트만으로 확정할 수 없다.** Evidence Recall이 필요한 상황이 맞다. `ASM.sources → LEC → LEC.source → raw/<term>/<course-slug>/transcripts/`로 원문까지 도달할 수 있고, 그 원문에 실제 발언이 있다.
 - "시험 범위가 확정된 근거가 뭐야?" → `scope_status`가 `confirmed`가 아니므로 근거 없이 확정으로 답할 수 없다.
 - "운동량을 지금까지 어떻게 배웠는지 정리해줘" → `CON-momentum`에 정의와 `sources` 3건이 있어 **원문을 열지 않고** 근거 ID를 붙여 답할 수 있다. 일반 Recall로 충분하다.
 

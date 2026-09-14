@@ -19,20 +19,24 @@ WS = HERE / "workspace"
 MANIFEST = HERE / "seed-manifest.json"
 PSNAP = HERE / "protected-runtime.json"   # verify_runtime의 보호 영역 baseline
 
+# 대상 CRS(2026-2 일반물리학2)의 과목 폴더. fixture와 같은 학기·과목 구조를 쓴다.
+C = "study/2026-2/general-physics-2"
+R = "raw/2026-2/general-physics-2"
+
 # ingest 이전에 이미 있어야 하는 것만 가져온다.
 SEED = [
-    "raw/transcripts/2026-09-08-general-physics-2-01.md",   # L1 입력
-    "raw/notices/2026-09-01-lms-midterm.md",                # 기존 공지
-    "study/courses/general-physics-2-2026-2.md",            # 대상 CRS
-    "study/exams/2026-midterm.md",                          # 기존 EXM (누적 대상)
-    "study/course-facts/exam-date-v1.md",                   # 기존 FAC (충돌 대상)
+    f"{R}/transcripts/2026-09-08-general-physics-2-01.md",  # L1 입력
+    f"{R}/notices/2026-09-01-lms-midterm.md",               # 기존 공지
+    f"{C}/course.md",                                       # 대상 CRS
+    f"{C}/exams/2026-midterm.md",                           # 기존 EXM (누적 대상)
+    f"{C}/course-facts/exam-date-v1.md",                    # 기존 FAC (충돌 대상)
     "wiki/concepts/momentum.md",                            # 기존 CON (연결 대상)
 ]
 
 # L1/L2/L4/L5가 만들어야 하므로 seed하지 않는 것.
 ABSENT = [
-    "study/lectures/", "study/assignments/", "study/questions/",
-    "study/resources/", "wiki/concepts/impulse.md", "raw/resources/",
+    f"{C}/lectures/", f"{C}/assignments/", f"{C}/questions/",
+    f"{C}/resources/", "wiki/concepts/impulse.md", f"{R}/resources/",
 ]
 
 if WS.exists():
@@ -47,7 +51,7 @@ for rel in SEED:
     shutil.copy2(src, dst)
 
 # CRS 대시보드는 비워 둔다. L1이 재구성해야 한다.
-crs = WS / "study/courses/general-physics-2-2026-2.md"
+crs = WS / f"{C}/course.md"
 t = crs.read_text(encoding="utf-8")
 start = t.index("<!-- AUTO-MANAGED:start -->")
 end = t.index("<!-- AUTO-MANAGED:end -->") + len("<!-- AUTO-MANAGED:end -->")
@@ -70,11 +74,11 @@ def drop_refs(path, keep):
 
 
 # EXM은 이번 전사 근거를 아직 갖지 않은 상태로 되돌린다. L1/L5가 누적해야 한다.
-drop_refs("study/exams/2026-midterm.md", {"FAC-general-physics-2-20260901-01"})
+drop_refs(f"{C}/exams/2026-midterm.md", {"FAC-general-physics-2-20260901-01"})
 
 # 기존 FAC는 아직 유효한 상태로 둔다. fixture에서는 이미 superseded지만, 그대로 두면
 # check-conflict의 supersede 전이를 검증할 수 없다. 대체는 L5가 수행해야 한다.
-v1 = WS / "study/course-facts/exam-date-v1.md"
+v1 = WS / f"{C}/course-facts/exam-date-v1.md"
 t = v1.read_text(encoding="utf-8")
 t = t.replace("status: superseded", "status: active", 1)
 t = re.sub(r"^## 충돌 / 확인 필요\n(?:.*\n)*?(?=^## )",
@@ -111,7 +115,7 @@ mom.write_text(t, encoding="utf-8")
 (WS / "_system/log.md").write_text(
     "<!-- Runtime Test용 가상 데이터. 실제 학습 자료가 아니다. -->\n", encoding="utf-8")
 
-for d in ("inbox", "raw/past-exams", "wiki/patterns"):
+for d in ("inbox", f"{R}/past-exams", "wiki/patterns"):
     (WS / d).mkdir(parents=True, exist_ok=True)
 
 # 읽기 전용 검증용 해시 manifest
