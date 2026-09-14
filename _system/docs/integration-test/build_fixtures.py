@@ -1147,6 +1147,40 @@ w("bad-supersedes.md", fm(
     sources="[]", supersedes=lst(["FAC-general-physics-2-19990101-01"]),
 ) + "\n<!-- 고의 오류: supersedes가 존재하지 않는 FAC를 가리킨다 -->\n", root=B)
 
+# ------------------------------------------------------- 저장 경로 오류 fixture
+# 저장 위치 자체가 검사 대상이라 평면 파일로 둘 수 없다. broken/storage/는 vault와 같은 루트 구조를
+# 쓰고, course는 vault의 CRS를 가리킨다. 각 파일은 저장 규칙 하나만 어기고 나머지는 정상이다.
+BS = B / "storage"
+
+# course는 2026-2 CRS인데 같은 slug의 2026-1 폴더에 있다. source는 올바른 canonical 원본이다.
+w(f"{S1}/lectures/bad-storage-path.md", fm(
+    schema=1, type="lecture", id="LEC-20260923-01", title="다른 학기 폴더에 놓인 강의",
+    status="draft", topics="[]", related="[]", created="2026-09-23", updated="2026-09-23",
+    course=CRS, date="2026-09-23", source=TR, resources="[]", concepts="[]",
+    assignments="[]", exams="[]", course_facts="[]", questions="[]",
+) + "\n<!-- 고의 오류: course는 2026-2 CRS인데 study/2026-1/general-physics-2/lectures/에 있다 -->\n", root=BS)
+
+# 노트 위치는 맞고 source 파일도 실제로 있지만, canonical home이 아닌 과목의 원본 폴더다.
+w(f"{S2}/resources/bad-raw-source.md", fm(
+    schema=1, type="resource", id="RES-general-physics-2-bad-raw-source",
+    title="다른 과목 원본 폴더를 가리키는 자료", status="active", topics="[]", related="[]",
+    created="2026-09-23", updated="2026-09-23", course=CRS,
+    resource_type="slides", authority="professor",
+    source="raw/2026-2/wrong-course/resources/bad-raw-source.pdf", lectures="[]",
+) + "\n<!-- 고의 오류: source가 canonical home이 아닌 raw/2026-2/wrong-course/resources/를 가리킨다 -->\n",
+  root=BS)
+w("raw/2026-2/wrong-course/resources/bad-raw-source.pdf",
+  "가상 PDF 자리표시자. 실제 파일이 아니다.\n", root=BS)
+
+# course-scoped 노트인데 course가 null이다. 위치와 나머지 필드는 정상이다.
+w(f"{S2}/questions/bad-course-null.md", fm(
+    schema=1, type="question", id="QST-general-physics-2-20260923-01",
+    title="과목이 비어 있는 질문", status="open", topics="[]", related="[]",
+    created="2026-09-23", updated="2026-09-23", course=None,
+    question_type="conceptual", sources="[LEC-20260908-01]",
+    answer_sources="[]", resolved_on="null",
+) + "\n<!-- 고의 오류: course-scoped 노트에 실제 CRS가 없다 (course: null) -->\n", root=BS)
+
 w("README.md", f"""
 # 고의 오류 fixture
 
@@ -1166,6 +1200,17 @@ L8 무결성 검사가 각 오류를 잡는지 확인하기 위한 파일이다.
 | `bad-orphan.md` | orphan 노트 | 4 |
 | `bad-missing-source.md` | 로컬 source 파일 없음 | 6 |
 | `bad-supersedes.md` | 끊어진 supersede 참조 | 9 |
+
+## 저장 경로 오류 (`storage/`)
+
+저장 위치 자체가 검사 대상이라 `storage/` 아래에 vault와 같은 루트 구조로 둔다. `course`는 `vault/`의
+CRS를 가리킨다. 각 파일은 저장 규칙 하나만 어기고 나머지는 스키마상 정상이다.
+
+| 파일 | 심은 오류 | L8 검사 항목 |
+|---|---|---|
+| `storage/study/2026-1/general-physics-2/lectures/bad-storage-path.md` | `course`는 2026-2 CRS인데 2026-1 폴더에 있다 (저장 경로 불일치) | 11 |
+| `storage/study/2026-2/general-physics-2/resources/bad-raw-source.md` | `source` 파일은 있지만 canonical home이 아닌 과목의 raw 폴더다 (원본 경로 불일치) | 11 |
+| `storage/study/2026-2/general-physics-2/questions/bad-course-null.md` | course-scoped 노트의 `course: null` (course 필수) | 11 |
 """, root=B)
 
 n = sum(1 for _ in V.rglob("*") if _.is_file()) + sum(1 for _ in B.rglob("*") if _.is_file())

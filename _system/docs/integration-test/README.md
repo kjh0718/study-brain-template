@@ -33,9 +33,9 @@ Python 3와 PyYAML만 쓴다. 새 의존성을 추가하지 않았다.
 | 파일 | 역할 |
 |---|---|
 | `build_fixtures.py` | 가상 vault와 고의 오류 fixture를 생성 |
-| `check_scenarios.py` | Scenario A~K + 공통 스키마 적합성 + L8 탐지 검사 |
+| `check_scenarios.py` | Scenario A~K + 공통 스키마 적합성 + S 저장 경로 규약 + L8·저장 경로 오류 탐지 검사 |
 | `vault/` | 가상 저장소. L1~L9를 문서대로 수행한 **기대 결과** |
-| `broken/` | L8 검사용 고의 오류 노트. `vault/`와 분리해 정상 검사를 오염시키지 않는다 |
+| `broken/` | L8 검사용 고의 오류 노트. `vault/`와 분리해 정상 검사를 오염시키지 않는다. 저장 위치가 검사 대상인 오류는 `broken/storage/`에 vault와 같은 루트 구조로 둔다 |
 | `protected-snapshot.json` | 보호 영역의 SHA-256. 재처리 전후 비교용 |
 
 `_system/docs/template-validation/`은 **템플릿 규격**을 보고, 이 폴더는 **워크플로 결과의 일관성**을 본다. 목적이 다르므로 둘 다 유지한다.
@@ -60,13 +60,14 @@ Python 3와 PyYAML만 쓴다. 새 의존성을 추가하지 않았다.
 - Course Fact 4건 (최초 공지 + Scenario E의 Case 1~3)
 - Past Exam 3건 (같은 개념이 3회차 반복), Question 2건, Review 1건, Course 2건
 - 보호 영역 25개 (`My Notes`, `My Understanding`, `My Questions`, `Personal Reflection`)
-- 고의 오류 9건
+- 고의 오류 9건 + 저장 경로 오류 3건(`broken/storage/`)
 
 ## Scenario 결과
 
 | Scenario | 결과 |
 |---|---|
 | 공통 스키마 적합성 | PASS |
+| S 저장 경로 규약 | PASS |
 | A Lecture Ingestion | PASS |
 | B Resource N:N | PASS |
 | C Concept Deduplication | PASS WITH NOTES |
@@ -79,8 +80,9 @@ Python 3와 PyYAML만 쓴다. 새 의존성을 추가하지 않았다.
 | J Re-ingestion / Idempotency | PASS |
 | K Partial Failure / Recovery | PASS |
 | L8 오류 탐지 | PASS |
+| 저장 경로 오류 탐지 | PASS |
 
-**PASS 11 / PASS WITH NOTES 2 / FAIL 0**
+**PASS 13 / PASS WITH NOTES 2 / FAIL 0**
 
 최초 실행에서는 Scenario I가 FAIL이었다. EXM ID 정책을 승인받아 수정한 뒤 재실행한 결과다. 경과는 아래 "수정한 문제"에 남긴다.
 
@@ -230,7 +232,33 @@ EXM-general-physics-2-2026-1-final
 | `bad-missing-source.md` | 로컬 source 파일 없음 | 항목6 |
 | `bad-supersedes.md` | 끊어진 supersede 참조 | 항목9 |
 
-`l8-maintenance.md`의 검사 항목 10개 중 8번(대시보드 일치)은 Scenario A에서 별도로 검증했고, 10번(보호 영역 존재)은 Scenario G에서 다뤘다.
+`l8-maintenance.md`의 검사 항목 11개 중 8번(대시보드 일치)은 Scenario A에서 별도로 검증했고, 10번(보호 영역 존재)은 Scenario G에서, 11번(저장 경로 규약)은 아래 S와 저장 경로 오류 탐지에서 다룬다.
+
+### S — 저장 경로 규약
+
+정상 `vault/`의 모든 구조화 노트가 [`common.md`](../../schemas/common.md)의 Storage Paths를 지키는지 본다. 위반 0건이다.
+
+- CRS는 `study/<term>/<course-slug>/course.md`에 있고, 폴더의 `<term>`이 frontmatter `term`과 같다.
+- course-scoped 노트(LEC·RES·ASM·EXM·PEX·FAC·QST·REV)는 `course`가 실제 CRS를 가리키고, 그 CRS 파일 경로에서 읽은 `study/<term>/<course-slug>/<kind>/` 아래에 있다.
+- 로컬 `source`를 갖는 LEC·RES·PEX는 canonical home CRS의 `raw/<term>/<course-slug>/` 아래 `transcripts/`·`resources/`·`past-exams/`를 가리킨다. 나머지 타입은 `sources`(ID 목록)만 가지므로 원본 경로를 검사하지 않는다.
+- CON·CLU는 `wiki/concepts/`·`wiki/clusters/`에만 있다. 옛 타입별 고정 폴더(`study/lectures/` 등)와 `raw/documents/`를 쓰지 않는다.
+
+오탐하지 않도록 다음을 위반으로 보지 않는다.
+
+- 과목 폴더 이름이 canonical slug다. ID 속 slug와 폴더를 비교하지 않는다. legacy ID와 migration(D-029) 뒤의 ID도 유효하기 때문이다.
+- RES·PEX는 `related`에 다른 CRS가 있어도 `course`가 가리키는 canonical home만 기준으로 본다. 2026-1 CRS를 `related`로 가진 `RES-general-physics-2-ch03-slides`는 위반이 아니다.
+- PEX 3건은 2022-2~2024-2에 시행된 기출이지만, 이 기출을 쓰는 2026-2 CRS 폴더에 있는 것이 정상이다.
+- 같은 slug의 2026-1과 2026-2 CRS는 term 폴더로 구분된다.
+
+### 저장 경로 오류 탐지
+
+`broken/storage/`의 fixture 3건이 각각 의도한 검사 하나로만 탐지된다. 각 파일은 저장 위치 말고는 스키마·관계·source 존재 검사를 통과해야 하며, 다른 오류가 섞이면 FAIL이다.
+
+| fixture | 심은 오류 | 탐지 |
+|---|---|---|
+| `study/2026-1/general-physics-2/lectures/bad-storage-path.md` | `course`는 2026-2 CRS인데 2026-1 폴더에 있다 | 저장 경로 불일치 |
+| `study/2026-2/general-physics-2/resources/bad-raw-source.md` | `source` 파일은 있지만 `raw/2026-2/wrong-course/resources/`를 가리킨다 | 원본 경로 불일치 |
+| `study/2026-2/general-physics-2/questions/bad-course-null.md` | `course: null` | course 필수 |
 
 ## 발견한 문제
 

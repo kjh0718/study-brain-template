@@ -16,3 +16,14 @@ L8 무결성 검사가 각 오류를 잡는지 확인하기 위한 파일이다.
 | `bad-orphan.md` | orphan 노트 | 4 |
 | `bad-missing-source.md` | 로컬 source 파일 없음 | 6 |
 | `bad-supersedes.md` | 끊어진 supersede 참조 | 9 |
+
+## 저장 경로 오류 (`storage/`)
+
+저장 위치 자체가 검사 대상이라 `storage/` 아래에 vault와 같은 루트 구조로 둔다. `course`는 `vault/`의
+CRS를 가리킨다. 각 파일은 저장 규칙 하나만 어기고 나머지는 스키마상 정상이다.
+
+| 파일 | 심은 오류 | L8 검사 항목 |
+|---|---|---|
+| `storage/study/2026-1/general-physics-2/lectures/bad-storage-path.md` | `course`는 2026-2 CRS인데 2026-1 폴더에 있다 (저장 경로 불일치) | 11 |
+| `storage/study/2026-2/general-physics-2/resources/bad-raw-source.md` | `source` 파일은 있지만 canonical home이 아닌 과목의 raw 폴더다 (원본 경로 불일치) | 11 |
+| `storage/study/2026-2/general-physics-2/questions/bad-course-null.md` | course-scoped 노트의 `course: null` (course 필수) | 11 |

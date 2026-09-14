@@ -90,40 +90,109 @@ def section(body, title):
 
 
 # ================================================================ 공통: 스키마 적합성
-fails, warn = list(parse_fail), []
-for nid, n in notes.items():
-    fm, rel, t = n["fm"], n["rel"], n["fm"]["type"]
+def schema_problems(nid, fm, roots):
+    """스키마·관계·source 존재 문제를 반환한다. roots는 로컬 source를 찾을 vault 루트들이다."""
+    out, t = [], fm["type"]
     s = spec[t]
     miss = s["required"] - set(fm)
     if miss:
-        fails.append(f"{rel}: 필수 필드 누락 {sorted(miss)}")
+        out.append(f"필수 필드 누락 {sorted(miss)}")
     ext = set(fm) - s["fields"]
     if ext:
-        fails.append(f"{rel}: 스키마에 없는 필드 {sorted(ext)}")
+        out.append(f"스키마에 없는 필드 {sorted(ext)}")
     if fm["status"] not in s["status"]:
-        fails.append(f"{rel}: status '{fm['status']}' 불허 (허용 {sorted(s['status'])})")
+        out.append(f"status '{fm['status']}' 불허 (허용 {sorted(s['status'])})")
     if not nid.startswith(PREFIX[t] + "-"):
-        fails.append(f"{rel}: ID 접두사 불일치 {nid}")
+        out.append(f"ID 접두사 불일치 {nid}")
     if not ID_CONTRACT.match(nid):
-        fails.append(f"{rel}: ID 형식 계약 위반 {nid}")
+        out.append(f"ID 형식 계약 위반 {nid}")
     for k in ("related", "concepts", "questions", "assignments", "exams", "course_facts",
               "sources", "answer_sources", "targets", "members", "lectures", "supersedes"):
         for r in (fm.get(k) or []):
             r = r["id"] if isinstance(r, dict) else r
             if isinstance(r, str) and re.match(r"^[A-Z]{3}-", r):
                 if r not in IDS:
-                    fails.append(f"{rel}: {k}의 {r} 대상 노트 없음")
+                    out.append(f"{k}의 {r} 대상 노트 없음")
                 if r == nid:
-                    fails.append(f"{rel}: {k}에 자기 자신")
+                    out.append(f"{k}에 자기 자신")
     for k in ("course", "subject"):
         v = fm.get(k)
         if isinstance(v, str) and re.match(r"^[A-Z]{3}-", v) and v not in IDS:
-            fails.append(f"{rel}: {k}의 {v} 대상 노트 없음")
+            out.append(f"{k}의 {v} 대상 노트 없음")
     src = fm.get("source")
     if isinstance(src, str) and not src.startswith("http"):
-        if not (V / src).exists():
-            fails.append(f"{rel}: source 파일 없음 {src}")
+        if not any((root / src).exists() for root in roots):
+            out.append(f"source 파일 없음 {src}")
+    return out
+
+
+fails, warn = list(parse_fail), []
+for nid, n in notes.items():
+    fails += [f"{n['rel']}: {p}" for p in schema_problems(nid, n["fm"], (V,))]
 record("공통 스키마 적합성", fails, warn)
+
+# ================================================================ S: 저장 경로 규약
+# 정본은 common.md의 Storage Paths와 SECOND-BRAIN.md L8 검사 항목 11이다.
+# 과목 폴더 이름이 canonical slug다. ID 속 slug는 legacy ID와 migration(D-029) 때문에 비교하지 않는다.
+STUDY_KIND = {"lecture": "lectures", "resource": "resources", "assignment": "assignments",
+              "exam": "exams", "past-exam": "past-exams", "course-fact": "course-facts",
+              "question": "questions", "review": "reviews"}
+WIKI_KIND = {"concept": "concepts", "cluster": "clusters"}
+# 스키마에서 source가 원본 경로인 타입만 둔다. 나머지 course-scoped 타입은 sources(ID 목록)만 가진다.
+RAW_KIND = {"lecture": "transcripts", "resource": "resources", "past-exam": "past-exams"}
+OLD_ROOTS = set(STUDY_KIND.values()) | {"courses"}
+
+# CRS ID -> (term, course-slug). 경로가 study/<term>/<course-slug>/course.md인 CRS만 폴더에서 읽고,
+# 경로가 틀린 CRS는 None으로 둔다(그 CRS 자신이 위반으로 보고된다).
+HOMES = {}
+for nid, n in notes.items():
+    if n["fm"]["type"] == "course":
+        p = n["rel"].parts
+        HOMES[nid] = (p[1], p[2]) if len(p) == 4 and p[0] == "study" and p[3] == "course.md" else None
+
+
+def storage_problems(rel, fm):
+    """vault 루트 기준 상대 경로 rel에 놓인 노트의 저장 규약 위반을 반환한다.
+    RES·PEX는 related에 다른 CRS가 있어도 course가 가리키는 canonical home만 기준으로 본다."""
+    parts, t = rel.parts, fm.get("type")
+    if parts[0] == "study" and len(parts) == 3 and parts[1] in OLD_ROOTS:
+        return [f"저장 경로 불일치: 옛 타입별 고정 폴더 study/{parts[1]}/에 있다"]
+    if t == "course":
+        if len(parts) != 4 or parts[0] != "study" or parts[3] != "course.md":
+            return ["저장 경로 불일치: CRS는 study/<term>/<course-slug>/course.md여야 한다"]
+        if str(fm.get("term")) != parts[1]:
+            return [f"저장 경로 불일치: 폴더 term {parts[1]}와 CRS term {fm.get('term')}이 다르다"]
+        return []
+    if t in WIKI_KIND:
+        if parts[:-1] != ("wiki", WIKI_KIND[t]):
+            return [f"저장 경로 불일치: {t}는 wiki/{WIKI_KIND[t]}/ 아래여야 한다"]
+        return []
+    if t not in STUDY_KIND:
+        return []
+    c = fm.get("course")
+    if not isinstance(c, str) or not c:
+        return ["course 필수: course-scoped 노트의 course가 비어 있다"]
+    if c not in HOMES:
+        return [f"course 필수: {c}는 존재하는 CRS가 아니다"]
+    if HOMES[c] is None:
+        return []
+    term, slug = HOMES[c]
+    out = []
+    if parts[:-1] != ("study", term, slug, STUDY_KIND[t]):
+        out.append(f"저장 경로 불일치: {c}의 study/{term}/{slug}/{STUDY_KIND[t]}/ 아래여야 한다")
+    src = fm.get("source")
+    if t in RAW_KIND and isinstance(src, str) and not src.startswith("http"):
+        if pathlib.PurePosixPath(src).parts[:4] != ("raw", term, slug, RAW_KIND[t]):
+            out.append(f"원본 경로 불일치: source가 canonical home의 raw/{term}/{slug}/{RAW_KIND[t]}/ 아래가 아니다 ({src})")
+    return out
+
+
+fails, warn = [], []
+for nid, n in notes.items():
+    fails += [f"{n['rel']}: {p}" for p in storage_problems(n["rel"], n["fm"])]
+for d in sorted(p for p in (V / "raw").rglob("documents") if p.is_dir()):
+    fails.append(f"{d.relative_to(V).as_posix()}/: 폐지된 raw/documents/ 폴더가 있다")
+record("S 저장 경로 규약", fails, warn)
 
 # ================================================================ Scenario A
 fails, warn = [], []
@@ -621,14 +690,43 @@ for f in sorted(BROKEN.glob("bad-*.md")):
         fails.append(f"{f.name}: 심은 오류를 하나도 탐지하지 못했다")
 record("L8 오류 탐지", fails, warn)
 
+# ================================================================ 저장 경로 오류 탐지
+# broken/storage/는 vault와 같은 루트 구조다. 각 fixture는 저장 규칙 하나만 어기고 나머지는
+# 스키마상 정상이어야 어느 검사가 잡았는지 분명하다. course는 vault의 CRS를 가리킨다.
+STORAGE = BROKEN / "storage"
+EXPECT_STORAGE = {"bad-storage-path.md": "저장 경로 불일치",
+                  "bad-raw-source.md": "원본 경로 불일치",
+                  "bad-course-null.md": "course 필수"}
+fails, warn = [], []
+storage_detected = {}
+for f in sorted(STORAGE.rglob("bad-*.md")):
+    rel = f.relative_to(STORAGE)
+    fmb = yaml.safe_load(re.match(r"^---\n(.*?)\n---\n", f.read_text(encoding="utf-8"), re.S).group(1))
+    hits = storage_problems(rel, fmb)
+    storage_detected[rel.as_posix()] = hits
+    kinds = {h.split(":")[0] for h in hits}
+    expect = EXPECT_STORAGE.get(f.name)
+    if expect is None:
+        fails.append(f"{rel.as_posix()}: 기대 탐지가 정의되지 않은 fixture")
+    elif kinds != {expect}:
+        fails.append(f"{rel.as_posix()}: '{expect}' 하나만 탐지돼야 한다. 실제 {sorted(kinds) or '없음'}")
+    other = schema_problems(fmb["id"], fmb, (STORAGE, V))
+    if other:
+        fails.append(f"{rel.as_posix()}: 저장 위치 외 오류가 섞였다 {other}")
+missing = sorted(set(EXPECT_STORAGE) - {pathlib.Path(k).name for k in storage_detected})
+if missing:
+    fails.append(f"저장 경로 fixture가 없다: {missing}")
+record("저장 경로 오류 탐지", fails, warn)
+
 # ================================================================ 출력
 print("=" * 68)
 print("Study Brain 통합 시험 — Scenario 결과")
 print("=" * 68)
-order = ["공통 스키마 적합성", "A Lecture Ingestion", "B Resource N:N",
+order = ["공통 스키마 적합성", "S 저장 경로 규약", "A Lecture Ingestion", "B Resource N:N",
          "C Concept Deduplication", "D Assignment 날짜", "E Course Fact Conflict",
          "F Past Exam", "G Protected Sections", "H Evidence Recall", "I ID 충돌 압박",
-         "J Re-ingestion / Idempotency", "K Partial Failure / Recovery", "L8 오류 탐지"]
+         "J Re-ingestion / Idempotency", "K Partial Failure / Recovery", "L8 오류 탐지",
+         "저장 경로 오류 탐지"]
 nfail = 0
 for k in order:
     v, det = results[k]
@@ -642,6 +740,10 @@ print("\n" + "-" * 68)
 print("L8 fixture별 탐지 결과")
 for name, hits in detected.items():
     print(f"  {name:28} {', '.join(hits) if hits else '탐지 실패'}")
+print("\n저장 경로 fixture별 탐지 결과")
+for name, hits in storage_detected.items():
+    print(f"  {name}")
+    print(f"      {' / '.join(hits) if hits else '탐지 실패'}")
 
 print("\n" + "=" * 68)
 tally = {}
