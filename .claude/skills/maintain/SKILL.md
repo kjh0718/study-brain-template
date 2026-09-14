@@ -1,6 +1,6 @@
 ---
 name: maintain
-description: Study Brain의 무결성을 검사하고 승인된 범위만 정리한다 (정리해). Use when the user asks to audit or tidy the vault — checks required fields, status values, ID contract, relation integrity, bidirectional Lecture/Resource links, source paths, topic vocabulary, course dashboards, and supersede chains. Inspect-only by default; never fixes without an explicit scope. Triggers include 정리해, 검사해, 확인해줘, maintain, and vault audit requests.
+description: Study Brain의 무결성을 검사하고 승인된 범위만 정리한다 (정리해). Use when the user asks to audit or tidy the vault — checks required fields, status values, ID contract, relation integrity, bidirectional Lecture/Resource links, source paths, topic vocabulary, course dashboards, supersede chains, and term/course storage paths. Inspect-only by default; never fixes without an explicit scope. Triggers include 정리해, 검사해, 확인해줘, maintain, and vault audit requests.
 ---
 
 Study Brain의 `maintain` Skill이다. 규격은 한 곳에만 둔다.

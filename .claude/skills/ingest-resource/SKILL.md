@@ -1,6 +1,6 @@
 ---
 name: ingest-resource
-description: 학습 자료를 한 번만 등록해 여러 강의에서 재사용한다 (자료 등록). Use when the input is a slide deck, textbook chapter, handout, paper, or an external link — searches for an existing Resource by title, author, edition, and content before creating a new one, then links it to lectures with per-lecture page ranges. Triggers include PPT, PDF, 교재, 프린트, 강의자료, resource, and "이 자료 등록해줘".
+description: 학습 자료를 한 번만 등록해 여러 강의에서 재사용한다 (자료 등록). Use when the input is a PDF slide deck, textbook chapter, handout, or paper, or an accessible external link — searches the whole vault for an existing Resource by title, author, edition, and content before creating a new one, then links it to lectures with per-lecture page ranges. Triggers include PDF, 교재, 프린트, 강의자료, resource, and "이 자료 등록해줘".
 ---
 
 Study Brain의 `ingest-resource` Skill이다. 규격은 한 곳에만 둔다.

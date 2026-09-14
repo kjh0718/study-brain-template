@@ -1,6 +1,6 @@
 ---
 name: maintain
-description: Study Brain의 무결성을 검사하고 승인된 범위만 정리한다 (정리해). Use when the user asks to audit or tidy the vault — checks required fields, status values, ID contract, relation integrity, bidirectional Lecture/Resource links, source paths, topic vocabulary, course dashboards, and supersede chains. Inspect-only by default; never fixes without an explicit scope. Triggers include 정리해, 검사해, 확인해줘, maintain, and vault audit requests.
+description: Study Brain의 무결성을 검사하고 승인된 범위만 정리한다 (정리해). Use when the user asks to audit or tidy the vault — checks required fields, status values, ID contract, relation integrity, bidirectional Lecture/Resource links, source paths, topic vocabulary, course dashboards, supersede chains, and term/course storage paths. Inspect-only by default; never fixes without an explicit scope. Triggers include 정리해, 검사해, 확인해줘, maintain, and vault audit requests.
 ---
 
 # maintain
@@ -29,7 +29,7 @@ L8의 진입점. 검사와 수정을 분리한다. **기본은 검사 모드다.
 2. `l8-maintenance.md`를 읽는다.
 3. **모드를 먼저 정한다.** "검사해줘"는 검사 모드, "정리해줘"는 수정 모드다. 판정 기준은 `l8-maintenance.md`가 정한다.
 4. **수정 모드인데 대상 범위가 없으면 검사 모드로 수행하고** 수정 후보 목록을 낸다. 범위를 추정해 고치지 않는다.
-5. 검사 항목 10개를 수행한다. 명령은 `l8-maintenance.md`에 있다.
+5. 검사 항목 11개를 수행한다. 11번째는 저장 경로 규약 검사다. 항목 정의는 `SECOND-BRAIN.md`의 L8 절, 명령은 `l8-maintenance.md`에 있으며 여기 복제하지 않는다.
 6. 수정 모드면 `SECOND-BRAIN.md`의 안전 순서표에서 낮은 단계부터 고치고 로그를 남긴다.
 
 ## Completion / reporting
@@ -45,6 +45,7 @@ L8의 진입점. 검사와 수정을 분리한다. **기본은 검사 모드다.
 - 상충하는 사실 중 한쪽을 골라 정리하지 않는다. L5로 넘긴다.
 - 스키마에 없는 필드나 상태값을 만들어 무결성을 맞추지 않는다.
 - 허용 상태값을 이 문서에 베껴 두지 않는다. 스키마에서 읽는다.
+- 저장 경로 위반을 고치려고 원본이나 노트를 과목 간에 옮기지 않는다. 보고만 하고, 이동은 사용자가 2.13 migration을 요청할 때 한다.
 
 ## Example
 

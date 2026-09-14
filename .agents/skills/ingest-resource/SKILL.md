@@ -1,6 +1,6 @@
 ---
 name: ingest-resource
-description: 학습 자료를 한 번만 등록해 여러 강의에서 재사용한다 (자료 등록). Use when the input is a slide deck, textbook chapter, handout, paper, or an external link — searches for an existing Resource by title, author, edition, and content before creating a new one, then links it to lectures with per-lecture page ranges. Triggers include PPT, PDF, 교재, 프린트, 강의자료, resource, and "이 자료 등록해줘".
+description: 학습 자료를 한 번만 등록해 여러 강의에서 재사용한다 (자료 등록). Use when the input is a PDF slide deck, textbook chapter, handout, or paper, or an accessible external link — searches the whole vault for an existing Resource by title, author, edition, and content before creating a new one, then links it to lectures with per-lecture page ranges. Triggers include PDF, 교재, 프린트, 강의자료, resource, and "이 자료 등록해줘".
 ---
 
 # ingest-resource
@@ -21,21 +21,23 @@ L2의 진입점. 자료 하나를 **한 번만** 등록해 여러 강의에서 �
 
 ## Inputs
 
-`$ARGUMENTS` — 자료 파일 경로 또는 접근 가능한 참조. L1이 넘긴 미등록 자료. 비어 있으면 묻는다.
+`$ARGUMENTS` — 자료 PDF 파일 경로 또는 접근 가능한 외부 참조. L1이 넘긴 미등록 자료. 비어 있으면 묻는다.
 
 ## Execution
 
 1. `SECOND-BRAIN.md`를 읽는다.
 2. `l2-resource-ingestion.md`를 읽고 그 체크리스트를 수행한다.
-3. **중복 검색을 먼저 한다.** 파일명만으로 판단하지 않고 제목·작성자·판·내용, 가능하면 파일 해시를 비교한다. 기존 RES가 있으면 갱신한다.
-4. 부모 L1이 있는지 확인한다. 호출 방식이 달라진다.
+3. 등록할 과목과 학기를 먼저 확정한다. 확정하지 못하면 자료를 `inbox/`에 둔 채 보류하며, 공용 자료라는 이유로 `course` 없이 등록하지 않는다. PPT/PPTX/HWP/DOCX/이미지는 직접 ingest하거나 변환하지 않고 PDF를 요청한다.
+4. **중복 검색을 먼저 한다.** 다른 과목 폴더까지 `study/` 전체의 RES를 본다. 파일명만으로 판단하지 않고 제목·작성자·판·내용, 가능하면 파일 해시를 비교한다. 기존 RES가 있으면 다른 과목 폴더에 있어도 그 노트를 갱신한다.
+5. 새 RES는 최초 등록 과목을 canonical home으로 삼아 `study/<term>/<course-slug>/resources/`에, 로컬 원본은 `raw/<term>/<course-slug>/resources/`에 둔다. 다른 과목이 재사용하면 `related`에 그 CRS ID를 더한다.
+6. 부모 L1이 있는지 확인한다. 호출 방식이 달라진다.
 
    | 단계 | L1이 호출 | 단독 실행 |
    |---|---|---|
    | 개념 후보 | 부모에 반환 | L4 직접 호출 |
    | 대시보드 | 목록만 반환 | 직접 갱신 |
 
-5. 강의와 연결할 때 `Lecture.resources[]`와 `Resource.lectures` **양쪽을 함께** 고친다.
+7. 강의와 연결할 때 `Lecture.resources[]`와 `Resource.lectures` **양쪽을 함께** 고친다.
 
 ## Completion / reporting
 
@@ -45,6 +47,7 @@ L2의 진입점. 자료 하나를 **한 번만** 등록해 여러 강의에서 �
 
 - **같은 자료를 수업마다 새 RES로 만들지 않는다.** 자료 1개를 여러 날 써도 RES는 하나다.
 - 과목마다 자료를 복제하지 않는다. 추가 과목은 `related`에 넣는다.
+- 재실행에서 RES의 `course`, `source`, 원본 위치를 다른 과목 폴더로 옮기지 않는다. 과목 이동이 필요하면 2.13 migration 대상으로 보고만 한다.
 - 외부 URL 자료를 임의로 내려받지 않는다.
 - 목차만으로 수업 진도나 사용 페이지를 추정하지 않는다.
 - 자료의 별표·반복 출현만으로 시험 출제를 확정하지 않는다.
