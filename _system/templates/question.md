@@ -8,14 +8,14 @@ topics: []
 related: []
 created: "{{created}}"
 updated: "{{updated}}"
-course: null
+course: "{{course_id}}"
 question_type: "{{question_type}}"
 sources: []
 answer_sources: []
 resolved_on: null
 ---
 
-<!-- course: 특정 과목의 질문이면 CRS ID를 넣는다. 공용 질문이면 null을 유지한다. -->
+<!-- course: 질문이 속한 과목의 CRS ID. null을 쓰지 않는다. 과목을 특정할 수 없는 질문은 만들지 않고 사용자에게 과목을 확인한다. -->
 <!-- question_type: conceptual, clarification, source-verification, problem-solving, other -->
 <!-- sources: 질문이 생긴 근거 노트 ID. answer_sources: 답변 근거 노트 ID. -->
 <!-- resolved_on: 해결을 확인한 날짜. 미해결이면 null을 유지한다. -->

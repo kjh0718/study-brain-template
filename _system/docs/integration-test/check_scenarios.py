@@ -26,7 +26,7 @@ ID_CONTRACT = re.compile(
 PREFIX = {"course": "CRS", "lecture": "LEC", "concept": "CON", "assignment": "ASM",
           "exam": "EXM", "past-exam": "PEX", "course-fact": "FAC", "question": "QST",
           "resource": "RES", "review": "REV", "cluster": "CLU"}
-OPTIONAL = {"course": {"code", "term", "instructor"}, "lecture": {"week"},
+OPTIONAL = {"course": {"code", "instructor"}, "lecture": {"week"},
             "resource": {"page_count"}, "assignment": {"submission_method"},
             "course-fact": {"effective_from"}}
 PROTECTED = ("My Notes", "My Understanding", "My Questions", "Personal Reflection")

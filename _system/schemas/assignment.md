@@ -1,6 +1,6 @@
 # Assignment Schema
 
-ASM 노트는 과목의 과제 한 건과 요구사항·마감·제출 상태를 관리한다. 저장 위치는 `study/assignments/`다. [공통 규칙](common.md)을 함께 적용한다.
+ASM 노트는 과목의 과제 한 건과 요구사항·마감·제출 상태를 관리한다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/assignments/`다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 

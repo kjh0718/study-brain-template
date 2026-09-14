@@ -1,6 +1,6 @@
 # Exam Schema
 
-EXM 노트는 현재 과목의 시험 한 회차에 대한 일정·범위·교수 언급을 누적한다. 저장 위치는 `study/exams/`다. [공통 규칙](common.md)을 함께 적용한다.
+EXM 노트는 현재 과목의 시험 한 회차에 대한 일정·범위·교수 언급을 누적한다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/exams/`다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 

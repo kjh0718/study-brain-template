@@ -1,6 +1,6 @@
 # Lecture Schema
 
-실제 수업 세션 하나를 정리하는 LEC 노트의 규격이다. 공통 필드는 저장소의 `_system/schemas/common.md`를 따른다. 저장 위치는 `study/lectures/`다.
+실제 수업 세션 하나를 정리하는 LEC 노트의 규격이다. 공통 필드는 저장소의 `_system/schemas/common.md`를 따른다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/lectures/`다. 경로 규칙은 common.md의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 
@@ -20,7 +20,7 @@ updated: 2026-09-08
 course: CRS-20260908-01
 date: 2026-09-08
 week: 3
-source: raw/transcripts/2026-09-08-physics.txt
+source: raw/2026-2/general-physics-1/transcripts/2026-09-08-physics.md
 resources:
   - id: RES-20260908-01
     pages: "32-45"
@@ -38,9 +38,9 @@ questions: []
 |---|---|---|
 | 공통 9개 필드 | 예 | common.md를 따른다. type은 lecture, id는 LEC-로 시작한다. |
 | status | 예 | draft, needs-review, processed, archived 중 하나 |
-| course | 예 | 실제 존재하는 CRS ID 하나. 과목이 불명확하면 inbox에 보류한다. |
+| course | 예 | 실제 존재하는 CRS ID 하나. null을 쓰지 않는다. 과목이 불명확하면 inbox에 보류한다. |
 | date | 예 | 실제 수업일 YYYY-MM-DD. 미확인일 때 null |
-| source | 예 | 보존된 주 전사본의 저장소 루트 기준 경로. / 구분자를 사용한다. |
+| source | 예 | 보존된 주 전사본(Markdown `.md`)의 저장소 루트 기준 경로. 로컬 원본은 연결된 CRS의 `raw/<term>/<course-slug>/transcripts/`에 둔다. / 구분자를 사용한다. |
 | week | 아니오 | 확인된 양의 정수 주차. 모르면 생략한다. |
 | resources | 예 | RES ID와 사용 범위를 담은 객체 목록. 없으면 [] |
 | concepts | 예 | CON ID 목록 |

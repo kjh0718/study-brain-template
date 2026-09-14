@@ -18,10 +18,10 @@ concepts:
   - CON-20260908-01
 ---
 
-<!-- course: 현재 과목과 연결되면 CRS ID를 넣는다. 미연결이면 null을 유지한다. -->
-<!-- year: 확인된 연도 정수만 넣는다. 모르면 null을 유지한다. -->
+<!-- course: 이 기출을 현재 사용하는 CRS ID. null을 쓰지 않는다. 과목이 미확정이면 노트를 만들지 않고 입력을 inbox/에 남긴다. -->
+<!-- year: 확인된 시험 연도 정수만 넣는다. 모르면 null을 유지한다. 실제 시행 학기는 새 필드 없이 ID와 본문 자료 식별 / 출처 절에 적는다. -->
 <!-- exam_type: midterm, final, quiz, practical, other, unknown -->
-<!-- source: 로컬 원본은 raw/past-exams/ 아래 경로, 외부 자료는 접근 가능한 참조. -->
+<!-- source: 로컬 원본은 raw/<term>/<course-slug>/past-exams/ 아래 경로, 외부 자료는 접근 가능한 참조. <term>은 이 기출을 사용하는 CRS의 학기다. -->
 <!-- authority: professor, official-lms, textbook, student-provided, external, ai-generated, unknown -->
 <!-- provenance: official(원본 시험지), reconstructed(학생 복원본), unknown -->
 <!-- 질문 연결에는 questions 필드가 없다. related와 본문을 사용한다. -->

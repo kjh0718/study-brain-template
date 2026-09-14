@@ -8,19 +8,84 @@ Study Brain의 모든 구조화 노트가 따르는 공통 규칙이다.
 
 | Prefix | Type | Location |
 |---|---|---|
-| CRS | course | `study/courses/` |
-| LEC | lecture | `study/lectures/` |
+| CRS | course | `study/<term>/<course-slug>/course.md` |
+| LEC | lecture | `study/<term>/<course-slug>/lectures/` |
 | CON | concept | `wiki/concepts/` |
-| ASM | assignment | `study/assignments/` |
-| EXM | exam | `study/exams/` |
-| PEX | past-exam | `study/past-exams/` |
-| FAC | course-fact | `study/course-facts/` |
-| QST | question | `study/questions/` |
-| RES | resource | `study/resources/` |
-| REV | review | `study/reviews/` |
+| ASM | assignment | `study/<term>/<course-slug>/assignments/` |
+| EXM | exam | `study/<term>/<course-slug>/exams/` |
+| PEX | past-exam | `study/<term>/<course-slug>/past-exams/` |
+| FAC | course-fact | `study/<term>/<course-slug>/course-facts/` |
+| QST | question | `study/<term>/<course-slug>/questions/` |
+| RES | resource | `study/<term>/<course-slug>/resources/` |
+| REV | review | `study/<term>/<course-slug>/reviews/` |
 | CLU | cluster | `wiki/clusters/` |
 
 `wiki/patterns/`는 Core Type이 아니다. 여러 Source와 Note에서 반복되는 패턴이 충분한 근거를 얻었을 때 Knowledge Promotion Workflow를 통해 생성하는 파생 지식 영역이다.
+
+`<term>`과 `<course-slug>`의 뜻과 경로 규칙은 아래 Storage Paths 절이 정한다.
+
+## Storage Paths
+
+저장 위치의 정본이다. 각 Type Schema와 템플릿은 이 절을 따르며 경로 규칙을 따로 만들지 않는다.
+
+### 경로 패턴
+
+```text
+study/<term>/<course-slug>/
+  course.md          CRS
+  lectures/          LEC
+  resources/         RES
+  assignments/       ASM
+  exams/             EXM
+  past-exams/        PEX
+  course-facts/      FAC
+  questions/         QST
+  reviews/           REV
+
+raw/<term>/<course-slug>/
+  resources/
+  transcripts/
+  assignments/
+  past-exams/
+  notices/
+
+wiki/
+  concepts/          CON
+  clusters/          CLU
+  patterns/          Core Type 아님
+```
+
+`wiki/`는 과목을 넘는 지식이므로 학기·과목 폴더로 나누지 않고 전역 구조를 유지한다.
+
+### `<term>`
+
+- 연결된 CRS의 `term` 값과 같다.
+- 형식은 `YYYY-1`, `YYYY-2`, `YYYY-summer`, `YYYY-winter` 중 하나다. 예: `2026-2`, `2026-summer`
+- term을 확인할 수 없으면 CRS와 그 하위 노트를 만들지 않고 입력을 `inbox/`에 남긴다.
+
+### `<course-slug>`
+
+- 과목을 처음 만들 때 정하는 영문 kebab-case의 안정적인 식별자다. ASCII 소문자, 숫자, 단일 하이픈만 쓴다. 예: `computer-network`
+- 이후 임의로 바꾸지 않는다. 같은 과목을 다른 학기에 다시 수강하면 같은 slug를 재사용한다.
+- 분반은 일반적으로 slug에 넣지 않는다. 같은 학기에 같은 과목을 여러 분반으로 실제 관리해야 하는 경우에만 처음 생성할 때 `computer-network-01` 같은 고유 slug를 사용한다.
+- slug를 담는 frontmatter 필드는 없다. 새 필드를 추가하지 않으며 과목 폴더 이름이 slug의 기록이다.
+
+### course-scoped 노트
+
+- LEC, RES, ASM, EXM, PEX, FAC, QST, REV는 course-scoped 노트다. 실제 저장 위치는 `course` 필드가 가리키는 CRS의 `term`과 `<course-slug>`를 따른다. 그 CRS의 `course.md`가 있는 과목 폴더 아래 해당 종류 폴더에 둔다.
+- course-scoped 노트의 `course`에는 `null`을 쓰지 않는다. 실제로 존재하는 CRS에 연결할 수 없으면 구조화 노트를 만들지 않고 입력을 `inbox/`에 남긴다. 과목을 초월한 지식은 `wiki/`가 담당한다.
+- 여러 과목이 함께 쓰는 RES와 PEX는 복제하지 않는다. 처음 등록된 과목을 canonical home으로 `course`에 두고 그 과목 폴더에 한 번만 저장하며, 다른 과목은 `related`에 CRS ID로 연결한다. 중복 검사는 항상 `study/` 전체에서 한다.
+- 로컬 원본은 연결된 CRS의 `raw/<term>/<course-slug>/` 아래 원본 종류 폴더에 둔다. `source`에는 그 경로를 저장소 루트 기준으로 적는다.
+- 동적 `<term>/<course-slug>/<kind>` 폴더에는 README를 만들지 않는다. 구조 설명은 `study/README.md`와 `raw/README.md`가 맡는다.
+
+### ID와 경로
+
+- 권장 형태에 `<과목 slug>` 부분이 있는 새 ID는 그 부분에 과목 폴더의 `<course-slug>`와 같은 값을 쓴다.
+- 날짜+일련번호 형태처럼 slug를 담지 않은 기존(legacy) ID도 형식 계약을 지키면 계속 유효하다. 이때 slug의 기준은 폴더다.
+- 이미 구조화된 노트의 과목 재배정은 예외적인 migration이다. 사용자의 명시적 요청과 충돌 확인 뒤에만 원본과 노트를 함께 옮기고, `source`와 관련 링크를 같은 변경에서 갱신한다.
+- migration에서도 ID는 바꾸지 않는다. 따라서 migration 뒤에는 기존 ID 속 slug와 새 폴더의 `<course-slug>`가 다를 수 있으며, 이를 이유로 ID를 재발급하지 않는다. 저장 위치가 맞는지는 ID가 아니라 `course` 필드와 폴더로 판단한다.
+
+결정 배경은 `_system/docs/plan/10-DECISIONS.md`의 D-021~D-031에 있다.
 
 ## Required Frontmatter
 
@@ -85,7 +150,7 @@ updated: 2026-09-08
 
 #### Type별 권장 형태
 
-권장이며 강제 알고리즘이 아니다. 재료를 확인할 수 없으면 확인된 부분까지만 쓰고, 형식 계약만 지키면 된다.
+권장이며 강제 알고리즘이 아니다. 재료를 확인할 수 없으면 확인된 부분까지만 쓰고, 형식 계약만 지키면 된다. 다만 새 ID에 `<과목 slug>` 부분을 쓰면 Storage Paths 절에 따라 과목 폴더의 `<course-slug>`와 일치시킨다.
 
 | Type | 권장 형태 | 예 |
 |---|---|---|
@@ -102,9 +167,9 @@ updated: 2026-09-08
 | cluster | `CLU-<topic slug>` | `CLU-classical-mechanics` |
 
 - `<날짜>`는 `YYYYMMDD`다. Lecture만 **수업일**을 쓰고 나머지는 노트 생성일이나 해당 사실의 날짜를 쓴다. 세부 예외는 각 Type Schema를 따른다.
-- `<과목 slug>`는 그 과목 CRS의 과목 부분과 같은 slug를 쓴다. 학기까지 넣지 않는다. 같은 과목을 여러 학기 들어도 하위 노트 ID가 학기 때문에 달라지지 않게 한다.
+- `<과목 slug>`는 그 과목의 `<course-slug>`(Storage Paths 절)와 같은 값을 쓴다. 학기까지 넣지 않는다. 같은 과목을 여러 학기 들어도 하위 노트 ID가 학기 때문에 달라지지 않게 한다.
 - **ID slug와 topic 어휘는 서로 다른 namespace다.** `topics` 필드에 쓰는 값만 `wiki/clusters/_topics.md`에 등록돼 있어야 한다. `CON-<개념 slug>`나 `CLU-<topic slug>`의 slug 부분이 어휘표에 등록된 topic일 필요는 없고, 반대로 등록된 topic마다 대응하는 CON이나 CLU가 있어야 하는 것도 아니다. Concept는 지식 객체이고 topic은 분류·검색 어휘이므로 개수와 경계가 다르다. 다만 같은 대상을 가리키는데 표기만 다른 slug를 만들지는 않는다.
-- 재료를 확인할 수 없으면 지어내지 않는다. 예를 들어 과목이 불명확하면 그 노트를 만들지 않거나, Type Schema가 허용하는 범위에서 과목 부분을 뺀다.
+- 재료를 확인할 수 없으면 지어내지 않는다. 예를 들어 과목이 불명확하면 course-scoped 노트를 만들지 않고 입력을 `inbox/`에 남긴다. 과목 부분을 빼서 과목 없는 ID로 만들지 않는다.
 
 #### 기존 ID
 
@@ -154,7 +219,7 @@ ISO 8601 날짜 형식인 `YYYY-MM-DD`를 사용한다.
 - 구조화 노트 파일은 Markdown(`.md`)으로 저장한다.
 - 파일명은 사람이 읽을 수 있는 kebab-case를 기본으로 한다.
 - 파일명에 ID를 포함하는 경우에도 frontmatter의 `id`가 정식 식별자다.
-- 폴더의 사용법은 해당 폴더의 `README.md`에 설명한다.
+- 고정 폴더의 사용법은 해당 폴더의 `README.md`에 설명한다. 동적 `<term>/<course-slug>/<kind>` 폴더에는 README를 만들지 않는다(Storage Paths 절).
 - 새 구조나 운영 규칙은 관련 문서와 루트 `SECOND-BRAIN.md`의 기준을 함께 갱신한다.
 
 ## Source and Note Boundary

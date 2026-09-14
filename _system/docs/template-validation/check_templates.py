@@ -9,8 +9,10 @@ for _s in (sys.stdout, sys.stderr):
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SCH, TPL = ROOT/"_system/schemas", ROOT/"_system/templates"
-OPTIONAL = {"course":{"code","term","instructor"}, "lecture":{"week"}, "resource":{"page_count"},
+OPTIONAL = {"course":{"code","instructor"}, "lecture":{"week"}, "resource":{"page_count"},
             "assignment":{"submission_method"}, "course-fact":{"effective_from"}}
+# course-scoped 노트는 실제 CRS에 연결돼야 하므로 템플릿에 course: null 기본값을 두지 않는다.
+COURSE_SCOPED = {"lecture","resource","assignment","exam","past-exam","course-fact","question","review"}
 EXPECT_STATUS = {"course":"planned","lecture":"draft","resource":"draft","concept":"draft",
                  "assignment":"open","exam":"planned","past-exam":"draft","course-fact":"needs-review",
                  "question":"open","review":"planned","cluster":"draft"}
@@ -50,6 +52,8 @@ for tf in sorted(TPL.glob("*.md")):
     if extra: problems.append(f"{tf.name}: 스키마에 없는 필드 {sorted(extra)}")
     opt_present = set(fm) & OPTIONAL.get(t, set())
     if opt_present: problems.append(f"{tf.name}: 선택 필드가 기본 frontmatter에 포함됨 {sorted(opt_present)}")
+    if t in COURSE_SCOPED and fm.get("course") != "{{course_id}}":
+        problems.append(f"{tf.name}: course 기본값은 \"{{{{course_id}}}}\"여야 한다 (현재 {fm.get('course')!r})")
 
     # 자리표시자는 따옴표로 감싼 문자열이어야 한다
     fmraw = re.match(r"^---\n(.*?)\n---\n", raw, re.S).group(1)

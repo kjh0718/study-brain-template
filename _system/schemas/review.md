@@ -1,6 +1,6 @@
 # Review Schema
 
-REV 노트는 복습 계획 또는 실제 복습 한 회차와 관찰된 학습 결과를 기록한다. 저장 위치는 `study/reviews/`다. [공통 규칙](common.md)을 함께 적용한다.
+REV 노트는 복습 계획 또는 실제 복습 한 회차와 관찰된 학습 결과를 기록한다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/reviews/`다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 
@@ -17,7 +17,7 @@ topics: []
 related: []
 created: 2026-09-08
 updated: 2026-09-08
-course: null
+course: CRS-20260908-01
 review_type: weekly
 targets: []
 scheduled_on: null
@@ -32,7 +32,7 @@ next_review: null
 
 | 필드 | 필수 | 규칙 |
 |---|---|---|
-| `course` | 예 | 주 관련 CRS ID. 여러 과목 공용이면 null |
+| `course` | 예 | 주 관련 CRS ID. null을 쓰지 않는다. 여러 과목에 걸친 회차는 주 과목 CRS에 두고 나머지 과목은 related에 CRS ID로 연결한다 |
 | `review_type` | 예 | daily, weekly, exam-prep, concept, custom |
 | `targets` | 예 | 복습 대상 LEC·CON·EXM·PEX·QST 등 ID 목록 |
 | `scheduled_on` | 예 | 복습 예정일 YYYY-MM-DD 또는 null |
@@ -85,6 +85,6 @@ next_review: null
 
 ## Identity
 
-권장 형태는 `REV-<과목 slug>-<날짜>-<review_type>`이다. 예: `REV-general-physics-2-20260913-weekly`. 날짜는 그 회차의 예정일 또는 수행일이다. 여러 과목 공용 회차는 과목 부분을 빼고 `REV-<날짜>-<review_type>`을 쓴다. 같은 날 같은 유형을 두 번 하면 뒤에 일련번호를 덧붙인다.
+권장 형태는 `REV-<과목 slug>-<날짜>-<review_type>`이다. 예: `REV-general-physics-2-20260913-weekly`. 날짜는 그 회차의 예정일 또는 수행일이다. 여러 과목에 걸친 회차도 주 과목의 course-slug를 쓰며 과목 부분을 뺀 ID를 만들지 않는다. 같은 날 같은 유형을 두 번 하면 뒤에 일련번호를 덧붙인다.
 
 형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.

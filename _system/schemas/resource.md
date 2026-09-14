@@ -1,6 +1,6 @@
 # Resource Schema
 
-자료 하나를 등록해 여러 강의에서 재사용하는 RES 노트의 규격이다. 공통 필드는 저장소의 `_system/schemas/common.md`를 따른다. 저장 위치는 `study/resources/`다.
+자료 하나를 등록해 여러 강의에서 재사용하는 RES 노트의 규격이다. 공통 필드는 저장소의 `_system/schemas/common.md`를 따른다. 저장 위치는 canonical home인 CRS의 `study/<term>/<course-slug>/resources/`다. 경로 규칙은 common.md의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 
@@ -20,7 +20,7 @@ updated: 2026-09-08
 course: CRS-20260908-01
 resource_type: slides
 authority: professor
-source: raw/resources/chapter03.pdf
+source: raw/2026-2/general-physics-1/resources/chapter03.pdf
 page_count: 67
 lectures: []
 ---
@@ -32,7 +32,7 @@ lectures: []
 |---|---|---|
 | 공통 9개 필드 | 예 | common.md를 따른다. type은 resource, id는 RES-로 시작한다. |
 | status | 예 | draft, needs-review, active, archived 중 하나 |
-| course | 예 | 주 사용 과목 CRS ID. 공용 자료로 과목이 없으면 null |
+| course | 예 | canonical home인 CRS ID. 자료를 처음 등록한 과목이며 null을 쓰지 않는다. 과목이 미확정이면 inbox에 보류한다 |
 | resource_type | 예 | slides, textbook, handout, paper, article, practice, lab, video, dataset, other |
 | authority | 예 | professor, official-lms, textbook, student-provided, external, ai-generated, unknown |
 | source | 예 | 실제 원본의 루트 기준 경로 또는 접근 가능한 외부 참조 |
@@ -41,7 +41,9 @@ lectures: []
 
 related는 추가 과목 CRS나 다른 자료 등 전용 필드 밖의 관계에 사용한다. 같은 교재가 여러 과목에서 사용돼도 RES를 중복 생성하지 않는다. 전용 필드에 있는 ID를 related에 반복하지 않는다.
 
-course에는 주 사용 과목 하나만 들어간다. 추가 과목은 related에 CRS ID로 기록하며, 이때 그 과목의 Dashboard 조회 대상에도 포함된다. course 필드만으로 조회하면 공유 자료가 누락되므로 조회는 course와 related를 함께 확인한다. 자세한 조회 규칙은 course.md의 Course Identity and Dashboard를 따른다.
+course에는 자료를 처음 등록한 과목(canonical home) 하나만 들어간다. RES 노트는 그 과목의 `study/<term>/<course-slug>/resources/`에, 로컬 원본은 `raw/<term>/<course-slug>/resources/`에 한 번만 저장한다. 다른 과목에서 재사용하면 복제하지 않고 related에 그 과목의 CRS ID를 추가하며, 이때 그 과목의 Dashboard 조회 대상에도 포함된다. course 필드만으로 조회하면 공유 자료가 누락되므로 조회는 course와 related를 함께 확인한다. 자세한 조회 규칙은 course.md의 Course Identity and Dashboard를 따른다.
+
+같은 자료인지 판단하는 중복 검사는 항상 `study/` 전체의 RES를 대상으로 한다. 나중에 더 많이 쓰는 과목이 생겨도 course를 바꾸지 않는다. canonical home을 다른 과목으로 옮기는 것은 예외적인 과목 재배정 migration이며 common.md의 Storage Paths 절을 따른다.
 
 authority는 자료의 출처 분류이며 사실의 정확도나 충돌 해결 우선순위를 자동으로 보장하지 않는다. LMS에 올라온 교수 자료는 작성자가 확인되면 professor로 두고 배포 경로를 본문에 기록한다. 작성자·출처를 알 수 없으면 unknown과 needs-review를 사용한다.
 
@@ -54,7 +56,7 @@ authority는 자료의 출처 분류이며 사실의 정확도나 충돌 해결 
 
 ## Identity and Versions
 
-- 권장 ID 형태는 `RES-<과목 slug>-<자료 slug>`다. 예: `RES-general-physics-2-ch03-slides`. 자료는 내용으로 특정되므로 등록일을 넣지 않는다. 같은 자료를 두 기기에서 등록해도 같은 ID가 나오게 하는 것이 목적이다. 공용 자료로 주 과목이 없으면 과목 부분을 뺀다. 개정판은 뒤에 판 구분자를 덧붙인다. 예: `...-ch03-slides-v2`. 형식 계약은 [common.md](common.md)의 `id` 절을 따른다.
+- 권장 ID 형태는 `RES-<과목 slug>-<자료 slug>`다. 예: `RES-general-physics-2-ch03-slides`. 자료는 내용으로 특정되므로 등록일을 넣지 않는다. 같은 자료를 두 기기에서 등록해도 같은 ID가 나오게 하는 것이 목적이다. `<과목 slug>`는 canonical home 과목의 course-slug이며 과목 부분을 뺀 ID를 만들지 않는다. 개정판은 뒤에 판 구분자를 덧붙인다. 예: `...-ch03-slides-v2`. 형식 계약은 [common.md](common.md)의 `id` 절을 따른다.
 - 파일명만으로 동일 자료라고 판단하지 않는다. 제목, 작성자, 판·버전, 원본 내용 또는 가능한 경우 파일 해시를 비교한다.
 - 같은 자료의 재입력·경로 이동은 기존 ID를 유지한다.
 - 내용과 페이지가 달라진 개정판은 새 RES로 구분하고 related와 본문에서 이전 판과 연결한다. 과거 Lecture의 페이지 참조를 새 판으로 자동 교체하지 않는다.

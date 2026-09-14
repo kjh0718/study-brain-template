@@ -14,17 +14,19 @@
 
 | 템플릿 | 새 노트 저장 위치 | 규격 |
 |---|---|---|
-| `course.md` | `study/courses/` | [course](../schemas/course.md) |
-| `lecture.md` | `study/lectures/` | [lecture](../schemas/lecture.md) |
-| `resource.md` | `study/resources/` | [resource](../schemas/resource.md) |
+| `course.md` | `study/<term>/<course-slug>/course.md` | [course](../schemas/course.md) |
+| `lecture.md` | `study/<term>/<course-slug>/lectures/` | [lecture](../schemas/lecture.md) |
+| `resource.md` | `study/<term>/<course-slug>/resources/` | [resource](../schemas/resource.md) |
 | `concept.md` | `wiki/concepts/` | [concept](../schemas/concept.md) |
-| `assignment.md` | `study/assignments/` | [assignment](../schemas/assignment.md) |
-| `exam.md` | `study/exams/` | [exam](../schemas/exam.md) |
-| `past-exam.md` | `study/past-exams/` | [past-exam](../schemas/past-exam.md) |
-| `course-fact.md` | `study/course-facts/` | [course-fact](../schemas/course-fact.md) |
-| `question.md` | `study/questions/` | [question](../schemas/question.md) |
-| `review.md` | `study/reviews/` | [review](../schemas/review.md) |
+| `assignment.md` | `study/<term>/<course-slug>/assignments/` | [assignment](../schemas/assignment.md) |
+| `exam.md` | `study/<term>/<course-slug>/exams/` | [exam](../schemas/exam.md) |
+| `past-exam.md` | `study/<term>/<course-slug>/past-exams/` | [past-exam](../schemas/past-exam.md) |
+| `course-fact.md` | `study/<term>/<course-slug>/course-facts/` | [course-fact](../schemas/course-fact.md) |
+| `question.md` | `study/<term>/<course-slug>/questions/` | [question](../schemas/question.md) |
+| `review.md` | `study/<term>/<course-slug>/reviews/` | [review](../schemas/review.md) |
 | `cluster.md` | `wiki/clusters/` | [cluster](../schemas/cluster.md) |
+
+`<term>`과 `<course-slug>`는 [common](../schemas/common.md)의 Storage Paths 절을 따른다. course-scoped 노트는 `course`가 가리키는 CRS의 과목 폴더 아래에 둔다.
 
 공통 필드 규칙은 [common](../schemas/common.md)을 함께 읽는다.
 
@@ -37,10 +39,11 @@
 | `{{id}}` | 해당 타입 접두사를 쓴 영구 ID. 형식 계약과 Type별 권장 형태는 [common](../schemas/common.md)의 `id` 절을 따른다. 예: `LEC-20260908-01`, `CON-momentum` |
 | `{{title}}` | 사람이 읽을 제목 |
 | `{{created}}` / `{{updated}}` | `YYYY-MM-DD` |
-| `{{course_id}}` | 실제 존재하는 `CRS-` ID |
+| `{{course_id}}` | 실제 존재하는 `CRS-` ID. course-scoped 노트는 `null`을 쓰지 않는다 |
+| `{{term}}` | 수강 학기. `YYYY-1`, `YYYY-2`, `YYYY-summer`, `YYYY-winter` 중 하나 |
 | `{{subject_id}}` | 사실의 대상 노트 ID |
 | `{{date}}` | 실제 날짜 `YYYY-MM-DD` |
-| `{{source}}` | 로컬 원본의 저장소 루트 기준 경로, 또는 접근 가능한 외부 URL |
+| `{{source}}` | 로컬 원본의 저장소 루트 기준 경로(`raw/<term>/<course-slug>/...`), 또는 접근 가능한 외부 URL |
 | `{{exam_type}}` `{{resource_type}}` `{{authority}}` `{{provenance}}` `{{fact_type}}` `{{question_type}}` `{{review_type}}` | 각 템플릿 상단 주석에 적힌 허용 값 중 하나 |
 
 자리표시자는 YAML 문자열로 두기 위해 따옴표로 감싸 두었다. 치환한 뒤 날짜와 숫자는 따옴표를 빼도 되고 그대로 두어도 된다.
@@ -58,7 +61,8 @@
 ## 필수 정보가 없을 때
 
 - 스키마가 `null`을 허용하는 필드는 `null`을 그대로 둔다. 템플릿에는 이미 그렇게 들어 있다.
-- `null`을 허용하지 않는 필수 필드를 채울 수 없으면 그 노트를 완성본으로 만들지 않는다. 원본은 `raw/`에 보존하고 `inbox/`에 보류 메모를 남긴다.
+- `null`을 허용하지 않는 필수 필드를 채울 수 없으면 그 노트를 완성본으로 만들지 않는다. 과목과 학기가 확정됐으면 원본은 `raw/<term>/<course-slug>/`에 보존하고 `inbox/`에 보류 메모를 남긴다.
+- course-scoped 노트의 `course`와 Course의 `term`은 `null`로 채우지 않는다. 과목이나 학기를 확정할 수 없으면 노트를 만들지 않고 입력을 `inbox/`에 남긴다.
 - 값을 지어내지 않는다. 모르는 항목은 각 타입의 검증 필요 계열 절에 무엇을 확인해야 하는지 적는다.
 - 관계 목록은 `[]`로 시작한다. 아직 없는 노트의 ID를 미리 적지 않는다.
 
@@ -66,7 +70,7 @@
 
 기본 frontmatter에서 빠져 있다. 값을 확인했을 때만 추가한다.
 
-- `course.md`: `code`, `term`, `instructor`
+- `course.md`: `code`, `instructor`
 - `lecture.md`: `week`
 - `resource.md`: `page_count`
 - `assignment.md`: `submission_method`

@@ -1,6 +1,6 @@
 # Question Schema
 
-QST 노트는 이해 또는 사실 확인이 필요한 독립 질문 하나와 해결 근거를 관리한다. 저장 위치는 `study/questions/`다. [공통 규칙](common.md)을 함께 적용한다.
+QST 노트는 이해 또는 사실 확인이 필요한 독립 질문 하나와 해결 근거를 관리한다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/questions/`다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 
@@ -17,7 +17,7 @@ topics: []
 related: []
 created: 2026-09-08
 updated: 2026-09-08
-course: null
+course: CRS-20260908-01
 question_type: conceptual
 sources: []
 answer_sources: []
@@ -31,7 +31,7 @@ resolved_on: null
 
 | 필드 | 필수 | 규칙 |
 |---|---|---|
-| `course` | 예 | 관련 CRS ID. 공용 질문이면 null |
+| `course` | 예 | 관련 CRS ID. null을 쓰지 않는다. 과목을 특정할 수 없는 질문은 QST를 만들지 않고 사용자에게 과목을 확인한다 |
 | `question_type` | 예 | conceptual, clarification, source-verification, problem-solving, other |
 | `sources` | 예 | 질문 발생 근거가 되는 구조화 노트 ID 목록 |
 | `answer_sources` | 예 | 답변 근거가 되는 구조화 노트 ID 목록 |
@@ -78,6 +78,6 @@ resolved_on: null
 
 ## Identity
 
-권장 형태는 `QST-<과목 slug>-<날짜>-<NN>`이다. 예: `QST-general-physics-2-20260908-01`. 날짜는 질문이 발생한 날이다. 과목에 종속되지 않는 질문이면 과목 부분을 빼고 `QST-<날짜>-<NN>`을 쓴다. 번호는 (QST, 과목, 날짜) 범위에서만 센다.
+권장 형태는 `QST-<과목 slug>-<날짜>-<NN>`이다. 예: `QST-general-physics-2-20260908-01`. 날짜는 질문이 발생한 날이다. `<과목 slug>`는 연결된 CRS의 course-slug이며, 과목 부분을 뺀 ID를 만들지 않는다. 번호는 (QST, 과목, 날짜) 범위에서만 센다.
 
 형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.

@@ -1,6 +1,6 @@
 # Course Fact Schema
 
-FAC 노트는 과목 운영의 근거 있는 사실 한 건을 기록하고 변경 이력을 보존한다. 저장 위치는 `study/course-facts/`다. [공통 규칙](common.md)을 함께 적용한다.
+FAC 노트는 과목 운영의 근거 있는 사실 한 건을 기록하고 변경 이력을 보존한다. 저장 위치는 연결된 CRS의 `study/<term>/<course-slug>/course-facts/`다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 

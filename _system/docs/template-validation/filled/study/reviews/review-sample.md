@@ -18,7 +18,7 @@ completed_on: null
 next_review: null
 ---
 
-<!-- course: 한 과목의 복습이면 CRS ID를 넣는다. 여러 과목 공용이면 null을 유지한다. -->
+<!-- course: 주 관련 과목의 CRS ID. null을 쓰지 않는다. 여러 과목에 걸친 회차는 주 과목에 두고 나머지 과목은 related에 CRS ID로 적는다. -->
 <!-- review_type: daily, weekly, exam-prep, concept, custom -->
 <!-- targets: 복습 대상 LEC·CON·EXM·PEX·QST 등의 ID. 계획 초안에서는 []를 허용하지만 실제 시작 시 1개 이상이어야 한다. -->
 <!-- completed_on: 실제로 완료했을 때만 넣는다. archived로 옮겨도 지우지 않는다. -->

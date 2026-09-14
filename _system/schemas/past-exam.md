@@ -1,6 +1,6 @@
 # Past Exam Schema
 
-PEX 노트는 과거 시험 원본 또는 복원 자료 한 묶음의 출처와 문제 분석을 관리한다. 저장 위치는 `study/past-exams/`다. [공통 규칙](common.md)을 함께 적용한다.
+PEX 노트는 과거 시험 원본 또는 복원 자료 한 묶음의 출처와 문제 분석을 관리한다. 저장 위치는 이 기출을 현재 사용하는 CRS의 `study/<term>/<course-slug>/past-exams/`다. 시험이 시행된 과거 학기의 폴더에 두지 않는다. [공통 규칙](common.md)을 함께 적용하며 경로 규칙은 그 문서의 Storage Paths 절을 따른다.
 
 ## Frontmatter
 
@@ -17,10 +17,10 @@ topics: []
 related: []
 created: 2026-09-08
 updated: 2026-09-08
-course: null
+course: CRS-20260908-01
 year: 2024
 exam_type: midterm
-source: raw/past-exams/physics-2024-midterm.pdf
+source: raw/2026-2/general-physics-1/past-exams/physics-2024-midterm.pdf
 authority: student-provided
 provenance: reconstructed
 concepts: []
@@ -33,10 +33,10 @@ concepts: []
 
 | 필드 | 필수 | 규칙 |
 |---|---|---|
-| `course` | 예 | 연결 가능한 현재 CRS ID. 미연결이면 null |
+| `course` | 예 | 이 기출을 현재 사용하는 CRS ID. null을 쓰지 않는다. 과목이 미확정이면 inbox에 보류한다 |
 | `year` | 예 | 확인된 시험 연도 정수 또는 null |
 | `exam_type` | 예 | midterm, final, quiz, practical, other, unknown |
-| `source` | 예 | raw/past-exams/ 원본 경로 또는 실제 외부 참조 |
+| `source` | 예 | `raw/<term>/<course-slug>/past-exams/` 원본 경로 또는 실제 외부 참조 |
 | `authority` | 예 | 공통 출처 분류값 |
 | `provenance` | 예 | official, reconstructed, unknown |
 | `concepts` | 예 | 관련 CON ID 목록 |
@@ -74,6 +74,8 @@ concepts: []
 
 - 원본 시험과 학생 복원본을 provenance로 구분한다. 과거 강사·과목명은 확인된 범위만 본문에 기록한다.
 - 같은 파일·시험의 재입력은 기존 노트를 사용한다. 부분 복원본과 다른 판본은 동일성 확인 후 연결한다.
+- 저장 폴더의 `<term>`은 이 기출을 사용하는 CRS의 학기이며 시험이 시행된 학기가 아니다. 실제 시행 연도·학기는 새 필드를 만들지 않고 `year`, ID의 학기 부분, 본문 `자료 식별 / 출처` 절에 기록한다.
+- 이미 등록된 기출을 다른 CRS가 다시 사용하면 새 PEX를 만들지 않는다. 처음 등록된 CRS 폴더의 PEX를 그대로 두고 related에 새로 사용하는 CRS ID를 추가한다. 중복 검사는 `study/` 전체에서 한다.
 - 각 문항은 원본 페이지·문항 번호를 남긴다. 번호가 없으면 로컬 식별 표기를 사용하고 원본 번호인 것처럼 표시하지 않는다.
 - 원본 정답, 학생 해설, AI 풀이를 분리한다. analyzed는 공식 정답 검증 완료라는 뜻이 아니다.
 - 기출 한 번으로 보편적 패턴이나 다음 시험 출제를 확정하지 않는다. 표본 수와 출처 범위를 기록한다.
@@ -84,6 +86,6 @@ concepts: []
 
 ## Identity
 
-권장 형태는 `PEX-<과목 slug>-<연도>-<학기>-<exam_type>`이다. 예: `PEX-general-physics-2-2024-2-midterm`. 회차가 ID를 특정하므로 등록일을 넣지 않는다. 같은 회차의 다른 판본이 별도 자료로 확인되면 뒤에 구분자를 덧붙인다. 예: `...-midterm-b`. 어느 회차인지 확인할 수 없으면 PEX를 만들지 않고 보류한다.
+권장 형태는 `PEX-<과목 slug>-<연도>-<학기>-<exam_type>`이다. 예: `PEX-general-physics-2-2024-2-midterm`. 회차가 ID를 특정하므로 등록일을 넣지 않는다. `<과목 slug>`는 이 기출을 처음 등록한 CRS의 course-slug이고, `<연도>-<학기>`는 실제 시험이 시행된 시기다. 같은 회차의 다른 판본이 별도 자료로 확인되면 뒤에 구분자를 덧붙인다. 예: `...-midterm-b`. 어느 회차인지 확인할 수 없으면 PEX를 만들지 않고 보류한다.
 
 형식 계약과 Type별 권장 형태는 [common.md](common.md)의 `id` 절이 정본이다. 노트 제목·날짜·파일명이 바뀌어도 기존 ID는 유지하며, 권장 형태로 바꾸려고 기존 ID를 재발급하지 않는다.

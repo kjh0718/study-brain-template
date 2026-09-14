@@ -35,8 +35,9 @@ def base(t, ident, title, **kw):
     return s
 
 N = {}
-N["course"] = base("course","CRS-20260908-01","일반물리학 1", status="active", topics="\n  - classical-mechanics")
-N["course"] = add_after(N["course"], "updated: "+D, 'code: PHY101\nterm: "2026-2"\ninstructor: 홍길동')
+N["course"] = base("course","CRS-20260908-01","일반물리학 1", status="active", term='"2026-2"',
+                   topics="\n  - classical-mechanics")
+N["course"] = add_after(N["course"], "updated: "+D, 'code: PHY101\ninstructor: 홍길동')
 N["course"] = fill(N["course"], "Related Notes",
  """<!-- AUTO-MANAGED:start -->
 - LEC-20260908-01 | 운동량과 충격량 | processed | 주 과목
