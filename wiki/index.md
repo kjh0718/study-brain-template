@@ -21,9 +21,9 @@
 
 ## 무엇이 여기 오지 않는가
 
-- 특정 수업 한 회차의 내용 → `study/lectures/`
-- 특정 학기의 시험·과제·일정 → `study/exams/`, `study/assignments/`, `study/course-facts/`
-- 기출 분석 → `study/past-exams/`
+- 특정 수업 한 회차의 내용 → `study/<term>/<course-slug>/lectures/`
+- 특정 학기의 시험·과제·일정 → `study/<term>/<course-slug>/exams/`, `study/<term>/<course-slug>/assignments/`, `study/<term>/<course-slug>/course-facts/`
+- 기출 분석 → `study/<term>/<course-slug>/past-exams/`
 - 원본 자료 → `raw/`
 
 과목·학기 맥락이 있어야만 의미가 있는 것은 `study/`에 둔다. 그 맥락을 떼어도 성립하는 것만 여기 온다.

@@ -12,32 +12,34 @@ Study Brain 시작 화면이다. 각 영역으로 이동하는 지도이며 데�
 
 Obsidian에서는 [`study-overview`](_system/views/study-overview.base) 표 뷰가 아래 다섯 가지를 자동으로 모아 준다. 열어서 상단 탭으로 전환한다.
 
-아래 표는 Obsidian이 없을 때도 쓰는 이동 경로다.
+아래 표는 각 현황을 확인하는 경로다. Obsidian이 없으면 [Study 구조 안내](study/README.md)를 따라 과목 노트를 찾고 frontmatter로 검색한다.
 
 | | 어디 | 무엇을 본다 |
 |---|---|---|
-| 마감 | [Assignments](study/assignments/README.md) | `status: open`, `in-progress`인 과제 |
-| 시험 | [Exams](study/exams/README.md) | `status: planned`인 시험과 확정 범위 |
+| 마감 | [진행 중인 과제](_system/views/study-overview.base) | `status: open`, `in-progress`인 과제 |
+| 시험 | [예정된 시험](_system/views/study-overview.base) | `status: planned`인 시험과 범위 확정 상태 |
 | 확인 필요 | 저장소 전체 | `status: needs-review`인 노트. 날짜·출처·충돌이 미확정이라는 뜻이다 |
-| 미해결 질문 | [Questions](study/questions/README.md) | `status: open`, `investigating`인 질문 |
-| 다음 복습 | [Reviews](study/reviews/README.md) | `next_review`가 가까운 회차 |
+| 미해결 질문 | [열린 질문](_system/views/study-overview.base) | `status: open`, `investigating`인 질문 |
+| 다음 복습 | [진행/예정 복습](_system/views/study-overview.base) | `planned`, `in-progress` 회차의 `scheduled_on`과 `next_review` |
 
-`needs-review`가 쌓이면 사람이 확인해야 한다는 신호다. 에이전트가 임의로 확정하지 않고 남겨 둔 것이다.
+`needs-review`가 쌓이면 사람이 확인해야 한다는 신호다. 에이전트가 임의로 확정하지 않고 남겨 둔 것이다. `study-overview`의 확인 필요 탭은 `study/`만 조회하므로 전역 `wiki/`까지 확인하려면 저장소 전체를 검색한다.
 
 ## 과목
 
-[Courses](study/courses/README.md) — 과목마다 CRS 노트 하나가 대시보드 역할을 한다. 그 과목의 강의·과제·시험·자료·사실이 거기서 모인다.
+[과목 폴더 구조](study/README.md) — `study/<term>/<course-slug>/course.md`의 CRS 노트가 과목 대시보드 역할을 한다. 그 과목의 강의·과제·시험·자료·사실이 거기서 모인다.
 
 과목 단위로 볼 때는 CRS 노트를 먼저 연다. 이 화면이 아니라 그쪽이 과목의 시작점이다.
 
 ## 수업과 자료
 
+[Study 구조 안내](study/README.md)에서 아래 종류별 저장 위치를 확인한다.
+
 | 영역 | 담는 것 |
 |---|---|
-| [Lectures](study/lectures/README.md) | 실제 수업 세션 하나씩. 요약, 교수님 강조, 개념, 질문 |
-| [Resources](study/resources/README.md) | 자료 노트. 자료 하나를 여러 강의가 페이지 범위별로 공유한다 |
-| [Past Exams](study/past-exams/README.md) | 기출·족보의 문항별 분석 |
-| [Course Facts](study/course-facts/README.md) | 일정·정책 등 운영 사실과 변경 이력 |
+| Lectures | 실제 수업 세션 하나씩. 요약, 교수님 강조, 개념, 질문 |
+| Resources | 자료 노트. 자료 하나를 여러 강의가 페이지 범위별로 공유한다 |
+| Past Exams | 기출·족보의 문항별 분석 |
+| Course Facts | 일정·정책 등 운영 사실과 변경 이력 |
 
 ## 장기 지식
 
@@ -55,7 +57,7 @@ Obsidian에서는 [`study-overview`](_system/views/study-overview.base) 표 뷰�
 | 영역 | 담는 것 |
 |---|---|
 | [Inbox](inbox/README.md) | 아직 분류하지 못한 입력. 비어 있는 것이 정상이다 |
-| [Raw](raw/transcripts/README.md) | 원본 보존 영역. 전사, 자료, 기출, 과제, 공지, 문서 |
+| [Raw](raw/README.md) | 학기·과목별 원본 보존 영역. 전사, 강의자료·일반 자료, 기출, 과제, 공지 |
 
 `raw/`의 원본은 읽기만 한다. 정리는 `study/`와 `wiki/`의 구조화 노트에서 한다.
 
