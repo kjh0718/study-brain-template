@@ -1,6 +1,10 @@
 properties:
   file.name:
     displayName: 노트
+  note.title:
+    displayName: 제목
+  file.folder:
+    displayName: 폴더
   note.status:
     displayName: 상태
   note.course:
@@ -40,9 +44,11 @@ views:
       direction: ASC
     order:
       - file.name
+      - note.title
       - note.date
       - note.status
       - note.topics
+      - file.folder
 
   - type: table
     name: 개념
@@ -51,6 +57,7 @@ views:
         - 'note.type == "concept"'
     order:
       - file.name
+      - note.title
       - note.status
       - note.topics
       - note.aliases
@@ -63,10 +70,12 @@ views:
         - 'note.type == "resource"'
     order:
       - file.name
+      - note.title
       - note.resource_type
       - note.authority
       - note.status
       - note.course
+      - file.folder
 
   - type: table
     name: 기출
@@ -75,8 +84,10 @@ views:
         - 'note.type == "past-exam"'
     order:
       - file.name
+      - note.title
       - note.year
       - note.exam_type
       - note.authority
       - note.provenance
       - note.status
+      - file.folder

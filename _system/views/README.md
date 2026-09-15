@@ -54,6 +54,12 @@ Cluster 뷰는 두지 않는다. Cluster는 표로 훑는 것이 아니라 열�
 
 **실제 학습 노트가 없는 동안에는 모든 뷰가 0행인 것이 정상이다.**
 
+## 같은 파일명 구분
+
+`study/`는 `study/<term>/<course-slug>/<kind>/` 중첩 구조다. `file.inFolder("study")`는 하위 폴더까지 포함하므로 학기·과목 폴더가 늘어도 뷰를 고치지 않는다.
+
+CRS는 과목마다 파일명이 모두 `course.md`이고, 다른 노트도 과목끼리 파일명이 겹칠 수 있다. 그래서 파일명 옆에 frontmatter `title`(`note.title`, 제목)과 파일이 있는 폴더(`file.folder`, 폴더)를 열로 보여 준다. 폴더의 `<term>/<course-slug>`로 학기와 과목을 구분한다. 모든 노트가 `wiki/concepts/`에 있는 개념 뷰에는 제목 열만 더했다.
+
 ## 행 정렬
 
 파일의 `order`는 **열 순서**다. 행 정렬 키는 Bases 문법에 없다. Obsidian에서 열 머리를 눌러 정렬하면 그 설정이 이 파일에 저장된다.

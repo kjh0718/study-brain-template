@@ -1,6 +1,10 @@
 properties:
   file.name:
     displayName: 노트
+  note.title:
+    displayName: 제목
+  file.folder:
+    displayName: 폴더
   note.type:
     displayName: 타입
   note.status:
@@ -45,10 +49,12 @@ views:
             - 'note.status == "in-progress"'
     order:
       - file.name
+      - note.title
       - note.due
       - note.due_status
       - note.status
       - note.course
+      - file.folder
 
   - type: table
     name: 예정된 시험
@@ -58,10 +64,12 @@ views:
         - 'note.status == "planned"'
     order:
       - file.name
+      - note.title
       - note.date
       - note.date_status
       - note.scope_status
       - note.course
+      - file.folder
 
   - type: table
     name: 열린 질문
@@ -73,10 +81,12 @@ views:
             - 'note.status == "investigating"'
     order:
       - file.name
+      - note.title
       - note.status
       - note.question_type
       - note.course
       - note.created
+      - file.folder
 
   - type: table
     name: 진행/예정 복습
@@ -88,10 +98,12 @@ views:
             - 'note.status == "in-progress"'
     order:
       - file.name
+      - note.title
       - note.scheduled_on
       - note.next_review
       - note.review_type
       - note.course
+      - file.folder
 
   - type: table
     name: 확인 필요
@@ -100,6 +112,8 @@ views:
         - 'note.status == "needs-review"'
     order:
       - file.name
+      - note.title
       - note.type
       - note.updated
       - note.course
+      - file.folder
