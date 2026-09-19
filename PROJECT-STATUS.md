@@ -1,6 +1,6 @@
 # Study Brain Template — 현재 상태
 
-최종 확인일: 2026-09-13
+최종 확인일: 2026-09-19
 
 이 문서는 무엇이 실제로 만들어졌고 무엇이 아직 없는지를 기록한다. 운영 규칙은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)에, 소개는 [`README.md`](README.md)에 있다.
 
@@ -10,13 +10,15 @@
 
 데이터 스키마, 운영 기준서, L1~L9 실행 문서, 노트 템플릿, 에이전트 진입점, Core Skill 8개가 있다. Skill로 각 레이어를 호출할 수 있고, Scenario A~K 통합 시험과 런타임 시험 A~I로 문서들이 서로 일관되는지 확인했고, Claude Code와 Codex에서 실제로 Skill을 호출해 실행 경로도 확인했다. 세션 시작 컨텍스트 Hook은 Claude Code와 Codex 양쪽에 등록했고 Windows에서 실제 세션으로 확인했다. POSIX는 아직 확인하지 않았다. 실제 사용자 학습 자료로 한 end-to-end 검증도 아직 하지 않았다.
 
+저장 위치는 타입별 고정 폴더에서 학기·과목 중심(`study/<term>/<course-slug>/`, `raw/<term>/<course-slug>/`)으로 옮겼다. 스키마, 운영 기준서, 워크플로, Skill, 검증 fixture가 모두 이 구조를 따른다. 자세한 범위는 아래 3.13에 있다.
+
 이 저장소는 `study-brain-template` **개발 저장소**로 쓴다. 실제 학습 자료는 템플릿 완성 후 별도 비공개 저장소에 담는다.
 
 ## 2. Phase별 상태
 
 | Phase | 상태 | 근거 |
 |---|---|---|
-| P1 저장소 골격 | **complete** | 폴더 구조, README-per-folder, 최소 `.gitignore`. `.gitkeep` 없음 |
+| P1 저장소 골격 | **complete** | 고정 폴더 구조와 README, 최소 `.gitignore`. 동적 과목 폴더에는 README·`.gitkeep` 없음 |
 | P2 Schema Layer | **complete** | `common.md` + 11개 Type 스키마. 자동 검사 통과 |
 | P3 SECOND-BRAIN.md | **complete** | 운영 원칙과 L1~L9 판단 기준 |
 | P4 Workflows | **complete** | `_system/workflows/`에 L1~L9 실행 문서 9개 + README |
@@ -37,15 +39,16 @@ P9는 `python _system/docs/run_all.py`로 6개 스위트를 한 번에 돌린다
 
 ```text
 inbox/    분류 전 입력
-raw/      원본 보존 (transcripts, resources, past-exams, assignments, notices, documents)
-study/    과목 종속 구조화 노트 (courses, lectures, resources, assignments,
-          exams, past-exams, course-facts, questions, reviews)
-wiki/     장기 지식 (concepts, clusters, patterns)
+raw/      원본 보존. <term>/<course-slug>/ 아래 transcripts, resources,
+          assignments, past-exams, notices
+study/    과목 종속 구조화 노트. <term>/<course-slug>/ 아래 course.md와 lectures,
+          resources, assignments, exams, past-exams, course-facts, questions, reviews
+wiki/     장기 지식 (concepts, clusters, patterns). 과목으로 나누지 않는다
 _system/  schemas, templates, workflows, docs, log.md
 .agents/  .claude/   에이전트 진입 위치
 ```
 
-각 주요 폴더의 `README.md`는 목적, 여기 두는 것, 여기 두지 않는 것, 규격, 관련 워크플로를 명시한다. `.gitkeep`을 쓰지 않는다.
+고정 폴더(`inbox/`, `study/`, `raw/`, `wiki/`와 `_system/` 하위)의 `README.md`가 목적, 여기 두는 것, 여기 두지 않는 것, 규격, 관련 워크플로를 명시한다. 동적 `<term>/<course-slug>/<kind>` 폴더에는 README를 만들지 않으며, 그 구조 설명은 [`study/README.md`](study/README.md)와 [`raw/README.md`](raw/README.md)가 맡는다. `.gitkeep`을 쓰지 않는다.
 
 현재 [`.gitignore`](.gitignore)는 Obsidian workspace·graph, Claude worktree, Skill runtime workspace·manifest·보호 snapshot, Python cache, `.claude/settings.local.json`, `.env`를 제외한다. 공유 Hook·Skill 설정과 검증용 fixture는 유지한다.
 
@@ -55,15 +58,15 @@ _system/  schemas, templates, workflows, docs, log.md
 
 | Prefix | Type | 위치 |
 |---|---|---|
-| CRS | course | `study/courses/` |
-| LEC | lecture | `study/lectures/` |
-| RES | resource | `study/resources/` |
-| ASM | assignment | `study/assignments/` |
-| EXM | exam | `study/exams/` |
-| PEX | past-exam | `study/past-exams/` |
-| FAC | course-fact | `study/course-facts/` |
-| QST | question | `study/questions/` |
-| REV | review | `study/reviews/` |
+| CRS | course | `study/<term>/<course-slug>/course.md` |
+| LEC | lecture | `study/<term>/<course-slug>/lectures/` |
+| RES | resource | `study/<term>/<course-slug>/resources/` |
+| ASM | assignment | `study/<term>/<course-slug>/assignments/` |
+| EXM | exam | `study/<term>/<course-slug>/exams/` |
+| PEX | past-exam | `study/<term>/<course-slug>/past-exams/` |
+| FAC | course-fact | `study/<term>/<course-slug>/course-facts/` |
+| QST | question | `study/<term>/<course-slug>/questions/` |
+| REV | review | `study/<term>/<course-slug>/reviews/` |
 | CON | concept | `wiki/concepts/` |
 | CLU | cluster | `wiki/clusters/` |
 
@@ -109,7 +112,7 @@ _system/  schemas, templates, workflows, docs, log.md
 
 ### 3.7 사용자 문서
 
-`README.md`(소개·구조·현재 상태), `HOME.md`(Obsidian 시작 화면), `wiki/index.md`(장기 지식 색인), `wiki/clusters/_topics.md`(topic 어휘 registry, 아직 비어 있음).
+`README.md`(소개·구조·현재 상태), `HOME.md`(Obsidian 시작 화면), `study/README.md`와 `raw/README.md`(학기·과목 저장 규칙), `wiki/index.md`(장기 지식 색인), `wiki/clusters/_topics.md`(topic 어휘 registry, 아직 비어 있음).
 
 ### 3.12 Obsidian 뷰
 
@@ -128,6 +131,30 @@ _system/  schemas, templates, workflows, docs, log.md
 
 `.obsidian/graph.json`은 개인 UI 값이 섞이므로 저장소에 두지 않고 권장 필터만 문서로 남겼다. frontmatter의 ID 관계는 Obsidian 링크가 아니므로 Graph의 쓸모는 아직 제한적이며, 이 구조는 P8에서 바꾸지 않았다.
 
+2026-09-19 확인: 두 Base에 제목(`note.title`)과 폴더(`file.folder`) 열을 더했다. 과목마다 CRS 파일명이 모두 `course.md`이므로 제목과 폴더의 `<term>/<course-slug>`로 구분한다. `file.inFolder("study")`가 하위 폴더까지 포함하므로 학기·과목 폴더가 늘어도 뷰 정의는 그대로다. 실제 Obsidian에서 두 Base가 열리고 두 열이 표시되는 것까지 확인했다. 학습 노트가 없어 뷰가 0행인 것은 정상이며, 이 확인은 두 Base의 로드와 열 표시 범위에 한정한다.
+
+### 3.13 학기·과목 저장 구조
+
+저장 위치를 타입별 고정 폴더에서 학기·과목 중심으로 옮겼다. ID 체계와 frontmatter 관계는 그대로 두고 물리적 경로만 바꿨다. 설계 배경은 [`10-DECISIONS.md`](_system/docs/plan/10-DECISIONS.md)의 D-021~D-031에 있다.
+
+| 반영 대상 | 상태 |
+|---|---|
+| 설계 결정 D-021~D-031 | 기록 완료 |
+| `_system/schemas/`, `_system/templates/` | 경로 규약 반영 완료 |
+| `SECOND-BRAIN.md` | 저장 흐름, 입력 형식, 과목 재배정 migration 반영 완료 |
+| `_system/workflows/` | 검색 명령과 예시 경로 갱신 완료 |
+| `.agents/skills/`, `.claude/skills/` | 입력·저장 규칙 반영 완료 |
+| 통합 시험 fixture와 runtime seed | 새 구조로 전환 완료 |
+| 저장 경로 규약 검증 | Scenario S와 저장 경로 오류 fixture 3건 추가 완료 |
+| `study/`, `raw/` 골격 | 타입별 README 15개를 `study/README.md`·`raw/README.md`로 대체 완료 |
+| Obsidian Bases | 제목·폴더 열 추가 완료 |
+
+- CRS는 `study/<term>/<course-slug>/course.md`이고, course-scoped 노트는 `course`가 가리키는 CRS의 과목 폴더 아래 종류 폴더에 둔다. `course: null`을 쓰지 않는다.
+- 공유 RES·PEX는 최초 등록 과목인 canonical home에 한 번만 저장하고 다른 과목은 `related`로 연결한다. 기출 폴더의 `<term>`은 시험 시행 학기가 아니라 그 기출을 사용하는 CRS의 학기다.
+- 과목 재배정은 일반 ingest가 아니라 `SECOND-BRAIN.md` 2.13의 migration으로만 한다. 기존 ID는 재발급하지 않으므로 ID 속 slug와 폴더 slug가 다를 수 있고, 저장 위치 판정은 `course` 필드와 폴더를 기준으로 한다.
+- `raw/documents/`는 폐지했다. 일반 자료는 `resources/`, 공지는 `notices/`, 과제 원본은 `assignments/`로 분류한다.
+- 표준 입력은 자료·기출 PDF와 전사 Markdown(`.md`)이다. PPT/PPTX·HWP/DOCX·이미지와 `.txt`/`.srt`/`.vtt` 전사는 자동 변환하지 않고 `inbox/`에 둔 채 PDF 또는 `.md` 준비를 요청한다. 과목·학기 미확정 입력도 `inbox/`에 남긴다.
+
 ### 3.8 검증 자료
 
 `_system/docs/template-validation/`:
@@ -145,11 +172,13 @@ _system/  schemas, templates, workflows, docs, log.md
 
 `_system/docs/integration-test/`에 Scenario A~K 통합 시험이 있다.
 
-- `build_fixtures.py` — 가상 vault(정상 노트 34건)와 고의 오류 fixture 9건 생성
-- `check_scenarios.py` — Scenario A~K + 공통 스키마 적합성 + L8 탐지 검사. FAIL이 있으면 exit 1
+- `build_fixtures.py` — 가상 vault(구조화 노트 25건과 원본 6건)와 고의 오류 fixture 9건, 저장 경로 오류 fixture 3건 생성
+- `check_scenarios.py` — Scenario A~K + 공통 스키마 적합성 + S 저장 경로 규약 + L8·저장 경로 오류 탐지 검사. FAIL이 있으면 exit 1
 - 보고서와 fixture 설명은 [`integration-test/README.md`](_system/docs/integration-test/README.md)
 
 2026-09-09 결과: **PASS 11 / PASS WITH NOTES 2 / FAIL 0.**
+
+저장 경로 검증을 더한 `27e2b64` 기준 실행 결과는 **PASS 13 / PASS WITH NOTES 2 / FAIL 0**이다. Scenario S가 정상 vault의 저장 경로 규약을 보고, 저장 경로 오류 탐지가 `broken/storage/`의 3건(다른 학기 폴더, canonical home이 아닌 원본 경로, `course: null`)을 각각 의도한 검사 하나로만 잡는지 확인한다.
 
 이 시험이 EXM ID의 학기 간 충돌을 찾아냈고, 승인 후 `EXM-<과목 slug>-<term>-<exam_type>`으로 고쳤다. `common.md`의 Concept–topic 결합 문장, L1 재개 지점 매핑 부재, 어휘표 파싱 위험도 함께 잡아 수정했다.
 
@@ -274,7 +303,7 @@ Claude Code에서 Skill 8개를 직접 호출해 결과를 검증했고(A~I), �
 
 ### 단계 C — L8 자동 검사 도구
 
-현재 `l8-maintenance.md`의 검사 항목 10개를 스크립트로 만든다. 새 의존성 없이 표준 라이브러리와 PyYAML만 쓴다.
+현재 `l8-maintenance.md`의 검사 항목 11개를 스크립트로 만든다. 새 의존성 없이 표준 라이브러리와 PyYAML만 쓴다. 11번(저장 경로 규약)은 통합 시험의 Scenario S가 fixture 범위에서 먼저 검사한다.
 
 ### 단계 D — Obsidian UX (P8) — 완료
 

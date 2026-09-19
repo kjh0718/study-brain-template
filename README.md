@@ -36,16 +36,20 @@ Study Brain은 그 문제를 다룬다. 원본을 증거로 남기고, 정리된
 
 ## Usage — 공부 상황별 예시
 
+표준 입력은 자료·기출 PDF와 전사 Markdown(`.md`)이다. 채팅에 붙여넣은 전사는 원문 그대로 `.md`로 저장한다.
+PPT/PPTX·HWP/DOCX·JPG/JPEG/PNG와 `.txt`/`.srt`/`.vtt` 전사는 자동으로 변환하거나 옮기지 않는다. `inbox/`에 그대로 둔 채 PDF나 `.md` 준비를 요청한다.
+과목이나 학기를 확정하지 못한 입력도 `inbox/`에 남는다.
+
 ### 오늘 수업 전사를 넣는다
 
 > "이건 오늘 일반물리학2 전체 전사본이야."
 
-`ingest-lecture`가 원본을 `raw/transcripts/`에 먼저 보존한 뒤 Lecture 노트를 만들고 자료·개념·질문·과제·시험 언급을 각각 연결한다.
+`ingest-lecture`가 과목과 학기를 먼저 확정하고 원본을 `raw/<term>/<course-slug>/transcripts/`에 보존한 뒤 Lecture 노트를 만들고 자료·개념·질문·과제·시험 언급을 각각 연결한다.
 교수 발언과 AI 해석은 서로 다른 절에 들어가고, 교수 발언에는 원문 위치와 타임스탬프가 붙는다.
 
-### 교수님 PPT를 등록한다
+### 강의자료를 등록한다
 
-> "3장 슬라이드야. 오늘 21~38페이지 봤어."
+> "3장 슬라이드 PDF야. 오늘 21~38페이지 봤어."
 
 `ingest-resource`가 같은 자료가 이미 등록됐는지 먼저 찾고, 없을 때만 새로 만든다.
 자료 하나를 여러 수업이 페이지 범위별로 공유한다. 수업마다 새 노트를 만들지 않는다.
@@ -155,11 +159,34 @@ Study Brain이 다른 노트 템플릿과 다른 지점이다.
 
 ## Repository Structure
 
+저장 위치는 학기와 과목을 기준으로 한다. 아래 `<term>`과 `<course-slug>`는 자리표시자이며, 실제 폴더는 노트를 저장할 때 만든다.
+
 ```text
 inbox/          분류 전 입력
-raw/            원본 보존 (전사, 자료, 기출, 과제, 공지, 문서)
-study/          과목 종속 구조화 노트 (강의, 자료, 과제, 시험, 기출, 사실, 질문, 복습, 과목)
-wiki/           장기 지식 (concepts, clusters, patterns)
+
+study/          과목 종속 구조화 노트
+└─ <term>/
+   └─ <course-slug>/
+      ├─ course.md      CRS
+      ├─ lectures/
+      ├─ resources/
+      ├─ assignments/
+      ├─ exams/
+      ├─ past-exams/
+      ├─ course-facts/
+      ├─ questions/
+      └─ reviews/
+
+raw/            원본 보존
+└─ <term>/
+   └─ <course-slug>/
+      ├─ transcripts/
+      ├─ resources/
+      ├─ assignments/
+      ├─ past-exams/
+      └─ notices/
+
+wiki/           장기 지식 (concepts, clusters, patterns). 과목으로 나누지 않는다
 _system/
   schemas/      11개 타입의 데이터 규격
   templates/    새 노트 작성 양식
@@ -171,7 +198,7 @@ _system/
 .claude/        Claude Code 진입점
 ```
 
-각 폴더의 `README.md`가 그 폴더에 무엇을 두고 무엇을 두지 않는지 정한다.
+과목 폴더의 CRS 노트는 `course.md`다. [`study/README.md`](study/README.md)와 [`raw/README.md`](raw/README.md)가 두 영역의 저장 규칙을 설명하며, 동적 `<term>/<course-slug>/<kind>` 폴더에는 README나 `.gitkeep`을 만들지 않는다. 나머지 고정 폴더는 각자의 `README.md`가 무엇을 두고 무엇을 두지 않는지 정한다.
 [`HOME.md`](HOME.md)는 Obsidian에서 열었을 때의 시작 화면이고, [`_system/views/`](_system/views/README.md)에 자동 갱신되는 표 뷰가 있다.
 
 ## Documentation
@@ -210,6 +237,7 @@ cd _system/docs/template-validation && python check_templates.py
 - P7 Hooks — 세션 시작 컨텍스트 Hook. Claude Code·Codex 모두 Windows에서 확인, POSIX 미확인
 - P8 Obsidian UX — complete. HOME과 Bases 표 뷰 2개, 실제 Obsidian에서 확인
 - P9 Tests — complete. 검증 스위트 6개는 `python _system/docs/run_all.py`로 한 번에 돌린다
+- 저장 구조 — 학기·과목 중심(`study/<term>/<course-slug>/`)으로 전환 완료. 스키마·운영 기준서·워크플로·Skill·검증 fixture가 모두 이 구조를 따른다
 - 실제 사용자 학습 자료로 한 end-to-end 검증은 아직 하지 않았다
 
 자세한 내용은 [`PROJECT-STATUS.md`](PROJECT-STATUS.md)에 있다.

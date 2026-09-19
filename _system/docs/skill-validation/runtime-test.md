@@ -24,6 +24,8 @@ Skill 파일의 **구조**가 아니라 **실제 실행 경로**를 검증한다
 | baseline | `44a34c9` feat: establish study brain core architecture |
 | 대상 | Phase 6 Skill 8개 (미커밋) |
 
+> 이 문서는 위 날짜에 수행한 실행 결과의 기록이다. 이후 저장 구조를 학기·과목 중심으로 옮기는 작업이 별도 commit들에서 이뤄져, seed와 검증 스크립트의 경로와 capture 입력 정책 검사가 바뀌었다. 아래 결과는 그 변경 이전의 기록이며 현재 실행 결과로 다시 쓰지 않았다.
+
 ## 실행 방법
 
 ```bash
