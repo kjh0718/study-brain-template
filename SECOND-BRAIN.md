@@ -816,7 +816,7 @@ course-scoped 노트(LEC, RES, ASM, EXM, PEX, FAC, QST, REV)는 모두 실제 CR
 - `_system/log.md`가 비어 있다. 첫 기록부터 append-only 형식을 지킨다.
 - 무결성 검사를 자동화한 도구가 없다. L8은 현재 수동 절차다.
 - 실제 사용자 학습 자료로 한 end-to-end 검증을 아직 하지 않았다. 통합 시험과 런타임 시험은 통과했으나 모두 가상 fixture 범위다.
-- 옛 타입별 폴더의 README 골격은 제거했고, 동적 학기·과목 구조의 설명은 `study/README.md`와 `raw/README.md`가 맡는다. 최종 구현 상태 문서 동기화는 남아 있다.
+- 옛 타입별 폴더의 README 골격은 제거했고, 동적 학기·과목 구조의 설명은 `study/README.md`와 `raw/README.md`가 맡는다.
 - `_system/workflows/`의 검색 명령·예시와 Skill 문서는 학기·과목별 저장 경로를 반영했다.
 
 현재 구현 상태는 [`PROJECT-STATUS.md`](PROJECT-STATUS.md)가 기록한다.
