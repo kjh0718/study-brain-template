@@ -1,3 +1,7 @@
+filters:
+  or:
+    - file.inFolder("study")
+    - file.inFolder("wiki")
 properties:
   file.name:
     displayName: 노트
@@ -27,67 +31,58 @@ properties:
     displayName: 연도
   note.exam_type:
     displayName: 시험 종류
-
-filters:
-  or:
-    - 'file.inFolder("study")'
-    - 'file.inFolder("wiki")'
-
 views:
   - type: table
     name: 강의
     filters:
       and:
-        - 'note.type == "lecture"'
+        - note.type == "lecture"
     groupBy:
-      property: note.course
+      property: course
       direction: ASC
     order:
       - file.name
-      - note.title
-      - note.date
-      - note.status
-      - note.topics
+      - title
+      - date
+      - status
+      - topics
       - file.folder
-
   - type: table
     name: 개념
     filters:
       and:
-        - 'note.type == "concept"'
+        - note.type == "concept"
     order:
       - file.name
-      - note.title
-      - note.status
-      - note.topics
-      - note.aliases
-      - note.updated
-
+      - title
+      - status
+      - topics
+      - aliases
+      - updated
   - type: table
     name: 자료
     filters:
       and:
-        - 'note.type == "resource"'
+        - note.type == "resource"
     order:
       - file.name
-      - note.title
-      - note.resource_type
-      - note.authority
-      - note.status
-      - note.course
+      - title
+      - resource_type
+      - authority
+      - status
+      - course
       - file.folder
-
   - type: table
     name: 기출
     filters:
       and:
-        - 'note.type == "past-exam"'
+        - note.type == "past-exam"
     order:
       - file.name
-      - note.title
-      - note.year
-      - note.exam_type
-      - note.authority
-      - note.provenance
-      - note.status
+      - title
+      - year
+      - exam_type
+      - authority
+      - provenance
+      - status
       - file.folder

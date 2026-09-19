@@ -1,3 +1,6 @@
+filters:
+  and:
+    - file.inFolder("study")
 properties:
   file.name:
     displayName: 노트
@@ -33,87 +36,78 @@ properties:
     displayName: 예정일
   note.next_review:
     displayName: 다음 복습
-
-filters:
-  and:
-    - 'file.inFolder("study")'
-
 views:
   - type: table
     name: 진행 중인 과제
     filters:
       and:
-        - 'note.type == "assignment"'
+        - note.type == "assignment"
         - or:
-            - 'note.status == "open"'
-            - 'note.status == "in-progress"'
+            - note.status == "open"
+            - note.status == "in-progress"
     order:
       - file.name
-      - note.title
-      - note.due
-      - note.due_status
-      - note.status
-      - note.course
+      - title
+      - due
+      - due_status
+      - status
+      - course
       - file.folder
-
   - type: table
     name: 예정된 시험
     filters:
       and:
-        - 'note.type == "exam"'
-        - 'note.status == "planned"'
+        - note.type == "exam"
+        - note.status == "planned"
     order:
       - file.name
-      - note.title
-      - note.date
-      - note.date_status
-      - note.scope_status
-      - note.course
+      - title
+      - date
+      - date_status
+      - scope_status
+      - course
       - file.folder
-
   - type: table
     name: 열린 질문
     filters:
       and:
-        - 'note.type == "question"'
+        - note.type == "question"
         - or:
-            - 'note.status == "open"'
-            - 'note.status == "investigating"'
+            - note.status == "open"
+            - note.status == "investigating"
     order:
       - file.name
-      - note.title
-      - note.status
-      - note.question_type
-      - note.course
-      - note.created
+      - title
+      - status
+      - question_type
+      - course
+      - created
       - file.folder
-
   - type: table
     name: 진행/예정 복습
     filters:
       and:
-        - 'note.type == "review"'
+        - note.type == "review"
         - or:
-            - 'note.status == "planned"'
-            - 'note.status == "in-progress"'
+            - note.status == "planned"
+            - note.status == "in-progress"
     order:
       - file.name
-      - note.title
-      - note.scheduled_on
-      - note.next_review
-      - note.review_type
-      - note.course
+      - title
+      - scheduled_on
+      - next_review
+      - review_type
+      - course
       - file.folder
-
   - type: table
     name: 확인 필요
     filters:
       and:
-        - 'note.status == "needs-review"'
+        - note.status == "needs-review"
     order:
       - file.name
-      - note.title
-      - note.type
-      - note.updated
-      - note.course
+      - title
+      - type
+      - updated
+      - course
       - file.folder
