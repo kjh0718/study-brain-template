@@ -13,7 +13,7 @@ aliases:
   - momentum
 sources: 
   - LEC-20260908-01
-  - RES-20260908-01
+  - RES-general-physics-1-week03-slides
 ---
 
 <!-- sources: 근거가 되는 LEC·RES·PEX 등의 ID. 근거가 없으면 draft 또는 needs-review로 둔다. -->

@@ -11,6 +11,7 @@ L8 무결성 검사가 각 오류를 잡는지 확인하기 위한 파일이다.
 | `bad-prefix.md` | type과 ID 접두사 불일치 | 3 |
 | `bad-id-shape.md` | ID 형식 계약 위반(대문자·공백) | 3 |
 | `bad-missing-ref.md` | 없는 ID 참조 | 4 |
+| `bad-duplicate-resource.md` | 한 LEC에 같은 RES가 두 항목 | 5 |
 | `bad-duplicate-concept.md` | 중복 개념 + 중복 topic slug | 7, L9 후보 |
 | `bad-status.md` | 허용되지 않는 status | 2 |
 | `bad-orphan.md` | orphan 노트 | 4 |

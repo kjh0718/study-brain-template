@@ -52,7 +52,7 @@ N["course"] = fill(N["course"], "Related Notes",
 - ASM-20260908-01 | 물리학 HW03 | open | 주 과목
 - EXM-20260908-01 | 일반물리학 중간고사 | planned | 주 과목
 - FAC-20260908-01 | 중간고사 일정 확정 | active | 주 과목
-- RES-20260908-01 | Chapter 3 - Momentum | active | 주 과목
+- RES-general-physics-1-week03-slides | Chapter 3 - Momentum | active | 주 과목
 - PEX-20260908-01 | 물리학 2024 중간고사 기출 | needs-review | 주 과목
 - QST-20260908-01 | 운동량 보존 조건 확인 | open | 주 과목
 - REV-20260908-01 | 물리학 주간 복습 | planned | 주 과목
@@ -61,19 +61,19 @@ N["course"] = fill(N["course"], "My Notes", "<!-- AI-PROTECTED -->\n\n사용자�
 
 N["lecture"] = base("lecture","LEC-20260908-01","운동량과 충격량", status="processed",
     course="CRS-20260908-01", date=D, source=f"{R}/transcripts/2026-09-08-physics-01.md",
-    topics="\n  - momentum", resources='\n  - id: RES-20260908-01\n    pages: "32-45"',
+    topics="\n  - momentum", resources='\n  - id: RES-general-physics-1-week03-slides\n    pages: "32-45"',
     concepts="\n  - CON-20260908-01", assignments="\n  - ASM-20260908-01",
     exams="\n  - EXM-20260908-01", course_facts="\n  - FAC-20260908-01",
     questions="\n  - QST-20260908-01")
 N["lecture"] = add_after(N["lecture"], "date: "+D, "week: 3")
 N["lecture"] = fill(N["lecture"], "My Notes", "<!-- AI-PROTECTED -->\n\n사용자 필기. 보호 영역 유지 확인용.")
 
-N["resource"] = base("resource","RES-20260908-01","Chapter 3 - Momentum", status="active",
+N["resource"] = base("resource","RES-general-physics-1-week03-slides","Chapter 3 - Momentum", status="active",
     course="CRS-20260908-01", resource_type="slides", authority="professor",
     source=f"{R}/resources/week03-slides.pdf", topics="\n  - momentum",
     lectures="\n  - LEC-20260908-01")
 N["concept"] = base("concept","CON-20260908-01","운동량", status="active", topics="\n  - momentum",
-    aliases="\n  - momentum", sources="\n  - LEC-20260908-01\n  - RES-20260908-01")
+    aliases="\n  - momentum", sources="\n  - LEC-20260908-01\n  - RES-general-physics-1-week03-slides")
 N["assignment"] = base("assignment","ASM-20260908-01","물리학 HW03", course="CRS-20260908-01",
     assigned=D, due="null", due_status="needs-review", sources="\n  - LEC-20260908-01")
 N["exam"] = base("exam","EXM-20260908-01","일반물리학 중간고사", course="CRS-20260908-01",

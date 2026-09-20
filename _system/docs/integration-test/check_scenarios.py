@@ -30,6 +30,8 @@ OPTIONAL = {"course": {"code", "instructor"}, "lecture": {"week"},
             "resource": {"page_count"}, "assignment": {"submission_method"},
             "course-fact": {"effective_from"}}
 PROTECTED = ("My Notes", "My Understanding", "My Questions", "Personal Reflection")
+RES_CH03 = "RES-general-physics-2-ch03-slides"
+RES_HANDOUT = "RES-general-physics-2-collision-handout"
 
 results = {}          # scenario -> (verdict, [detail lines])
 
@@ -236,7 +238,10 @@ else:
     rq = section(b, "Review Questions") or ""
     if "(AI 생성)" not in rq:
         fails.append("Review Question에 AI 생성 표시가 없다")
-    if not lec["fm"]["resources"] or lec["fm"]["resources"][0].get("pages") != "21-38":
+    ppt = [i for i in (lec["fm"].get("resources") or []) if i["id"] == RES_CH03]
+    if len(ppt) != 1:
+        fails.append(f"{RES_CH03} 항목이 {len(ppt)}개다. 1개여야 한다")
+    elif ppt[0].get("pages") != "21-38":
         fails.append("PPT 페이지 범위가 기록되지 않았다")
     # 결정적 대시보드: 자동 관리 영역이 조회 결과와 일치하는가
     crs = notes["CRS-2026-2-general-physics-2"]
@@ -257,35 +262,101 @@ else:
 record("A Lecture Ingestion", fails, warn)
 
 # ================================================================ Scenario B
+# Lecture-Resource는 M:N이다. 한 RES가 여러 LEC에, 한 LEC이 여러 RES에 붙을 수 있고
+# 두 방향이 교차할 수 있다. 여기서는 양쪽 방향, 교차, 부분·생략 pages, 재등록 시
+# 중복 생성 금지, 한 LEC 안의 중복 항목 금지를 함께 본다.
 fails, warn = [], []
 res_notes = [n for n in notes.values() if n["fm"]["type"] == "resource"]
-ch03 = [n for n in res_notes if "ch03" in n["fm"]["id"]]
-if len(ch03) != 1:
-    fails.append(f"같은 자료의 RES가 {len(ch03)}개다. 1개여야 한다")
-else:
-    r = ch03[0]
+res_ids = {n["fm"]["id"] for n in res_notes}
+
+# 정방향 Lecture.resources -> {RES: {LEC: pages}}. 같은 LEC 안의 중복 항목도 여기서 잡는다.
+fwd = {}
+for lid, n in sorted(by_type("lecture").items()):
+    seen = set()
+    for item in (n["fm"].get("resources") or []):
+        rid = item["id"]
+        if rid in seen:
+            fails.append(f"{lid}.resources에 {rid}가 중복 항목이다. 구간은 한 항목의 pages에 모은다")
+        seen.add(rid)
+        fwd.setdefault(rid, {})[lid] = item.get("pages")
+
+# 1) 양방향 정합. 모든 RES에 대해 두 방향이 같은 집합을 가리켜야 한다.
+for r in res_notes:
     rid = r["fm"]["id"]
-    fwd = {}   # LEC -> pages
-    for lid, n in by_type("lecture").items():
-        for item in (n["fm"].get("resources") or []):
-            if item["id"] == rid:
-                fwd[lid] = item.get("pages")
-    if len(fwd) != 4:
-        fails.append(f"이 RES를 참조하는 LEC이 {len(fwd)}개다. 4개여야 한다")
-    if len(set(fwd.values())) != len(fwd):
-        fails.append("Lecture별 page range가 보존되지 않았다")
-    back = set(r["fm"]["lectures"])
-    if back != set(fwd):
-        fails.append(f"양방향 drift: Resource.lectures={sorted(back)} vs 정방향={sorted(fwd)}")
-    # Resource 쪽에서 사용 관계를 재구성할 수 있는가
+    back = set(r["fm"]["lectures"] or [])
+    front = set(fwd.get(rid, {}))
+    if back != front:
+        fails.append(f"{rid} 양방향 drift: lectures={sorted(back)} vs 정방향={sorted(front)}")
     usage = section(r["body"], "Lecture Usage") or ""
-    for lid, pages in fwd.items():
-        if lid not in usage or pages not in usage:
-            warn.append(f"Lecture Usage 요약에 {lid} {pages}가 없다")
-    # 재등록 시 새 RES를 만들지 않는가: 같은 source를 가리키는 RES가 1개인지
-    same_src = [n for n in res_notes if n["fm"]["source"] == r["fm"]["source"]]
-    if len(same_src) != 1:
-        fails.append("같은 원본을 가리키는 RES가 여러 개다")
+    for lid, pages in fwd.get(rid, {}).items():
+        if lid not in usage:
+            warn.append(f"{rid}의 Lecture Usage에 {lid}가 없다")
+        elif pages and pages not in usage:
+            warn.append(f"{rid}의 Lecture Usage에 {lid} {pages}가 없다")
+for rid in fwd:
+    if rid not in res_ids:
+        fails.append(f"Lecture이 참조하는 {rid}의 RES 노트가 없다")
+
+# 2) 1 RES -> 여러 LEC
+if len(fwd.get(RES_CH03, {})) != 4:
+    fails.append(f"{RES_CH03}를 쓰는 LEC이 {len(fwd.get(RES_CH03, {}))}개다. 4개여야 한다")
+if len(set(fwd.get(RES_CH03, {}).values())) != len(fwd.get(RES_CH03, {})):
+    fails.append("Lecture별 page range가 보존되지 않았다")
+
+# 3) 1 LEC -> 여러 RES
+multi = {lid for lid, n in by_type("lecture").items()
+         if len(n["fm"].get("resources") or []) >= 2}
+if not multi:
+    fails.append("자료를 둘 이상 쓰는 LEC이 없다. 반대 방향이 검증되지 않는다")
+
+# 4) 교차 M:N. 두 RES의 LEC 집합이 겹치되 어느 쪽도 다른 쪽을 포함하지 않아야 한다.
+a_set, b_set = set(fwd.get(RES_CH03, {})), set(fwd.get(RES_HANDOUT, {}))
+if not (a_set & b_set):
+    fails.append("두 RES를 함께 쓰는 LEC이 없다. 교차가 아니다")
+if a_set <= b_set or b_set <= a_set:
+    fails.append(f"한 RES의 LEC 집합이 다른 쪽에 포함된다. 교차 M:N이 아니다: {sorted(a_set)} / {sorted(b_set)}")
+
+# 5) 부분 pages와 6) pages 생략
+pages_all = [pg for m in fwd.values() for pg in m.values()]
+if not [pg for pg in pages_all if pg and pg != "전체"]:
+    fails.append("부분 페이지 범위를 기록한 연결이 없다")
+if None not in pages_all:
+    fails.append("pages를 생략한 연결이 없다. 범위 미확인 상태가 검증되지 않는다")
+omitted = [(rid, lid) for rid, m in fwd.items() for lid, pg in m.items() if pg is None]
+for rid, lid in omitted:
+    r = notes.get(rid)
+    if r and re.search(rf"\|\s*{re.escape(lid)}\s*\|\s*[0-9]", section(r["body"], "Lecture Usage") or ""):
+        fails.append(f"{rid}의 Lecture Usage가 {lid}의 생략된 pages를 임의의 범위로 채웠다")
+# 한 항목 안에 여러 구간을 담은 표현이 유지되는지. 항목을 쪼개면 위 중복 검사에 걸린다.
+if not [pg for pg in pages_all if pg and "," in pg]:
+    fails.append("비연속 구간을 한 pages 문자열에 담은 연결이 없다")
+
+
+# 겹침 허용. 같은 RES를 서로 다른 LEC이 겹치는 범위로 쓰는 쌍이 실제로 있어야
+# "겹쳐도 정상"이 검증된다. 여기서 FAIL이 나면 fixture가 겹침을 잃은 것이다.
+def page_ranges(pages):
+    return [(int(s), int(e)) for s, e in re.findall(r"(\d+)\s*-\s*(\d+)", pages or "")]
+
+
+overlapped = [
+    (rid, l1, l2)
+    for rid, m in fwd.items()
+    for i, (l1, p1) in enumerate(sorted(m.items()))
+    for l2, p2 in sorted(m.items())[i + 1:]
+    for s1, e1 in page_ranges(p1)
+    for s2, e2 in page_ranges(p2)
+    if s1 <= e2 and s2 <= e1
+]
+if not overlapped:
+    fails.append("같은 RES를 겹치는 범위로 쓰는 LEC 쌍이 없다. 겹침 허용이 검증되지 않는다")
+
+# 7) 재등록 시 중복 생성 금지. 같은 원본을 가리키는 RES는 하나뿐이어야 한다.
+by_src = {}
+for n in res_notes:
+    by_src.setdefault(n["fm"]["source"], []).append(n["fm"]["id"])
+for src, ids in by_src.items():
+    if len(ids) != 1:
+        fails.append(f"같은 원본을 가리키는 RES가 여러 개다: {src} -> {sorted(ids)}")
 record("B Resource N:N", fails, warn)
 
 # ================================================================ Scenario C
@@ -673,6 +744,13 @@ for f in sorted(BROKEN.glob("bad-*.md")):
                 if isinstance(r, str) and r not in IDS:
                     hits.append("항목4/9 없는 ID 참조")
                     break
+            seen_res = set()
+            for it in (fmb.get("resources") or []):
+                rid2 = it["id"] if isinstance(it, dict) else it
+                if rid2 in seen_res:
+                    hits.append("항목5 같은 LEC 안의 RES 중복 항목")
+                    break
+                seen_res.add(rid2)
             src = fmb.get("source")
             if isinstance(src, str) and not src.startswith("http") and not (V / src).exists():
                 hits.append("항목6 source 파일 없음")

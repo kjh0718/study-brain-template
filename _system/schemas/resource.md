@@ -10,7 +10,7 @@
 ---
 schema: 1
 type: resource
-id: RES-20260908-01
+id: RES-general-physics-1-ch03-momentum
 title: Chapter 3 - Momentum and Collisions
 status: active
 topics: []
@@ -64,11 +64,13 @@ authority는 자료의 출처 분류이며 사실의 정확도나 충돌 해결 
 
 ## Lecture Relationship
 
-Lecture.resources[].id와 Resource.lectures는 같은 연결을 양쪽에서 표현한다. 연결·해제 시 양쪽을 함께 확인한다.
+Lecture.resources[].id와 Resource.lectures는 같은 연결을 양쪽에서 표현한다. 연결·해제 시 양쪽을 함께 확인한다. 관계는 M:N이다. 한 RES가 여러 LEC에 연결될 수 있고, 한 LEC이 여러 RES를 참조할 수 있다.
 
 사용 페이지의 기준 데이터는 Lecture.resources[].pages다. Resource 본문의 Lecture Usage는 그 정보를 요약한 보기이며 독립적으로 다른 페이지를 기록하지 않는다.
 
-자료 1개를 여러 날 사용해도 RES는 하나를 유지하고 각 Lecture에 그날 확인된 사용 범위를 기록한다. 자료의 목차만으로 수업 진도를 추정하지 않는다.
+자료 1개를 여러 날 사용해도 RES는 하나를 유지하고 각 Lecture에 그날 확인된 사용 범위를 기록한다. 여러 Lecture가 같은 페이지를 겹쳐 사용해도 정상이며 한쪽을 지우지 않는다. 자료의 목차만으로 수업 진도를 추정하지 않는다.
+
+연결 근거가 없으면 연결하지 않는다. 파일명이나 날짜 근접성으로 관계를 추정하지 않으며, 근거가 불충분한 후보는 해당 Lecture 본문의 `## AI 해석 / 검증 필요`에 남긴다. 사용자가 그 자료를 여러 수업에서 썼다고 밝힌 경우에는 그 근거로 여러 Lecture와 한 번에 연결할 수 있다. 판단 기준의 정본은 SECOND-BRAIN.md 2.10이다.
 
 ## Body Structure
 

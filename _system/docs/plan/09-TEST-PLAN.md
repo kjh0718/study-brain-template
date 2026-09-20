@@ -27,16 +27,19 @@
 - log append
 
 ## Resource N:N 테스트
-하나의 PDF를 4개 Lecture에서 사용.
+하나의 PDF를 4개 Lecture에서 사용하고, 그중 두 Lecture는 두 번째 자료도 함께 사용한다.
 
 기대:
 ```text
-RES 1개
-→ Lecture 4개
-→ 각각 다른 page range
+RES 슬라이드 → Lecture 4개, 각각 다른 page range (겹쳐도 정상)
+RES 유인물   → Lecture 3개 (슬라이드와 Lecture 집합이 서로 포함되지 않는 교차 M:N)
+Lecture 1개  → RES 2개 (자료마다 항목 하나)
 ```
 
-동일 PDF를 RES 4개로 중복 생성하면 실패.
+- 동일 PDF를 RES 4개로 중복 생성하면 실패.
+- 한 Lecture의 `resources`에 같은 RES가 두 항목으로 들어가면 실패. 떨어진 구간은 한 `pages` 문자열에 담는다.
+- `pages` 생략은 범위 미확인이다. 자료 전체로 해석해 채우면 실패.
+- 두 방향 모두 ID로 찾아 검사한다. 항목 순서에 의존하면 실패.
 
 ## Concept 중복 테스트
 `momentum`, `운동량`, `linear momentum` 표현을 섞는다.

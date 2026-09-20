@@ -42,6 +42,7 @@ instructor: 가상 교수
 - LEC-20260910-01 — 운동량 정의 복습 — processed — 주 과목
 - LEC-20260915-01 — 탄성 충돌 — processed — 주 과목
 - LEC-20260917-01 — 비탄성 충돌 — processed — 주 과목
+- LEC-20260922-01 — 2차원 충돌 연습 — processed — 주 과목
 - ASM-general-physics-2-20260908-01 — HW3 3장 연습문제 — open — 주 과목
 - ASM-general-physics-2-20260908-02 — HW4 4장 예습 과제 — open — 주 과목
 - ASM-general-physics-2-20260908-03 — HW5 보고서 — open — 주 과목
@@ -52,6 +53,7 @@ instructor: 가상 교수
 - FAC-general-physics-2-20260909-01 — 중간고사 일정 언급 (변경 선언 없음) — needs-review — 주 과목
 - FAC-general-physics-2-20260910-01 — 중간고사 일정 추측 언급 — needs-review — 주 과목
 - RES-general-physics-2-ch03-slides — 제3장 운동량과 충돌 슬라이드 — active — 주 과목
+- RES-general-physics-2-collision-handout — 충돌 정리 유인물 — active — 주 과목
 - PEX-general-physics-2-2022-2-midterm — 일반물리학2 2022-2 중간고사 기출 — needs-review — 주 과목
 - PEX-general-physics-2-2023-2-midterm — 일반물리학2 2023-2 중간고사 기출 — needs-review — 주 과목
 - PEX-general-physics-2-2024-2-midterm — 일반물리학2 2024-2 중간고사 기출 — needs-review — 주 과목

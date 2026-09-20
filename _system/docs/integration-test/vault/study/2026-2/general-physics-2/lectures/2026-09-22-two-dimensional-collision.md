@@ -1,21 +1,20 @@
 ---
 schema: 1
 type: lecture
-id: LEC-20260915-01
-title: 탄성 충돌
+id: LEC-20260922-01
+title: 2차원 충돌 연습
 status: processed
 topics: 
   - momentum
 related: []
-created: 2026-09-15
-updated: 2026-09-15
+created: 2026-09-22
+updated: 2026-09-22
 course: CRS-2026-2-general-physics-2
-date: 2026-09-15
+date: 2026-09-22
 source: raw/2026-2/general-physics-2/transcripts/2026-09-08-general-physics-2-01.md
 resources: 
-  - id: RES-general-physics-2-ch03-slides
-    pages: "39-48"
   - id: RES-general-physics-2-collision-handout
+    pages: "8-12"
 concepts: 
   - CON-momentum
 assignments: []
@@ -32,7 +31,7 @@ Scenario B(Resource N:N) 전용 축약 fixture다. 같은 RES를 서로 다른 �
 
 ## 핵심 내용
 
-- 탄성 충돌
+- 2차원 충돌 연습
 
 ## 교수님 강조
 
@@ -68,8 +67,7 @@ Scenario B(Resource N:N) 전용 축약 fixture다. 같은 RES를 서로 다른 �
 
 ## 사용 자료
 
-- RES-general-physics-2-ch03-slides pages 39-48
-- RES-general-physics-2-collision-handout 사용 범위 미확인 (pages 생략)
+- RES-general-physics-2-collision-handout pages 8-12
 
 ## 기출 연결
 

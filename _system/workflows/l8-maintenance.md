@@ -88,6 +88,8 @@ rg -n -A5 "^lectures:" study -g "**/resources/*.md"
 
 한쪽에만 있는 연결이 있으면 불일치다. 공유 RES는 다른 과목의 LEC과도 이어지므로 과목 폴더로 좁히지 않는다.
 
+같은 `resources` 블록 안에 같은 RES ID가 두 번 이상 나오면 중복 항목이다. 한 항목으로 합치고 구간은 그 항목의 `pages` 문자열에 함께 적는다. 다른 LEC끼리 페이지가 겹치는 것은 중복이 아니므로 고치지 않는다.
+
 **6. `source`와 `sources`의 용도 구분**
 
 ```bash
@@ -215,8 +217,8 @@ L8 무결성 검사 보고 (검사 모드 — 저장소를 바꾸지 않았다)
    source: raw/<term>/<course-slug>/resources/ch05.pdf 파일이 없다 (로컬 경로)
 
 [medium] 2건
-4. 양방향 불일치 — LEC-20260915-01.resources에 RES-20260908-01이 있으나
-   RES-20260908-01.lectures에 그 LEC이 없다
+4. 양방향 불일치 — LEC-20260915-01.resources에 RES-general-physics-2-ch03-slides이 있으나
+   RES-general-physics-2-ch03-slides.lectures에 그 LEC이 없다
 5. 대시보드 불일치 — study/<term>/<course-slug>/course.md
    조회 결과 9행, 자동 관리 영역 7행. LEC 2건 누락
 
@@ -242,7 +244,7 @@ L8 정리 완료 (수정 모드)
 안전 순서: 낮은 단계부터 수행
 
 [수정함] 2건
-1. LEC-20260915-01.resources의 RES-20260908-01 → RES-20260908-01.lectures에 역방향 추가
+1. LEC-20260915-01.resources의 RES-general-physics-2-ch03-slides → RES-general-physics-2-ch03-slides.lectures에 역방향 추가
 2. topic collision 어휘표 등록 후 LEC-20260915-01.topics 유지
 
 [범위 밖이라 손대지 않음] 3건
@@ -264,7 +266,7 @@ L8 정리 완료 (수정 모드)
 수정 모드만 기록한다.
 
 ```text
-- 2026-09-20 14:10 | L8 | sync-relations | RES-20260908-01 | done | LEC-20260915-01 역방향 누락 복구
+- 2026-09-20 14:10 | L8 | sync-relations | RES-general-physics-2-ch03-slides | done | LEC-20260915-01 역방향 누락 복구
 - 2026-09-20 14:12 | L8 | register-topic | collision | done | LEC-20260915-01에서 사용 중이던 미등록 topic
 - 2026-09-20 14:15 | L8 | finalize-run | study/<term>/<course-slug>/lectures/ | partial | 승인 범위 밖 3건, 보고만 2건 남음
 ```

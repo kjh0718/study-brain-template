@@ -47,6 +47,8 @@ for d in (V, B):
 CRS = "CRS-2026-2-general-physics-2"
 CRS1 = "CRS-2026-1-general-physics-2"
 RES = "RES-general-physics-2-ch03-slides"
+# Scenario B의 두 번째 자료. 한 LEC이 여러 RES를 쓰는 방향과 교차 M:N을 만든다.
+RES2 = "RES-general-physics-2-collision-handout"
 EXM = "EXM-general-physics-2-2026-2-midterm"   # <term> 사용. 연도만 쓰면 학기 간 충돌한다
 
 # 저장 위치는 각 노트의 course가 가리키는 CRS의 <term>/<course-slug>를 따른다 (common.md Storage Paths).
@@ -103,7 +105,7 @@ w(f"{S2}/lectures/2026-09-08-momentum.md", fm(
     status="processed", topics=lst(["momentum", "impulse"]), related="[]",
     created="2026-09-08", updated="2026-09-08", course=CRS, date="2026-09-08",
     week=3, source=TR,
-    resources=f"\n  - id: {RES}\n    pages: \"21-38\"",
+    resources=f"\n  - id: {RES}\n    pages: \"21-38\""         f"\n  - id: {RES2}\n    pages: \"3-7, 10-12\"",
     concepts=lst(["CON-momentum", "CON-impulse"]),
     assignments=lst(["ASM-general-physics-2-20260908-01"]),
     exams=lst([EXM]),
@@ -172,6 +174,7 @@ w(f"{S2}/lectures/2026-09-08-momentum.md", fm(
 ## 사용 자료
 
 - {RES} pages 21-38 (00:19:02). 페이지 기준은 슬라이드 번호다.
+- {RES2} pages 3-7, 10-12 (00:52:30). 한 수업에서 떨어진 두 구간을 썼고 항목은 하나로 둔다.
 
 ## 기출 연결
 
@@ -220,6 +223,7 @@ w(f"{S2}/resources/ch03-slides.md", fm(
 ## Overview
 
 교수 배포 3장 슬라이드. 총 60페이지. 네 번의 수업에 걸쳐 사용됐다.
+09/15와 09/17은 45-48쪽을 겹쳐 사용했다. 겹침은 정상이며 한쪽을 지우지 않는다.
 
 ## Structure
 
@@ -253,7 +257,7 @@ w(f"{S2}/resources/ch03-slides.md", fm(
 | LEC-20260908-01 | 21-38 |
 | LEC-20260910-01 | 1-20 |
 | LEC-20260915-01 | 39-48 |
-| LEC-20260917-01 | 49-60 |
+| LEC-20260917-01 | 45-60 |
 
 ## Exam References
 
@@ -278,21 +282,105 @@ w(f"{S2}/resources/ch03-slides.md", fm(
 
 w(f"{R2}/resources/general-physics-2-ch03-slides.pdf","가상 PDF 자리표시자. 실제 파일이 아니다.\n")
 
+# 두 번째 자료. RES는 {LEC1, LEC3}에만 걸리므로 ch03 슬라이드와 교차 M:N이 된다.
+# LEC1은 떨어진 두 구간을 한 pages 문자열로, LEC3은 범위 미확인이라 pages를 생략한다.
+w(f"{S2}/resources/collision-handout.md", fm(
+    schema=1, type="resource", id=RES2, title="충돌 정리 유인물",
+    status="active", topics=lst(["momentum"]), related="[]",
+    created="2026-09-08", updated="2026-09-15", course=CRS,
+    resource_type="handout", authority="professor",
+    source=f"{R2}/resources/general-physics-2-collision-handout.pdf", page_count=12,
+    lectures=lst(["LEC-20260908-01", "LEC-20260915-01", "LEC-20260922-01"]),
+) + f"""
+{BANNER}
+
+## Overview
+
+교수가 따로 배포한 충돌 정리 유인물. 총 12페이지. 세 번의 수업에서 사용됐다.
+09/08과 09/22는 10-12쪽을 겹쳐 사용했다.
+
+## Structure
+
+- pp.1-7 충돌 분류와 보존량 정리표
+- pp.8-12 연습문제
+
+## Key Concepts
+
+- [[CON-momentum]] 운동량
+
+## Material Emphasis
+
+- p.5 보존량 비교표 굵게 표시
+
+## Professor Emphasis
+
+미확인. 이 유인물을 직접 언급한 교수 발언은 전사에서 확인되지 않았다.
+
+## Lecture Usage
+
+<!-- 기준 데이터는 Lecture.resources[].pages다. 이 표는 그것을 요약한 보기다. -->
+
+| Lecture | pages |
+|---|---|
+| LEC-20260908-01 | 3-7, 10-12 |
+| LEC-20260915-01 | 미확인 (pages 생략) |
+| LEC-20260922-01 | 8-12 |
+
+09/15는 이 유인물을 썼다는 것만 확인됐고 페이지는 확인되지 않았다. 생략은 전체 사용이 아니다.
+
+## Exam References
+
+해당 없음.
+
+## Assignment References
+
+- pp.8-12 연습문제. L5 미처리.
+
+## Version / Provenance
+
+초판. 배포처 LMS, 작성자 담당 교수.
+
+## My Notes
+
+<!-- AI-PROTECTED -->
+
+## Source
+
+- {R2}/resources/general-physics-2-collision-handout.pdf (보존됨)
+""")
+
+w(f"{R2}/resources/general-physics-2-collision-handout.pdf",
+  "가상 PDF 자리표시자. 실제 파일이 아니다.\n")
+
+# (id, 날짜, 제목, [(RES ID, pages 또는 None)], 파일 slug)
+# pages가 None이면 그 수업의 사용 범위를 확인하지 못했다는 뜻이다. 자료 전체를 썼다는 뜻이 아니다.
 _LEC_B = [
-    ("LEC-20260910-01", "2026-09-10", "운동량 정의 복습", "1-20", "2026-09-10-momentum-review"),
-    ("LEC-20260915-01", "2026-09-15", "탄성 충돌", "39-48", "2026-09-15-elastic-collision"),
-    ("LEC-20260917-01", "2026-09-17", "비탄성 충돌", "49-60", "2026-09-17-inelastic-collision"),
+    ("LEC-20260910-01", "2026-09-10", "운동량 정의 복습",
+     [(RES, "1-20")], "2026-09-10-momentum-review"),
+    ("LEC-20260915-01", "2026-09-15", "탄성 충돌",
+     [(RES, "39-48"), (RES2, None)], "2026-09-15-elastic-collision"),
+    ("LEC-20260917-01", "2026-09-17", "비탄성 충돌",
+     [(RES, "45-60")], "2026-09-17-inelastic-collision"),
+    # ch03 슬라이드를 쓰지 않는 수업. 두 RES의 LEC 집합이 서로 포함되지 않아 교차 M:N이 된다.
+    ("LEC-20260922-01", "2026-09-22", "2차원 충돌 연습",
+     [(RES2, "8-12")], "2026-09-22-two-dimensional-collision"),
 ]
 # collision topic은 대응하는 CON이 없다. Concept identity와 topic vocabulary가
 # 1:1로 강제되지 않는지 검증하기 위한 fixture다.
 _LEC_TOPICS = {"LEC-20260917-01": ["momentum", "collision"]}
 
-for lid, date, title, pages, slug in _LEC_B:
+for lid, date, title, used, slug in _LEC_B:
+    res_block = "".join(
+        "\n  - id: " + rid + (f'\n    pages: "{pg}"' if pg else "")
+        for rid, pg in used)
+    res_lines = "\n".join(
+        f"- {rid} pages {pg}" if pg else f"- {rid} 사용 범위 미확인 (pages 생략)"
+        for rid, pg in used)
     w(f"{S2}/lectures/{slug}.md", fm(
         schema=1, type="lecture", id=lid, title=title, status="processed",
         topics=lst(_LEC_TOPICS.get(lid, ["momentum"])), related="[]", created=date, updated=date,
         course=CRS, date=date, source=TR,
-        resources=f"\n  - id: {RES}\n    pages: \"{pages}\"",
+        resources=res_block,
         concepts=lst(["CON-momentum"]), assignments="[]", exams="[]",
         course_facts="[]", questions="[]",
     ) + f"""
@@ -340,7 +428,7 @@ Scenario B(Resource N:N) 전용 축약 fixture다. 같은 RES를 서로 다른 �
 
 ## 사용 자료
 
-- {RES} pages {pages}
+{res_lines}
 
 ## 기출 연결
 
@@ -947,6 +1035,7 @@ w(f"{S2}/course.md", fm(
 - LEC-20260910-01 — 운동량 정의 복습 — processed — 주 과목
 - LEC-20260915-01 — 탄성 충돌 — processed — 주 과목
 - LEC-20260917-01 — 비탄성 충돌 — processed — 주 과목
+- LEC-20260922-01 — 2차원 충돌 연습 — processed — 주 과목
 - ASM-general-physics-2-20260908-01 — HW3 3장 연습문제 — open — 주 과목
 - ASM-general-physics-2-20260908-02 — HW4 4장 예습 과제 — open — 주 과목
 - ASM-general-physics-2-20260908-03 — HW5 보고서 — open — 주 과목
@@ -957,6 +1046,7 @@ w(f"{S2}/course.md", fm(
 - FAC-general-physics-2-20260909-01 — 중간고사 일정 언급 (변경 선언 없음) — needs-review — 주 과목
 - FAC-general-physics-2-20260910-01 — 중간고사 일정 추측 언급 — needs-review — 주 과목
 - {RES} — 제3장 운동량과 충돌 슬라이드 — active — 주 과목
+- {RES2} — 충돌 정리 유인물 — active — 주 과목
 - PEX-general-physics-2-2022-2-midterm — 일반물리학2 2022-2 중간고사 기출 — needs-review — 주 과목
 - PEX-general-physics-2-2023-2-midterm — 일반물리학2 2023-2 중간고사 기출 — needs-review — 주 과목
 - PEX-general-physics-2-2024-2-midterm — 일반물리학2 2024-2 중간고사 기출 — needs-review — 주 과목
@@ -1125,6 +1215,14 @@ w("bad-status.md", fm(
     assignments="[]", exams="[]", course_facts="[]", questions="[]",
 ) + "\n<!-- 고의 오류: lecture에 active는 허용 값이 아니다 -->\n", root=B)
 
+w("bad-duplicate-resource.md", fm(
+    schema=1, type="lecture", id="LEC-20260923-01", title="같은 자료가 두 항목으로 들어간 수업",
+    status="processed", topics="[]", related="[]", created="2026-09-23",
+    updated="2026-09-23", course=CRS, date="2026-09-23", source=TR,
+    resources=f"\n  - id: {RES}\n    pages: \"1-10\"\n  - id: {RES}\n    pages: \"20-30\"",
+    concepts="[]", assignments="[]", exams="[]", course_facts="[]", questions="[]",
+) + "\n<!-- 고의 오류: 한 LEC의 resources에 같은 RES가 두 항목으로 있다. 구간은 한 항목의 pages에 모아야 한다 -->\n", root=B)
+
 w("bad-orphan.md", fm(
     schema=1, type="concept", id="CON-orphan-topic", title="어디서도 참조되지 않는 노트",
     status="draft", topics="[]", related="[]", created="2026-09-20",
@@ -1195,6 +1293,7 @@ L8 무결성 검사가 각 오류를 잡는지 확인하기 위한 파일이다.
 | `bad-prefix.md` | type과 ID 접두사 불일치 | 3 |
 | `bad-id-shape.md` | ID 형식 계약 위반(대문자·공백) | 3 |
 | `bad-missing-ref.md` | 없는 ID 참조 | 4 |
+| `bad-duplicate-resource.md` | 한 LEC에 같은 RES가 두 항목 | 5 |
 | `bad-duplicate-concept.md` | 중복 개념 + 중복 topic slug | 7, L9 후보 |
 | `bad-status.md` | 허용되지 않는 status | 2 |
 | `bad-orphan.md` | orphan 노트 | 4 |

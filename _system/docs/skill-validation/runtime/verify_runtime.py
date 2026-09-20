@@ -17,6 +17,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[3]
 SCH = ROOT / "_system/schemas"
 WS = HERE / "workspace"
+RES_CH03 = "RES-general-physics-2-ch03-slides"
 SEED = json.loads((HERE / "seed-manifest.json").read_text(encoding="utf-8"))
 CANON = ROOT / ".agents/skills"
 FIXTURE = HERE.parents[1] / "integration-test/vault"   # seed의 원본. 보호 영역 baseline
@@ -191,15 +192,22 @@ else:
         fails.append("Review Question에 AI 생성 표시가 없다")
     if lec["fm"].get("week") is not None:
         warn.append("원문에 주차 언급이 없는데 week가 채워졌다")
-    r = lec["fm"]["resources"]
-    if not r or r[0].get("pages") != "21-38":
+    # 자료는 여럿일 수 있으므로 순서가 아니라 ID로 찾는다.
+    items = lec["fm"].get("resources") or []
+    ids = [i["id"] for i in items]
+    if len(ids) != len(set(ids)):
+        fails.append("한 LEC의 resources에 같은 RES가 중복 항목으로 있다")
+    ch03 = [i for i in items if i["id"] == RES_CH03]
+    if len(ch03) != 1:
+        fails.append(f"{RES_CH03} 항목이 {len(ch03)}개다. 1개여야 한다")
+    elif ch03[0].get("pages") != "21-38":
         fails.append("자료 페이지 범위가 기록되지 않았다")
-    else:
-        res = notes.get(r[0]["id"])
+    for it in items:
+        res = notes.get(it["id"])
         if not res:
-            fails.append("참조한 RES가 없다")
+            fails.append(f"참조한 RES가 없다: {it['id']}")
         elif "LEC-20260908-01" not in (res["fm"]["lectures"] or []):
-            fails.append("Lecture->Resource 역방향이 없다")
+            fails.append(f"{it['id']}의 Lecture->Resource 역방향이 없다")
 # 개념: 기존 연결 + 신규 생성
 mom = [i for i, n in notes.items() if n["fm"]["type"] == "concept"
        and "운동량" in (n["fm"]["title"] + " ".join(n["fm"].get("aliases") or []) + " momentum")]
@@ -373,7 +381,7 @@ if len(res) != 1:
     fails.append(f"RES가 {len(res)}개다. 같은 자료는 하나여야 한다")
 else:
     r = res[0]
-    if r["fm"]["id"] != "RES-general-physics-2-ch03-slides":
+    if r["fm"]["id"] != RES_CH03:
         fails.append(f"원본 확보 후 새 ID가 발급됐다: {r['fm']['id']}")
     src = r["fm"]["source"]
     if not re.match(r"^raw/[^/]+/[^/]+/resources/", src):

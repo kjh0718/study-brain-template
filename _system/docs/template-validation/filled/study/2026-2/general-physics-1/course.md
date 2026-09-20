@@ -42,7 +42,7 @@ term: "2026-2"
 - ASM-20260908-01 | 물리학 HW03 | open | 주 과목
 - EXM-20260908-01 | 일반물리학 중간고사 | planned | 주 과목
 - FAC-20260908-01 | 중간고사 일정 확정 | active | 주 과목
-- RES-20260908-01 | Chapter 3 - Momentum | active | 주 과목
+- RES-general-physics-1-week03-slides | Chapter 3 - Momentum | active | 주 과목
 - PEX-20260908-01 | 물리학 2024 중간고사 기출 | needs-review | 주 과목
 - QST-20260908-01 | 운동량 보존 조건 확인 | open | 주 과목
 - REV-20260908-01 | 물리학 주간 복습 | planned | 주 과목

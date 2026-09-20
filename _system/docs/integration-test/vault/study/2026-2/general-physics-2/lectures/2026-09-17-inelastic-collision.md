@@ -15,7 +15,7 @@ date: 2026-09-17
 source: raw/2026-2/general-physics-2/transcripts/2026-09-08-general-physics-2-01.md
 resources: 
   - id: RES-general-physics-2-ch03-slides
-    pages: "49-60"
+    pages: "45-60"
 concepts: 
   - CON-momentum
 assignments: []
@@ -68,7 +68,7 @@ Scenario B(Resource N:N) 전용 축약 fixture다. 같은 RES를 서로 다른 �
 
 ## 사용 자료
 
-- RES-general-physics-2-ch03-slides pages 49-60
+- RES-general-physics-2-ch03-slides pages 45-60
 
 ## 기출 연결
 

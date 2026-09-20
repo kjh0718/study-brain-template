@@ -14,7 +14,7 @@ date: 2026-09-08
 week: 3
 source: raw/2026-2/general-physics-1/transcripts/2026-09-08-physics-01.md
 resources: 
-  - id: RES-20260908-01
+  - id: RES-general-physics-1-week03-slides
     pages: "32-45"
 concepts: 
   - CON-20260908-01
@@ -31,6 +31,8 @@ questions:
 <!-- date: 수업일을 확인하지 못했으면 자리표시자 대신 null을 넣고 status를 needs-review로 둔다. -->
 <!-- source: 보존된 주 전사본의 저장소 루트 기준 경로. 분할 전사는 나머지를 Source 절에 모두 적는다. -->
 <!-- resources 항목 형식: - id: RES-...  (사용 범위를 확인했으면 같은 항목에 pages: "32-45") -->
+<!-- 자료마다 항목 하나. 같은 RES를 두 항목으로 나누지 않고 떨어진 구간은 한 pages 문자열에 적는다(예: "3-7, 10-12"). -->
+<!-- pages 생략은 자료 전체를 썼다는 뜻이 아니라 범위를 확인하지 못했다는 뜻이다. 연결 근거가 없으면 항목을 만들지 않고 AI 해석 / 검증 필요에 후보로 남긴다. -->
 <!-- 선택 필드: 주차를 확인했으면 week를 추가한다. -->
 
 ## 수업 요약

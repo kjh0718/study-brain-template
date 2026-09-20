@@ -15,6 +15,7 @@ source: "{{source}}"
 lectures: []
 ---
 
+<!-- id: RES-<과목 slug>-<자료 slug> 형태. 등록일을 넣지 않는다. 예: RES-general-physics-2-ch03-slides -->
 <!-- course: 자료를 처음 등록한 과목(canonical home)의 CRS ID. null을 쓰지 않는다. 다른 과목에서 재사용하면 복제하지 않고 related에 그 과목의 CRS ID를 적는다. -->
 <!-- resource_type: slides, textbook, handout, paper, article, practice, lab, video, dataset, other -->
 <!-- authority: professor, official-lms, textbook, student-provided, external, ai-generated, unknown -->
@@ -50,6 +51,7 @@ lectures: []
 ## Lecture Usage
 
 <!-- 사용 페이지의 기준 데이터는 Lecture.resources[].pages다. 여기에는 그 요약만 둔다. -->
+<!-- 여러 Lecture가 겹치는 페이지를 써도 정상이다. 범위를 확인하지 못한 Lecture는 pages 칸을 미확인으로 둔다. -->
 
 -
 

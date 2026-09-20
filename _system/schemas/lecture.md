@@ -22,8 +22,10 @@ date: 2026-09-08
 week: 3
 source: raw/2026-2/general-physics-1/transcripts/2026-09-08-physics.md
 resources:
-  - id: RES-20260908-01
+  - id: RES-general-physics-1-ch03-momentum
     pages: "32-45"
+  - id: RES-general-physics-1-collision-handout
+    pages: "3-7, 10-12"
 concepts: []
 assignments: []
 exams: []
@@ -51,7 +53,11 @@ questions: []
 
 semester는 Course의 term을 참조하므로 중복 저장하지 않는다. related는 위 전용 필드에 없는 추가 관계(예: 관련 PEX, REV, LEC)에 사용한다. 관계 목록은 중복 없이 실제 존재하는 ID만 담는다. 아직 생성하지 않은 후보는 본문에 기록한다.
 
-resources 항목의 id는 필수다. pages는 확인된 페이지 범위 문자열이며 모르면 생략한다. PDF 페이지와 슬라이드 번호가 다르면 본문에 기준을 밝힌다. 페이지가 없는 자료는 본문에 장·절·타임스탬프를 기록한다. 사용 범위를 추정하지 않는다.
+resources 항목의 id는 필수다. 한 수업이 여러 자료를 썼으면 자료마다 항목을 하나씩 둔다. 같은 RES ID를 두 항목으로 나누지 않으며, 떨어진 구간 여럿은 한 항목의 pages 문자열 안에 적는다(예: `"3-7, 10-12"`).
+
+pages는 확인된 페이지 범위 문자열이며 모르면 생략한다. 형식을 강제하지 않고 기존 값을 정규화하지 않는다. **생략은 자료 전체를 사용했다는 뜻이 아니라 범위를 확인하지 못했다는 뜻이다.** 다른 Lecture가 같은 자료의 겹치는 페이지를 적어도 정상이다. PDF 페이지와 슬라이드 번호가 다르면 본문에 기준을 밝힌다. 페이지가 없는 자료는 본문에 장·절·타임스탬프를 기록한다. 사용 범위를 추정하지 않는다.
+
+연결 근거가 불충분하면 항목을 만들지 않고 본문 `## AI 해석 / 검증 필요`에 후보로 남긴다. 그 이유만으로 status를 needs-review로 바꾸지 않는다. 판단 기준의 정본은 SECOND-BRAIN.md 2.10이다.
 
 ## Status
 

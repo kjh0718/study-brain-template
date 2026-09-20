@@ -55,12 +55,12 @@ Python 3와 PyYAML만 쓴다. 새 의존성을 추가하지 않았다.
 가상 과목 **일반물리학2**를 2026-1과 2026-2 두 학기에 수강한 상황을 만들었다.
 
 - 전사 1건 (약 70분 분량, 타임스탬프 포함). 교수 강조·단순 설명·과제·애매한 마감·시험 언급·추정 표현·PPT 페이지·학생 질문 2건·다음 수업 공지를 모두 포함한다.
-- Lecture 4건, Resource 1건(60p를 4개 Lecture가 페이지 범위별 사용), Concept 2건, Cluster 1건
+- Lecture 5건, Resource 2건, Concept 2건, Cluster 1건. 60p 슬라이드는 Lecture 4건이 페이지 범위별로, 12p 유인물은 Lecture 3건이 사용하며 두 자료의 Lecture 집합은 서로 포함되지 않는다(교차 M:N)
 - Assignment 4건 (Scenario D의 A~D 발언에 각각 대응)
 - Course Fact 4건 (최초 공지 + Scenario E의 Case 1~3)
 - Past Exam 3건 (같은 개념이 3회차 반복), Question 2건, Review 1건, Course 2건
-- 보호 영역 25개 (`My Notes`, `My Understanding`, `My Questions`, `Personal Reflection`)
-- 고의 오류 9건 + 저장 경로 오류 3건(`broken/storage/`)
+- 보호 영역 27개 (`My Notes`, `My Understanding`, `My Questions`, `Personal Reflection`)
+- 고의 오류 10건 + 저장 경로 오류 3건(`broken/storage/`)
 
 ## Scenario 결과
 
@@ -99,15 +99,25 @@ Python 3와 PyYAML만 쓴다. 새 의존성을 추가하지 않았다.
 - Course Fact와 개념 지식이 분리됐다. 학생 질문 2건이 QST로 추출됐다.
 - Review Question에 `(AI 생성)` 표시가 있다.
 - PPT 페이지 범위 `21-38`이 기록됐다.
-- **대시보드 결정성**: 자동 관리 영역의 20개 항목이 `course` 조회 결과와 정확히 일치하고, 타입 순서 → ID 오름차순 정렬 규칙을 만족한다. 두 번 계산해도 같은 텍스트가 나온다.
+- **대시보드 결정성**: 자동 관리 영역의 22개 항목이 `course` 조회 결과와 정확히 일치하고, 타입 순서 → ID 오름차순 정렬 규칙을 만족한다. 두 번 계산해도 같은 텍스트가 나온다.
 
 ### B — Resource N:N
 
-- 같은 자료의 RES가 **정확히 1개**다.
-- LEC 4개가 같은 RES를 가리키고 각각 다른 페이지 범위(`1-20`, `21-38`, `39-48`, `49-60`)를 갖는다.
-- `Resource.lectures`와 각 `Lecture.resources[].id`가 **완전히 일치**한다. drift 없음.
-- Resource 본문 `## Lecture Usage`로 사용 관계를 재구성할 수 있고, 그 값이 정방향 기준 데이터와 같다.
-- 같은 `source`를 가리키는 RES가 1개뿐이다. 재등록 시 새 RES가 생기지 않는 구조다.
+양쪽 방향과 그 교차를 함께 본다. 검사는 특정 항목 순서에 의존하지 않고 RES ID로 찾는다.
+
+| 보는 것 | fixture |
+|---|---|
+| 1 RES → 여러 LEC | ch03 슬라이드를 LEC 4건이 `1-20`, `21-38`, `39-48`, `45-60`으로 사용 |
+| 1 LEC → 여러 RES | `LEC-20260908-01`과 `LEC-20260915-01`이 슬라이드와 유인물을 함께 사용 |
+| 교차 M:N | 슬라이드 {09-08, 09-10, 09-15, 09-17}, 유인물 {09-08, 09-15, 09-22}. 어느 쪽도 다른 쪽을 포함하지 않는다 |
+| 부분 pages | 위 모든 범위가 자료 일부다. `39-48`과 `45-60`은 겹치며 이는 정상이다 |
+| 비연속 구간 | `LEC-20260908-01` → 유인물 `"3-7, 10-12"`. 항목을 쪼개지 않고 한 문자열에 담는다 |
+| pages 생략 | `LEC-20260915-01` → 유인물. 범위 미확인이며 Lecture Usage도 범위를 지어내지 않는다 |
+| 양방향 정합 | 모든 RES에서 `Resource.lectures`와 각 `Lecture.resources[].id`가 완전히 일치한다. drift 없음 |
+| 중복 항목 금지 | 한 LEC의 `resources`에 같은 RES ID가 두 번 나오지 않는다 |
+| 재등록 중복 금지 | 같은 `source`를 가리키는 RES가 1개뿐이다. 재등록해도 새 RES가 생기지 않는다 |
+
+Resource 본문 `## Lecture Usage`로 사용 관계를 재구성할 수 있고, 그 값이 정방향 기준 데이터와 같다.
 
 ### C — Concept Deduplication (PASS WITH NOTES)
 
@@ -218,7 +228,7 @@ EXM-general-physics-2-2026-1-final
 
 ### L8 오류 탐지
 
-고의 오류 9건을 모두 탐지했다.
+고의 오류 10건을 모두 탐지했다.
 
 | fixture | 심은 오류 | 탐지된 항목 |
 |---|---|---|
@@ -226,6 +236,7 @@ EXM-general-physics-2-2026-1-final
 | `bad-prefix.md` | type과 ID 접두사 불일치 | 항목3 |
 | `bad-id-shape.md` | ID 형식 계약 위반(대문자·공백) | 항목3 |
 | `bad-missing-ref.md` | 없는 ID 참조 | 항목4 |
+| `bad-duplicate-resource.md` | 한 LEC에 같은 RES가 두 항목 | 항목5 |
 | `bad-duplicate-concept.md` | 중복 개념 + 중복 topic slug | 항목7 + L9 후보 |
 | `bad-status.md` | `lecture`에 `active` | 항목2 |
 | `bad-orphan.md` | orphan 노트 | 항목4 |

@@ -149,12 +149,12 @@ rg -n "^(id|title|topics|members):" wiki/clusters -g "*.md"
 ```text
 L4 Knowledge extraction 완료
 
-- 입력 후보: 개념 6, 질문 3 (근거: LEC-20260908-01, RES-20260908-01)
+- 입력 후보: 개념 6, 질문 3 (근거: LEC-20260908-01, RES-general-physics-2-ch03-slides)
 - 기존 CON 연결: 4
   - CON-20260415-01 운동량 ← LEC-20260908-01 (aliases에 momentum 있어 동일 판정)
   - CON-20260415-02 에너지 보존 ← LEC-20260908-01
 - 신규 CON: 1
-  - CON-20260908-01 충격량 (근거 2개: LEC-20260908-01, RES-20260908-01)
+  - CON-20260908-01 충격량 (근거 2개: LEC-20260908-01, RES-general-physics-2-ch03-slides)
 - 후보 보류: 2
   - "역학적 계" — 1회 등장, 경계 불명확 → LEC 본문에 후보로만 기록
 - 신규 QST: 3 (conceptual 2, source-verification 1)
@@ -185,7 +185,7 @@ L4 Knowledge extraction 완료
 1. `wiki/concepts/`에서 세 표기를 모두 검색한다.
 2. `CON-20260415-01` (title: 운동량, aliases: `[momentum, linear momentum]`)이 나온다.
 3. **CON 3개를 만들지 않는다.** 기존 하나에 연결한다.
-4. `sources`에 `LEC-20260908-01`, `RES-20260908-01`, `PEX-20260909-01`을 모두 추가한다. 근거가 다르므로 셋 다 남는다.
+4. `sources`에 `LEC-20260908-01`, `RES-general-physics-2-ch03-slides`, `PEX-20260909-01`을 모두 추가한다. 근거가 다르므로 셋 다 남는다.
 5. 새 표기가 aliases에 없으면 aliases에 추가한다.
 6. topic은 어휘표의 기존 `momentum` 하나를 쓴다. `linear-momentum`을 새로 만들지 않는다.
 
