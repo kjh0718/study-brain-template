@@ -10,6 +10,7 @@ import datetime
 import logging
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import threading
@@ -627,7 +628,123 @@ def group_f():
     check("F", "주차 제안 교시·범위", school.suggest_week("12주차 2교시") == (12, 2) and school.suggest_week("0주차 100차시") == (None, None))
 
 
-GROUPS = [group_a, group_b, group_c, group_d, group_e, group_f]
+class FakePopen:
+    """호출마다 calls에 인자를 남기고, 생성 시 stderr와 산출물을 쓴 뒤 끝난 척한다."""
+    def __init__(self, calls, plan):
+        self.calls, self.plan = calls, plan
+
+    def __call__(self, args, stdin=None, stdout=None, stderr=None):
+        self.calls.append(args)
+        rc, err, write = self.plan[min(len(self.calls), len(self.plan)) - 1]
+        stderr.write(err)
+        if write is not None:
+            pathlib.Path(args[-1]).write_bytes(write)
+        self.returncode, self.killed, self.hang = rc, False, rc is None
+        return self
+
+    def wait(self, timeout=None):
+        if self.hang and not self.killed:
+            raise subprocess.TimeoutExpired("ffmpeg", timeout)
+        return self.returncode
+
+    def kill(self):
+        self.killed = True
+        self.returncode = -9
+
+
+def group_g():
+    from unittest import mock
+    import hls
+    from school import UserError
+
+    URL = "https://cdn.example/v/index.m3u8?sig=SECRET"
+    pub = lambda host, port, type=None: [(0, 0, 0, "", ("8.8.8.8", 443))]
+    priv = lambda host, port, type=None: [(0, 0, 0, "", ("10.0.0.5", 443))]
+    for bad in ("http://cdn.example/a.m3u8", "https://u:p@cdn.example/a.m3u8", "https://cdn.example:8443/a.m3u8"):
+        check("G", f"거절 {bad[:20]}", raises(UserError, hls.validate_cdn, bad, pub))
+    check("G", "사설 IP 거절", raises(UserError, hls.validate_cdn, "https://cdn.example/a.m3u8", priv))
+    mixed = lambda host, port, type=None: pub(host, port) + priv(host, port)
+    check("G", "하나라도 사설이면 거절", raises(UserError, hls.validate_cdn, "https://cdn.example/a.m3u8", mixed))
+    check("G", "공인 IP 허용", hls.validate_cdn("https://cdn.example/a.m3u8", pub) is None)
+
+    def dns_fail(host, port, type=None):
+        raise OSError("nope")
+    check("G", "DNS 실패는 UserError", raises(UserError, hls.validate_cdn, "https://cdn.example/a.m3u8", dns_fail))
+
+    with tmpdir() as t:
+        d = pathlib.Path(t)
+        a = hls.ffmpeg_args("ffmpeg", URL, d / "v.mp4.part", False)
+        check("G", "필수 인자", all(x in a for x in ("-tls_verify", "1", "-c", "copy", "-fs", str(2 * 1024**3), "https,tls,tcp,crypto")))
+        check("G", "Referer 없음", "-headers" not in a and a[-1] == str(d / "v.mp4.part"))
+        check("G", "Referer 인자", "Referer: https://ecampus.sejong.ac.kr/\r\n" in hls.ffmpeg_args("ffmpeg", URL, d / "x", True))
+        check("G", "쿠키 인자 없음", not any("ookie" in x for x in hls.ffmpeg_args("ffmpeg", URL, d / "x", True)))
+
+        def run(plan, name, **kw):
+            calls = []
+            with mock.patch.object(hls.socket, "getaddrinfo", pub):
+                try:
+                    hls.download_hls(URL, d / name, ffmpeg="ffmpeg", popen=FakePopen(calls, plan), **kw)
+                    return calls, None
+                except UserError as e:
+                    return calls, str(e)
+
+        # 정상
+        calls, err = run([(0, b"", b"video")], "ok.mp4")
+        check("G", "정상 다운로드", err is None and len(calls) == 1 and (d / "ok.mp4").read_bytes() == b"video" and not (d / "ok.mp4.part").exists())
+        # 403 → referer 재시도 성공
+        calls, err = run([(1, b"HTTP error 403 Forbidden " + URL.encode(), None), (0, b"", b"video")], "v.mp4")
+        check("G", "403 재시도", len(calls) == 2 and "-headers" not in calls[0] and "-headers" in calls[1]
+              and (d / "v.mp4").read_bytes() == b"video" and not (d / "v.mp4.part").exists())
+        # 실패: stderr에 서명 URL
+        calls, err = run([(1, b"error opening " + URL.encode(), b"junk")], "f.mp4")
+        check("G", "오류에 URL·stderr 없음", err and "sig=" not in err and "https://" not in err and "SECRET" not in err
+              and len(calls) == 1 and not (d / "f.mp4").exists() and not (d / "f.mp4.part").exists())
+        # 403이 재시도에서도 실패하면 두 번에서 멈춘다
+        calls, err = run([(1, b"403", b"x"), (1, b"403", b"x")], "g.mp4")
+        check("G", "403 두 번 실패", err and len(calls) == 2 and not (d / "g.mp4.part").exists())
+        # stderr 16 KiB 뒤의 403은 보지 않는다
+        calls, err = run([(1, b"x" * 20000 + b"403", None)], "h.mp4")
+        check("G", "stderr는 16KiB까지만", err and len(calls) == 1)
+        # 빈 파일 / 상한 이상
+        calls, err = run([(0, b"", b"")], "e.mp4")
+        check("G", "빈 파일은 실패", err and not (d / "e.mp4").exists() and not (d / "e.mp4.part").exists())
+        calls, err = run([(0, b"", b"12345")], "big.mp4", max_bytes=5)
+        check("G", "상한 이상은 실패", err and not (d / "big.mp4").exists() and not (d / "big.mp4.part").exists())
+        # ffmpeg가 파일을 안 만들었다
+        calls, err = run([(0, b"", None)], "n.mp4")
+        check("G", "산출물 없음은 실패", err and not (d / "n.mp4").exists())
+        # 시간 초과: kill하고 partial 삭제
+        procs = []
+        class Hang(FakePopen):
+            def __call__(self, *a, **k):
+                p = super().__call__(*a, **k)
+                procs.append(p)
+                return p
+        calls = []
+        (d / "t.mp4.part").write_bytes(b"stale")
+        with mock.patch.object(hls.socket, "getaddrinfo", pub):
+            try:
+                hls.download_hls(URL, d / "t.mp4", ffmpeg="ffmpeg", popen=Hang(calls, [(None, b"", b"half")]), timeout=1)
+                msg = None
+            except UserError as e:
+                msg = str(e)
+        check("G", "시간 초과", msg == "영상 받기가 2시간을 넘었습니다. 다시 시도해 주세요." and procs[0].killed
+              and not (d / "t.mp4.part").exists() and not (d / "t.mp4").exists())
+        # 사설 IP면 ffmpeg를 띄우지 않는다
+        calls = []
+        with mock.patch.object(hls.socket, "getaddrinfo", priv):
+            ok = raises(UserError, lambda: hls.download_hls(URL, d / "p.mp4", ffmpeg="ffmpeg", popen=FakePopen(calls, [(0, b"", b"v")])))
+        check("G", "사설 IP면 실행 안 함", ok and not calls)
+        # 예기치 못한 예외에도 partial 정리
+        def boom(args, **k):
+            pathlib.Path(args[-1]).write_bytes(b"x")
+            raise RuntimeError("boom")
+        with mock.patch.object(hls.socket, "getaddrinfo", pub):
+            ok = raises(RuntimeError, lambda: hls.download_hls(URL, d / "b.mp4", ffmpeg="ffmpeg", popen=boom))
+        check("G", "예외에도 partial 정리", ok and not (d / "b.mp4.part").exists())
+
+
+GROUPS = [group_a, group_b, group_c, group_d, group_e, group_f, group_g]
 
 for g in GROUPS:
     try:
