@@ -184,7 +184,11 @@ def group_h():
 
         # 경합 보강: 저장소 호출 결과가 중간에 달라진 경우를 흉내 낸다.
         real_claim = store.claim
-        store.claim = lambda *a, **k: None
+
+        def claim_after_delete(item_id, *a, **k):  # 옮기는 사이 항목이 지워진 실제 경합
+            store.remove(item_id)
+            return None
+        store.claim = claim_after_delete
         try:
             r = upload("recording", "race.m4a", b"\x00", week=7, session=1)
         finally:
@@ -195,6 +199,8 @@ def group_h():
         hole = store.add_item(kind="transcript", bundle=rec["bundle"], filename="week_08_01.md", status=jobs.FAILED,
                               error="x", source={"type": "upload", "name": "x.m4a"})
         check("H", "업로드 자리표시자 재시도 409", c.post(f"/api/items/{hole['id']}/retry", headers=H).status_code == 409
+              and store.find(hole["id"])["status"] == jobs.FAILED)
+        check("H", "업로드 자리표시자 삭제 409", c.delete(f"/api/items/{hole['id']}", headers=H).status_code == 409
               and store.find(hole["id"])["status"] == jobs.FAILED)
         check("H", "조건부 remove는 상태가 다르면 None", store.remove(hole["id"], from_statuses=(jobs.DONE,)) is None
               and store.remove(hole["id"], from_statuses=(jobs.FAILED,))["id"] == hole["id"])

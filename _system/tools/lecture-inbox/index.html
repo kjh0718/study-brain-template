@@ -179,7 +179,7 @@ $("login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const body = JSON.stringify({ studentId: $("sid").value.trim(), password: $("pw").value });
   const pending = api("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body });
-  $("pw").value = ""; // 요청을 보낸 직후 비운다
+  $("pw").value = ""; $("sid").value = ""; // 요청을 보낸 직후 비운다(학번도 화면에 남기지 않는다)
   $("login-msg").textContent = "";
   const r = await pending;
   if (!r.ok) { $("login-msg").textContent = r.detail || "로그인하지 못했습니다."; return; }

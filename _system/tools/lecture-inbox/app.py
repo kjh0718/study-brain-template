@@ -1,4 +1,5 @@
 """lecture-inbox 로컬 API. 요청 본문·학번·비밀번호·서명된 URL은 로그와 오류 응답에 남기지 않는다."""
+import contextlib
 import datetime as dt
 import logging
 import secrets
@@ -128,7 +129,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
                                  "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY",
                                  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-                                                            "style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"})
+                                                            "style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"})
         return response
 
     @app.exception_handler(RequestValidationError)
@@ -305,9 +306,14 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
                 if store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name)) is None:
                     raise HTTPException(409, "업로드 항목이 그 사이에 바뀌었습니다. 다시 올려 주세요.")
             except BaseException:
-                store.remove(item["id"])
+                with contextlib.suppress(KeyError):  # 그 사이 항목이 지워졌어도 폴더는 치워야 한다
+                    store.remove(item["id"])
                 shutil.rmtree(work, ignore_errors=True)
                 raise
+
+    def is_upload_placeholder(item: dict) -> bool:
+        """옮기는 중인 업로드(FAILED, media 없음). 되살릴 파일이 없고 업로드 쪽이 정리를 맡는다."""
+        return item["status"] == FAILED and item["source"]["type"] == "upload" and not item.get("media")
 
     @app.post("/api/items/{item_id}/retry")
     def retry(item_id: str):
@@ -315,7 +321,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             item = store.find(item_id)
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
-        if item["status"] == FAILED and item["source"]["type"] == "upload" and not item.get("media"):
+        if is_upload_placeholder(item):
             raise HTTPException(409, "올리던 도중 멈춘 항목입니다. 지우고 다시 올려 주세요.")  # 되살릴 파일이 없다
         target = TRANSCRIBE_WAIT if item.get("media") else DOWNLOAD_WAIT
         item = store.claim(item_id, (FAILED,), status=target, error=None)
@@ -331,7 +337,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             item = store.find(item_id)
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
-        if item["status"] not in DELETABLE:
+        if item["status"] not in DELETABLE or is_upload_placeholder(item):
             raise HTTPException(409, "진행 중이거나 끝난 항목은 지울 수 없습니다.")
         try:
             removed = store.remove(item_id, DELETABLE)  # 확인과 삭제를 한 번에 해야 워커가 집은 항목을 지우지 않는다
