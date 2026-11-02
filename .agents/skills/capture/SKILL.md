@@ -25,7 +25,7 @@ description: 새 학습 입력을 받아 어떤 ingest workflow로 보낼지 판
 ## Execution
 
 1. `SECOND-BRAIN.md`를 읽는다.
-2. `inbox/`의 강의 수집 도구 묶음이면 `안내.md`의 항목마다 종류대로 보낸다. 규칙은 [`inbox/README.md`](../../../inbox/README.md)를 따른다.
+2. `inbox/`의 강의 수집 도구 묶음이면 `안내.md`의 `완료` 항목마다 종류대로 보내되, 자료를 전사보다 먼저 처리한다. 건너뛴 `대기`·`실패` 항목은 `실패` 사유와 함께 보고한다. 규칙은 [`inbox/README.md`](../../../inbox/README.md)를 따른다.
 3. 입력의 종류를 판단해 아래 중 하나로 보낸다.
 
    | 입력 | 보낼 곳 |

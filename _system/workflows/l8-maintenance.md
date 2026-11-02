@@ -93,13 +93,21 @@ rg -n -A5 "^lectures:" study -g "**/resources/*.md"
 **6. `source`와 `sources`의 용도 구분**
 
 ```bash
-# 로컬 경로인 source의 파일 존재 확인
-rg -oN --no-filename "^source: \K(?!http|null$).+" study -g "*.md" -P | while read -r p; do
+# 로컬 경로인 source의 파일 존재 확인 (assignment 제외). LEC·RES·PEX의 source: null은 "MISSING: null"로 잡힌다
+rg -oN --no-filename "^source: \K(?!http).+" study -g "*.md" -g "!**/assignments/*.md" -P | while read -r p; do
   [ -e "$p" ] || echo "MISSING: $p"
 done
+
+# assignment의 source: 값이 null이면 건너뛰고 경로만 확인
+rg -oN --no-filename "^source: \K(?!http|null$).+" study -g "**/assignments/*.md" -P | while read -r p; do
+  [ -e "$p" ] || echo "MISSING: $p"
+done
+
+# 빈 source 값 (assignment 포함. 필수가 아닌 assignment도 비워 두지 말고 null로 쓴다)
+rg -n "^source:\s*$" study -g "*.md"
 ```
 
-assignment의 `source: null`은 원본 파일이 없다는 뜻이므로 누락으로 보고하지 않는다.
+assignment의 `source: null`은 원본 파일이 없다는 뜻이므로 누락으로 보고하지 않는다. LEC·RES·PEX는 `source`가 필수이므로 `null`이나 빈 값이면 누락으로 보고한다.
 
 `source`가 외부 URL이면 **존재 검사 대신** 형식과 접근 기록 여부만 본다. 접근하지 못한 외부 참조를 파일 누락으로 보고하지 않는다. `sources`는 노트 ID 목록이므로 경로 검사 대상이 아니다.
 

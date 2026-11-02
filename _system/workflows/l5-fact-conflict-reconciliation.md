@@ -59,7 +59,7 @@ rg -ln "FAC-20260908-01" study -g "**/course-facts/*.md"
 
 ## 2. 실행 체크리스트
 
-- [ ] **0. 원본 보존.** inbox 과제 PDF면 SECOND-BRAIN.md L5 0단계를 따른다.
+- [ ] **0. 원본 보존.** inbox 과제 PDF면 SECOND-BRAIN.md L5 0단계를 따른다. 같은 내용이 `raw/`에 이미 있으면 복사하지 않고 그 경로를 쓴다. 보존된 경로는 2·3단계에서 정한 ASM의 `source`에 적는다.
 - [ ] **1. 항목 단위로 분해.** 마감 하나, 시험 하나가 각각 별개 항목이다.
 - [ ] **2. 대상 타입 결정.** 과제 → ASM, 시험 → EXM, 그 밖의 운영 사실과 **변경** → FAC. 새 노트는 대상 CRS의 `study/<term>/<course-slug>/` 아래 `assignments/`, `exams/`, `course-facts/`에 만든다.
 - [ ] **3. 기존 노트 검색.** 같은 항목이면 근거를 누적한다.
@@ -140,7 +140,7 @@ rg -ln "FAC-20260908-01" study -g "**/course-facts/*.md"
 - [ ] 미확정 항목이 **해당 필드의** 미확정 값으로 명시됐다. 서로 다른 필드의 값을 섞어 쓰지 않았다.
 - [ ] 명시적 변경일 때 이전 FAC가 있었으면 `supersedes`로 이어져 있고, 없었으면 `supersedes: []`이며 기존 값이 `## 변경 이력`에 적혀 있다.
 - [ ] `supersedes`에 자기 참조나 순환이 없다.
-- [ ] 입력이 과제 PDF면 원본이 `raw/<term>/<course-slug>/assignments/`에 있고 ASM `source`가 그 경로를 가리킨다. 원본 파일이 없는 과제는 `source: null`이다.
+- [ ] 입력이 과제 PDF면 원본이 `raw/<term>/<course-slug>/assignments/`에 있고(같은 내용이 다른 과목 폴더 등 `raw/` 아래에 이미 있으면 그 사본) ASM `source`가 그 경로를 가리킨다. 원본 파일이 없는 과제는 `source: null`이다.
 - [ ] 로그를 기록했다.
 
 ## 6. 완료 보고 형식
@@ -181,6 +181,8 @@ L5 Fact reconciliation 완료
 - 2026-09-08 18:45 | L5 | create-note | FAC-20260908-01 | done | 중간고사 10/17. supersedes FAC-20260415-03
 - 2026-09-08 18:46 | L5 | update-note | EXM-20260415-01 | done | date 10-15 -> 10-17
 ```
+
+`preserve-source`에서 같은 내용이 `raw/`에 이미 있어 복사하지 않았으면 대상에 그 기존 경로를 적고 메모를 "이미 보존됨: <경로>"로 남긴다.
 
 불명확한 상충으로 보류했으면 결과값을 `conflict`로 남긴다.
 

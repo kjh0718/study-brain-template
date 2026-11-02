@@ -32,6 +32,7 @@ Study Brain 저장소의 단일 운영 기준서다. 이 저장소에서 작업�
 - 확정하지 못하면 파일을 이동하거나 변환하지 않고 그대로 두며, 무엇을 확인해야 하는지 사용자에게 알린다. 추측으로 과목이나 학기를 배정하지 않는다.
 - 표준 입력 형식이 아닌 파일도 여기 그대로 둔다. 처리 기준은 아래 표준 입력 형식 절을 따른다.
 - 강의 수집 도구가 만든 묶음(`안내.md`가 있는 폴더)의 처리 규칙은 [`inbox/README.md`](inbox/README.md)의 `강의 수집 도구 묶음` 절을 따른다.
+- 묶음 정리 예외: 묶음의 모든 항목을 처리했으면 남은 `안내.md`와 처리한 `inbox/` 사본, 빈 폴더를 지운다. `raw/`로 옮긴 것은 물론, 같은 내용이 이미 `raw/`에 있어 `preserve-source`에 메모 "이미 보존됨: <경로>"로 남긴 사본도 처리한 것이다. 이는 임시 영역 정리이며 안전 순서 5단계의 삭제가 아니므로 사용자 승인이 필요 없다. `대기` 항목이 있거나, 처리하지 않은 파일이 남았거나, 이번 실행에서 이 묶음의 항목이 `partial`·`held`로 끝났으면 지우지 않는다. `실패` 항목은 파일이 없으므로 막지 않는다. 그 사유는 지우기 전에 보고한다.
 
 ### raw/
 
@@ -350,7 +351,7 @@ Core Type과 접두사, 저장 위치는 [`_system/schemas/common.md`](_system/s
 
 course-scoped 노트(LEC, RES, ASM, EXM, PEX, FAC, QST, REV)는 모두 실제 CRS에 연결돼야 하고, 원본과 노트의 저장 경로가 그 CRS의 `term`과 `<course-slug>`로 정해진다. 따라서 L1, L2, L3, L5는 원본을 보존하거나 노트를 만들기 전에 이 절차를 수행한다. L4와 L7이 QST·REV를 만들 때도 연결할 CRS를 이 절차로 확인한다. 저장소가 비어 있어 CRS가 하나도 없을 수 있다. 새 레이어 번호를 만들지 않는다.
 
-1. **course 확인.** 입력 내용, 파일명, 사용자 지정을 근거로 어느 과목인지 확인한다. 추측하지 않는다. `inbox/`의 강의 수집 도구 묶음에 있는 `안내.md`는 사용자 지정이다. 그 과목·학기가 기존 CRS와 다를 때만 사용자에게 묻는다.
+1. **course 확인.** 입력 내용, 파일명, 사용자 지정을 근거로 어느 과목인지 확인한다. 추측하지 않는다. `inbox/`의 강의 수집 도구 묶음에 있는 `안내.md`의 과목명·term·종류·주차·차시·수업일은 사용자 지정이다. 기존 CRS의 제목은 비슷한데 term이나 code가 다르거나 안내 값이 기존 CRS와 충돌할 때만 사용자에게 묻는다. 맞는 CRS가 없으면 묻지 않고 5단계로 만든다.
 2. **term 확인.** 같은 근거로 어느 학기인지 확인한다. 형식은 [`course.md`](_system/schemas/course.md)가 정한 `YYYY-1`, `YYYY-2`, `YYYY-summer`, `YYYY-winter`다.
 3. **CRS 존재 확인.** `study/` 전체의 `course.md`에서 기존 CRS를 검색한다. 검색 키는 code(또는 title) + term + 분반이다. 일치하는 CRS가 있으면 그 ID를 사용한다.
 4. **course-slug 확인.** 기존 CRS가 있으면 그 `course.md`가 있는 폴더 `study/<term>/<course-slug>/`에서 `<course-slug>`를 확인한다. 이 입력의 원본과 노트 경로는 모두 이 값을 쓴다.
@@ -587,7 +588,7 @@ course-scoped 노트(LEC, RES, ASM, EXM, PEX, FAC, QST, REV)는 모두 실제 CR
 **읽는 범위**: 근거 노트의 해당 부분, 같은 course의 기존 ASM·EXM·FAC, 관련 원본.
 
 **처리 순서**
-0. **원본 보존.** 입력이 `inbox/`의 과제 PDF면 공통 준비 절차로 CRS를 확보한 뒤 원본을 `raw/<term>/<course-slug>/assignments/`로 옮긴다. 같은 내용이 `raw/`에 이미 있으면 다시 복사하지 않는다. 로그에 `preserve-source`를 남긴다. 이후 단계가 실패해도 이 결과는 유지한다. 옮긴 경로를 해당 ASM의 `source`에 적는다.
+0. **원본 보존.** 입력이 `inbox/`의 과제 PDF면 공통 준비 절차로 CRS를 확보한 뒤 원본을 `raw/<term>/<course-slug>/assignments/`로 옮긴다. 같은 내용이 `raw/`에 이미 있으면(다른 과목 폴더 포함) 다시 복사하지 않고 그 경로를 쓴다. 로그에 `preserve-source`를 남기며, 이미 있었으면 메모를 "이미 보존됨: <경로>"로 한다. 이후 단계가 실패해도 이 결과는 유지한다. 보존된 경로(이미 있으면 그 경로)는 2·3단계에서 정한 ASM의 `source`에 적는다.
 1. 사실을 항목 단위로 분해한다. 마감 하나, 시험 하나가 각각 별개 항목이다.
 2. 대상 타입을 정한다. 과제는 ASM, 시험은 EXM, 그 밖의 운영 사실과 변경은 FAC다.
 3. 기존 노트를 검색한다. 같은 항목이면 근거를 누적한다.
@@ -608,14 +609,14 @@ course-scoped 노트(LEC, RES, ASM, EXM, PEX, FAC, QST, REV)는 모두 실제 CR
 
 **생성·수정 대상**
 - 생성: 대상 CRS의 `study/<term>/<course-slug>/` 아래 `assignments/`의 ASM, `exams/`의 EXM, `course-facts/`의 FAC.
-- 수정: 근거 노트의 관계 목록, 대상 ASM·EXM의 일정 필드. 단독 실행이면 표시가 달라지는 CRS의 대시보드 영역. 부모 L1이 있으면 갱신 대상 목록만 부모에게 돌려준다.
+- 수정: 근거 노트의 관계 목록, 대상 ASM·EXM의 일정 필드, 과제 PDF 입력이면 ASM의 `source`. 단독 실행이면 표시가 달라지는 CRS의 대시보드 영역. 부모 L1이 있으면 갱신 대상 목록만 부모에게 돌려준다.
 - 수정하지 않음: CON, QST, 원본, 보호 영역, 이미 `superseded`로 정리된 FAC.
 
 **완료 조건**
 - 각 사실 항목이 노트 하나에 대응하고 근거가 연결됐다.
 - 미확정 항목이 해당 필드의 미확정 값으로 명시됐다. `due_status`·`date_status`·`scope_status`는 `unknown` 또는 `needs-review`, FAC는 `status: needs-review`다. 서로 다른 필드의 값을 섞어 쓰지 않는다.
 - 명시적 변경일 때, 이전 FAC가 있었으면 이전 FAC와 새 FAC가 `supersedes`로 이어져 있다. 이전 FAC가 없었으면 새 FAC의 `supersedes`가 `[]`이고 기존 EXM·ASM 값이 변경 이력에 적혀 있다.
-- 입력이 과제 PDF면 원본이 `raw/<term>/<course-slug>/assignments/`에 있고 ASM `source`가 그 경로를 가리킨다. 원본 파일이 없는 과제는 `source: null`이다.
+- 입력이 과제 PDF면 원본이 `raw/<term>/<course-slug>/assignments/`에 있고(같은 내용이 다른 과목 폴더 등 `raw/` 아래에 이미 있으면 그 사본) ASM `source`가 그 경로를 가리킨다. 원본 파일이 없는 과제는 `source: null`이다.
 
 **보류 조건**
 - 발화 권한이나 적용 범위를 알 수 없으면 FAC를 `needs-review`로 두고 대상 ASM·EXM은 고치지 않는다.
