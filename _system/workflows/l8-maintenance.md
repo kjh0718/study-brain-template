@@ -94,10 +94,12 @@ rg -n -A5 "^lectures:" study -g "**/resources/*.md"
 
 ```bash
 # 로컬 경로인 source의 파일 존재 확인
-rg -oN --no-filename "^source: \K(?!http).+" study -g "*.md" -P | while read -r p; do
+rg -oN --no-filename "^source: \K(?!http|null$).+" study -g "*.md" -P | while read -r p; do
   [ -e "$p" ] || echo "MISSING: $p"
 done
 ```
+
+assignment의 `source: null`은 원본 파일이 없다는 뜻이므로 누락으로 보고하지 않는다.
 
 `source`가 외부 URL이면 **존재 검사 대신** 형식과 접근 기록 여부만 본다. 접근하지 못한 외부 참조를 파일 누락으로 보고하지 않는다. `sources`는 노트 ID 목록이므로 경로 검사 대상이 아니다.
 

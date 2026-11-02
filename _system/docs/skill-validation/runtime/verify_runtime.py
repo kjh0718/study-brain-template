@@ -27,7 +27,7 @@ PROTECTED = ("My Notes", "My Understanding", "My Questions", "Personal Reflectio
 ID_CONTRACT = re.compile(
     r"^(?:CRS|LEC|CON|ASM|EXM|PEX|FAC|QST|RES|REV|CLU)-[a-z0-9]+(?:-[a-z0-9]+)*$")
 OPTIONAL = {"course": {"code", "instructor"}, "lecture": {"week"},
-            "resource": {"page_count"}, "assignment": {"submission_method"},
+            "resource": {"page_count"}, "assignment": {"submission_method", "source"},
             "course-fact": {"effective_from"}}
 CODES = {"preserve-source", "create-note", "update-note", "sync-relations", "register-topic",
          "reconcile-fact", "refresh-dashboard", "record-review", "promote-pattern",

@@ -27,7 +27,7 @@ PREFIX = {"course": "CRS", "lecture": "LEC", "concept": "CON", "assignment": "AS
           "exam": "EXM", "past-exam": "PEX", "course-fact": "FAC", "question": "QST",
           "resource": "RES", "review": "REV", "cluster": "CLU"}
 OPTIONAL = {"course": {"code", "instructor"}, "lecture": {"week"},
-            "resource": {"page_count"}, "assignment": {"submission_method"},
+            "resource": {"page_count"}, "assignment": {"submission_method", "source"},
             "course-fact": {"effective_from"}}
 PROTECTED = ("My Notes", "My Understanding", "My Questions", "Personal Reflection")
 RES_CH03 = "RES-general-physics-2-ch03-slides"

@@ -75,7 +75,8 @@ N["resource"] = base("resource","RES-general-physics-1-week03-slides","Chapter 3
 N["concept"] = base("concept","CON-20260908-01","운동량", status="active", topics="\n  - momentum",
     aliases="\n  - momentum", sources="\n  - LEC-20260908-01\n  - RES-general-physics-1-week03-slides")
 N["assignment"] = base("assignment","ASM-20260908-01","물리학 HW03", course="CRS-20260908-01",
-    assigned=D, due="null", due_status="needs-review", sources="\n  - LEC-20260908-01")
+    assigned=D, due="null", due_status="needs-review", sources="\n  - LEC-20260908-01",
+    source="null")  # 샘플에 hw03.pdf fixture가 없어 경로 대신 null(원본 파일 없음)로 둔다
 N["exam"] = base("exam","EXM-20260908-01","일반물리학 중간고사", course="CRS-20260908-01",
     exam_type="midterm", date="null", date_status="needs-review", scope_status="unknown",
     sources="\n  - LEC-20260908-01\n  - FAC-20260908-01", concepts="\n  - CON-20260908-01")

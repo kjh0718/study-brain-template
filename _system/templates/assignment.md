@@ -13,12 +13,15 @@ assigned: null
 due: null
 due_status: unknown
 sources: []
+source: null
 ---
 
 <!-- assigned / due: 확인된 날짜만 넣는다. 모르면 null을 유지한다. -->
 <!-- due_status: unknown(마감 언급 없음), needs-review(표현이 모호하거나 상충), confirmed(값과 근거가 모두 있음) -->
 <!-- due에 시각까지 넣을 때는 시간대를 포함한다. 예: "2026-09-15T23:59:00+09:00" -->
 <!-- 선택 필드: 제출 방식을 확인했으면 submission_method를 추가한다. -->
+<!-- source: 과제 원본 PDF를 raw/<term>/<course-slug>/assignments/ 에 보존했으면 그 경로를 적는다. 원본 파일이 없으면 null. -->
+<!-- 주의: sources(근거 노트 ID 목록)와 source(원본 경로)는 다른 필드다. -->
 
 ## 요구사항
 

@@ -23,6 +23,7 @@ due: null
 due_status: needs-review
 submission_method: "LMS"
 sources: []
+source: null
 ---
 ```
 
@@ -38,6 +39,7 @@ sources: []
 | `due_status` | 예 | unknown, needs-review, confirmed 중 하나 |
 | `submission_method` | 아니오 | 확인된 제출 방식 문자열. 모르면 생략 |
 | `sources` | 예 | 과제 근거 LEC·RES·FAC ID 목록 |
+| source | 아니오 | 과제 원본 PDF의 저장소 루트 기준 경로(raw/<term>/<course-slug>/assignments/…) 또는 접근 가능한 외부 참조. 원본 파일이 없으면 null. sources(노트 ID 목록)와 혼용하지 않는다. |
 
 ## Status
 

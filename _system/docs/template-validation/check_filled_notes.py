@@ -12,7 +12,7 @@ ROOT = HERE.parents[2]
 SCH  = ROOT/"_system/schemas"
 BOX  = HERE/"filled"                      # 이 폴더가 가상 저장소 루트다
 OPTIONAL = {"course":{"code","instructor"},"lecture":{"week"},"resource":{"page_count"},
-            "assignment":{"submission_method"},"course-fact":{"effective_from"}}
+            "assignment":{"submission_method","source"},"course-fact":{"effective_from"}}
 PREFIX = {"course":"CRS","lecture":"LEC","concept":"CON","assignment":"ASM","exam":"EXM",
           "past-exam":"PEX","course-fact":"FAC","question":"QST","resource":"RES",
           "review":"REV","cluster":"CLU"}

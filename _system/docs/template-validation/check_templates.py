@@ -10,7 +10,9 @@ for _s in (sys.stdout, sys.stderr):
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 SCH, TPL = ROOT/"_system/schemas", ROOT/"_system/templates"
 OPTIONAL = {"course":{"code","instructor"}, "lecture":{"week"}, "resource":{"page_count"},
-            "assignment":{"submission_method"}, "course-fact":{"effective_from"}}
+            "assignment":{"submission_method","source"}, "course-fact":{"effective_from"}}
+# 선택 필드지만 템플릿에 null 기본값으로 두는 것: assignment의 source(원본 파일이 없으면 null)
+NULL_DEFAULT = {"assignment": {"source"}}
 # course-scoped 노트는 실제 CRS에 연결돼야 하므로 템플릿에 course: null 기본값을 두지 않는다.
 COURSE_SCOPED = {"lecture","resource","assignment","exam","past-exam","course-fact","question","review"}
 EXPECT_STATUS = {"course":"planned","lecture":"draft","resource":"draft","concept":"draft",
@@ -50,7 +52,8 @@ for tf in sorted(TPL.glob("*.md")):
     if missing: problems.append(f"{tf.name}: 필수 필드 누락 {sorted(missing)}")
     extra = set(fm) - schema_fields
     if extra: problems.append(f"{tf.name}: 스키마에 없는 필드 {sorted(extra)}")
-    opt_present = set(fm) & OPTIONAL.get(t, set())
+    # 선택 필드는 기본 frontmatter에서 뺀다. 단 NULL_DEFAULT에 든 필드는 null 기본값으로 둘 수 있다.
+    opt_present = {k for k in set(fm) & OPTIONAL.get(t, set()) if not (k in NULL_DEFAULT.get(t, set()) and fm[k] is None)}
     if opt_present: problems.append(f"{tf.name}: 선택 필드가 기본 frontmatter에 포함됨 {sorted(opt_present)}")
     if t in COURSE_SCOPED and fm.get("course") != "{{course_id}}":
         problems.append(f"{tf.name}: course 기본값은 \"{{{{course_id}}}}\"여야 한다 (현재 {fm.get('course')!r})")
