@@ -12,6 +12,7 @@ L5의 진입점. 과제(ASM)·시험(EXM)·운영 사실(FAC)을 만들고 충�
 ## When to use
 
 공지·마감·시험 언급이 들어왔을 때. [ingest-lecture](../ingest-lecture/SKILL.md)가 전사에서 그런 항목을 발견했을 때도 호출된다.
+`inbox/`의 과제 PDF가 들어왔을 때(워크플로 0단계)도 쓴다.
 
 ## Required reading
 

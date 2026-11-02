@@ -219,6 +219,10 @@ Skill은 [`SECOND-BRAIN.md`](SECOND-BRAIN.md)와 [`_system/workflows/`](_system/
 
 Codex의 Windows 등록은 `powershell.exe -NoProfile -EncodedCommand`를 쓴다. Codex가 hook을 세션 환경의 shell(PowerShell 또는 cmd)로 실행하는데, 따옴표가 든 표현은 argv 조립 규칙 때문에 cmd에서 조용히 깨지고, 따옴표를 빼면 PowerShell에서 공백 경로가 깨지기 때문이다. Base64는 두 shell 모두에서 토큰 하나라 그 차이를 타지 않는다. **정본은 Base64가 아니라 PowerShell payload 원문이며** [`_system/hooks/README.md`](_system/hooks/README.md)에 적어 뒀다.
 
+### 3.14 강의 수집 도구
+
+[`_system/tools/lecture-inbox/`](_system/tools/lecture-inbox/README.md)에 강의 영상·음성을 로컬에서 전사해 `inbox/`에 묶음으로 넣는 Windows 도구가 있다(구현됨). 서버는 `127.0.0.1:4319`에서만 열리고 vault에는 `inbox/`에만 쓴다. 묶음 처리 규칙은 [`inbox/README.md`](inbox/README.md)의 `강의 수집 도구 묶음` 절이고, L5는 `inbox/`의 과제 PDF를 0단계에서 `raw/<term>/<course-slug>/assignments/`로 보존한 뒤 ASM의 선택 필드 `source`에 경로를 적는다. 검사는 [`_system/docs/lecture-inbox-validation/`](_system/docs/lecture-inbox-validation/README.md)에 있고 `test_core.py`가 `run_all.py`에 들어 있다. 실제 이캠퍼스 계정으로 한 검증은 아직 하지 않았다. 결과는 Task 13 후 이 항목에 갱신한다.
+
 ## 4. 아직 없는 것
 
 | 영역 | 현재 | 다음 작업 |

@@ -9,7 +9,7 @@
 | 항목 | 값 |
 |---|---|
 | 목적 | 과제(ASM), 시험(EXM), 운영 사실(FAC)의 생성과 충돌 조정 |
-| 입력 | L1이 넘긴 공지·마감·시험 언급. 사용자 입력. LMS 공지 원본(`raw/<term>/<course-slug>/notices/`)과 과제 원본(`raw/<term>/<course-slug>/assignments/`) |
+| 입력 | L1이 넘긴 공지·마감·시험 언급. 사용자 입력. LMS 공지 원본(`raw/<term>/<course-slug>/notices/`)과 과제 원본(`raw/<term>/<course-slug>/assignments/`). `inbox/`의 과제 PDF |
 | 저장소 쓰기 | 예 |
 | 호출할 수 있는 레이어 | **없다.** 특히 **L5는 L1을 호출하지 않는다** |
 | 주 생성물 | ASM, EXM, FAC |
@@ -59,6 +59,7 @@ rg -ln "FAC-20260908-01" study -g "**/course-facts/*.md"
 
 ## 2. 실행 체크리스트
 
+- [ ] **0. 원본 보존.** inbox 과제 PDF면 SECOND-BRAIN.md L5 0단계를 따른다.
 - [ ] **1. 항목 단위로 분해.** 마감 하나, 시험 하나가 각각 별개 항목이다.
 - [ ] **2. 대상 타입 결정.** 과제 → ASM, 시험 → EXM, 그 밖의 운영 사실과 **변경** → FAC. 새 노트는 대상 CRS의 `study/<term>/<course-slug>/` 아래 `assignments/`, `exams/`, `course-facts/`에 만든다.
 - [ ] **3. 기존 노트 검색.** 같은 항목이면 근거를 누적한다.
@@ -139,6 +140,7 @@ rg -ln "FAC-20260908-01" study -g "**/course-facts/*.md"
 - [ ] 미확정 항목이 **해당 필드의** 미확정 값으로 명시됐다. 서로 다른 필드의 값을 섞어 쓰지 않았다.
 - [ ] 명시적 변경일 때 이전 FAC가 있었으면 `supersedes`로 이어져 있고, 없었으면 `supersedes: []`이며 기존 값이 `## 변경 이력`에 적혀 있다.
 - [ ] `supersedes`에 자기 참조나 순환이 없다.
+- [ ] 입력이 과제 PDF면 원본이 `raw/<term>/<course-slug>/assignments/`에 있고 ASM `source`가 그 경로를 가리킨다. 원본 파일이 없는 과제는 `source: null`이다.
 - [ ] 로그를 기록했다.
 
 ## 6. 완료 보고 형식
@@ -172,6 +174,7 @@ L5 Fact reconciliation 완료
 ## 7. 로그 기록
 
 ```text
+- 2026-09-08 18:43 | L5 | preserve-source | raw/2026-2/general-physics-2/assignments/hw3.pdf | done | inbox 과제 원본 보존
 - 2026-09-08 18:44 | L5 | reconcile-fact | ASM-20260908-01 | held | HW3 마감 "다음 주까지" 모호. due null 유지
 - 2026-09-08 18:44 | L5 | reconcile-fact | EXM-20260415-01 | done | 중간고사 근거 누적. 신규 생성 안 함
 - 2026-09-08 18:45 | L5 | reconcile-fact | FAC-20260415-03 | done | 명시적 변경으로 superseded

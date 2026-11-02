@@ -89,6 +89,16 @@ PPT/PPTX·HWP/DOCX·JPG/JPEG/PNG와 `.txt`/`.srt`/`.vtt` 전사는 자동으로 
 `check-conflict`가 명시적인 변경 공지인지 그냥 다르게 언급된 것인지 구분한다.
 변경이 분명할 때만 이전 사실을 대체하고, 애매하면 양쪽 근거를 남긴 채 확인을 요청한다. 나중에 나온 말이라는 이유로 덮어쓰지 않는다.
 
+### 강의 영상을 전사해 inbox에 넣는다
+
+Windows에서 강의 영상·음성을 로컬로 전사하고 PDF와 함께 `inbox/`에 묶음으로 넣어 주는 도구가 있다.
+
+```powershell
+_system\tools\lecture-inbox\start.cmd
+```
+
+도구는 `inbox/`에만 쓴다. 묶음을 `raw/`와 `study/`로 옮기는 것은 AI 에이전트의 몫이고, 규칙은 [`inbox/README.md`](inbox/README.md)에 있다. 설치와 사용법은 [도구 README](_system/tools/lecture-inbox/README.md)를 본다.
+
 ## How It Works
 
 위 흐름에서 `raw/`는 증거이고 `study/`·`wiki/`는 해석이다. 구조화 노트가 원본을 가리키며 그 반대는 없다. 각 폴더가 담는 것은 아래 [Repository Structure](#repository-structure)에 있다.

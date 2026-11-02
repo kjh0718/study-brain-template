@@ -25,18 +25,19 @@ description: 새 학습 입력을 받아 어떤 ingest workflow로 보낼지 판
 ## Execution
 
 1. `SECOND-BRAIN.md`를 읽는다.
-2. 입력의 종류를 판단해 아래 중 하나로 보낸다.
+2. `inbox/`의 강의 수집 도구 묶음이면 `안내.md`의 항목마다 종류대로 보낸다. 규칙은 [`inbox/README.md`](../../../inbox/README.md)를 따른다.
+3. 입력의 종류를 판단해 아래 중 하나로 보낸다.
 
    | 입력 | 보낼 곳 |
    |---|---|
    | 수업 전체 전사 Markdown(`.md`) 또는 붙여넣은 전사 텍스트 | [ingest-lecture](../ingest-lecture/SKILL.md) — L1 |
    | 강의자료·교재·프린트·논문 PDF 또는 외부 참조 | [ingest-resource](../ingest-resource/SKILL.md) — L2 |
    | 기출·족보 PDF 또는 외부 참조 | [ingest-past-exam](../ingest-past-exam/SKILL.md) — L3 |
-   | 과제·시험·운영 공지 | [check-conflict](../check-conflict/SKILL.md) — L5 |
+   | 과제·시험·운영 공지, 과제 원본 PDF | [check-conflict](../check-conflict/SKILL.md) — L5 |
 
-3. 표준 입력 형식이 아니면 어느 Skill로도 보내지 않는다. PPT/PPTX, HWP/DOCX, JPG/JPEG/PNG 등 이미지, `.txt`/`.srt`/`.vtt` 전사가 여기 해당한다. `inbox/`에 있는 그대로 두고 옮기거나 변환하지 않은 채 PDF 또는 `.md` 준비를 요청한다.
-4. 선택한 Skill의 Execution을 그대로 이어서 수행한다.
-5. 종류, 과목, 학기 중 하나라도 확정할 수 없으면 **여기서 멈춘다.** 입력을 `raw/`로 옮기지 않고 구조화 노트도 만들지 않는다. `inbox/`에 그대로 둔 채 무엇을 확인해야 하는지 묻는다.
+4. 표준 입력 형식이 아니면 어느 Skill로도 보내지 않는다. PPT/PPTX, HWP/DOCX, JPG/JPEG/PNG 등 이미지, `.txt`/`.srt`/`.vtt` 전사가 여기 해당한다. `inbox/`에 있는 그대로 두고 옮기거나 변환하지 않은 채 PDF 또는 `.md` 준비를 요청한다.
+5. 선택한 Skill의 Execution을 그대로 이어서 수행한다.
+6. 종류, 과목, 학기 중 하나라도 확정할 수 없으면 **여기서 멈춘다.** 입력을 `raw/`로 옮기지 않고 구조화 노트도 만들지 않는다. `inbox/`에 그대로 둔 채 무엇을 확인해야 하는지 묻는다. `안내.md`는 사용자 지정이므로 그 과목·학기는 추측이 아니다.
 
 분류 기준을 여기서 새로 만들지 않는다. 판단이 갈리면 `SECOND-BRAIN.md`의 저장소 구조와 데이터 흐름 절, 표준 입력 형식 절을 따른다.
 
