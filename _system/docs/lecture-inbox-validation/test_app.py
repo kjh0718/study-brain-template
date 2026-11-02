@@ -209,7 +209,10 @@ def group_h():
         check("H", "삭제 확인 뒤 상태 바뀌면 409·보존", r.status_code == 409 and store.find(busy["id"])["status"] == jobs.TRANSCRIBING)
         store.remove(busy["id"])
 
-        check("H", "화면 제공", "강의 수집 도구" in c.get("/").text)
+        page = c.get("/")
+        check("H", "화면 제공", "강의 수집 도구" in page.text and "frame-ancestors 'none'" in page.headers["content-security-policy"])
+        check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
+              and "https://" not in page.text and 'src="' not in page.text)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
