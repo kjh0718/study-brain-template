@@ -145,7 +145,112 @@ def group_c():
     check("C", "2회는 반복 아님", repetition.find_repetition_span(rep[:2]) is None)
 
 
-GROUPS = [group_a, group_b, group_c]
+def group_d():
+    import transcriber
+    from transcript import Segment as S, append_checkpoint, read_checkpoint
+    SR = transcriber.SAMPLE_RATE
+
+    class Fake:
+        """script(call_index, offset) -> 상대 구간 목록. 호출마다 (len(audio), offset, options)를 기록한다."""
+        def __init__(self, script):
+            self.script, self.calls = script, []
+
+        def segments(self, audio, offset, **options):
+            i = len(self.calls)
+            self.calls.append((len(audio), offset, options))
+            return iter([S(offset + s.start, offset + s.end, s.text) for s in self.script(i, offset)])
+
+    audio = [0.0] * (SR * 60)
+    REP = "같은 말을 반복합니다"
+    rep3 = lambda a: [S(a + k, a + k + 1, REP) for k in range(3)]
+
+    def seeded(d, name, segs, marker=False):
+        w = d / name
+        w.mkdir()
+        for s in segs:
+            append_checkpoint(w / "segments.jsonl", s)
+        if marker:
+            (w / "decoded").touch()
+        return w
+
+    with tmpdir() as t:
+        d = pathlib.Path(t)
+        # D1 처음부터
+        w = d / "w1"
+        w.mkdir()
+        e = Fake(lambda i, o: [S(0, 5, "하나"), S(5, 9, "둘"), S(9, 12, "셋")])
+        progress = []
+        segs, n = transcriber.transcribe(audio, w, e, progress.append)
+        check("D", "처음부터 offset 0", e.calls[0][1] == 0.0 and e.calls[0][0] == len(audio))
+        check("D", "체크포인트 3줄·마커", len(read_checkpoint(w / "segments.jsonl")) == 3 and (w / "decoded").exists())
+        check("D", "기본 옵션 전달·진행률", e.calls[0][2] == transcriber.BASE_OPTIONS and progress[-1] == 12 / 60)
+        # D2 이어하기: 끝 20.0까지 + 잘린 줄
+        w2 = seeded(d, "w2", [S(0, 10, "하나"), S(10, 20, "둘")])
+        with open(w2 / "segments.jsonl", "ab") as f:
+            f.write(b'{"start": 20, "end"')
+        e2 = Fake(lambda i, o: [S(0, 4, "넷")])
+        segs, _ = transcriber.transcribe(audio, w2, e2)
+        check("D", "마지막 끝 시각부터", e2.calls[0][1] == 20.0 and e2.calls[0][0] == len(audio) - 20 * SR)
+        check("D", "타임스탬프 원본 기준", segs[-1] == S(20.0, 24.0, "넷") and len(segs) == 3)
+        # D3 decoded 마커가 있으면 디코딩 안 함
+        w3 = seeded(d, "w3", [S(0, 10, "하나"), S(10, 20, "둘")], marker=True)
+        e3 = Fake(lambda i, o: [S(0, 4, "넷")])
+        segs3, _ = transcriber.transcribe(audio, w3, e3)
+        check("D", "마커 있으면 재디코딩 없음", e3.calls == [] and len(segs3) == 2)
+        # D4 이미 끝까지 됨
+        w4 = seeded(d, "w4", [S(0, 59.5, "끝까지")])
+        e4 = Fake(lambda i, o: [S(0, 1, "x")])
+        transcriber.transcribe(audio, w4, e4)
+        check("D", "남은 꼬리 1초 미만이면 호출 없음", e4.calls == [] and (w4 / "decoded").exists())
+        # D5 반복 해결
+        w5 = d / "w5"
+        w5.mkdir()
+        e5 = Fake(lambda i, o: [S(0, 9, "앞 문장입니다 여기")] + rep3(10) + [S(13, 14, "뒤 문장입니다 저기")] if i == 0
+                  else [S(0.5, 2, "정상 하나입니다"), S(2, 4, "정상 둘입니다")])
+        segs5, n5 = transcriber.transcribe(audio, w5, e5)
+        check("D", "재시도 offset은 start-0.5", e5.calls[1][1] == 9.5 and e5.calls[1][0] == 4 * SR
+              and n5 == 0 and not any(s.text.startswith(transcriber.REPETITION_MARK) for s in segs5))
+        check("D", "재시도 옵션 병합", e5.calls[1][2] == {**transcriber.BASE_OPTIONS})
+        check("D", "해결된 구간 교체", [s.text for s in segs5] == ["앞 문장입니다 여기", "정상 하나입니다", "정상 둘입니다", "뒤 문장입니다 저기"])
+        # D6 반복 미해결 (재시도해도 계속 반복)
+        w6 = d / "w6"
+        w6.mkdir()
+        e6 = Fake(lambda i, o: [S(0, 9, "앞 문장입니다 여기")] + rep3(10) if i == 0 else rep3(0.5))
+        segs6, n6 = transcriber.transcribe(audio, w6, e6)
+        check("D", "미해결 표시 한 줄", n6 == 1 and sum(s.text.startswith(transcriber.REPETITION_MARK) for s in segs6) == 1
+              and len(e6.calls) == 1 + len(transcriber.RETRY_OPTIONS) and len(segs6) == 2)
+        check("D", "재시도마다 옵션 병합", e6.calls[2][2] == {**transcriber.BASE_OPTIONS, **transcriber.RETRY_OPTIONS[1]})
+        # D7 180초 넘는 반복
+        long_audio = [0.0] * (SR * 400)
+        w7 = d / "w7"
+        w7.mkdir()
+        e7 = Fake(lambda i, o: [S(10, 100, REP), S(100, 200, REP), S(200, 300, REP)])
+        segs7, n7 = transcriber.transcribe(long_audio, w7, e7)
+        check("D", "긴 구간은 재시도 없음", len(e7.calls) == 1 and n7 == 1 and len(segs7) == 1)
+
+        # D8 재시도 예외는 다음 옵션으로
+        def script8(i, o):
+            if i == 1:
+                raise RuntimeError("boom")
+            return [S(0, 9, "앞 문장입니다 여기")] + rep3(10) if i == 0 else [S(0.5, 3, "정상으로 돌아왔습니다")]
+        w8 = d / "w8"
+        w8.mkdir()
+        e8 = Fake(script8)
+        segs8, n8 = transcriber.transcribe(audio, w8, e8)
+        check("D", "재시도 예외 흡수", n8 == 0 and len(e8.calls) == 3 and segs8[-1].text == "정상으로 돌아왔습니다")
+        # D9 offset 이전 구간은 버림
+        w9 = seeded(d, "w9", [S(0, 10, "하나"), S(10, 20, "둘")])
+        e9 = Fake(lambda i, o: [S(-1, 2, "과거"), S(-0.03, 2, "허용 오차"), S(2, 5, "정상")])
+        segs9, _ = transcriber.transcribe(audio, w9, e9)
+        check("D", "체크포인트 이전 시간 무시", len(segs9) == 4 and all(s.start >= 19.95 for s in segs9[2:]) and "과거" not in [s.text for s in segs9])
+        # D10 빈 텍스트 무시
+        w10 = d / "w10"
+        w10.mkdir()
+        segs10, _ = transcriber.transcribe(audio, w10, Fake(lambda i, o: [S(0, 1, ""), S(1, 2, "내용")]))
+        check("D", "빈 텍스트 무시", [s.text for s in segs10] == ["내용"] and len(read_checkpoint(w10 / "segments.jsonl")) == 1)
+
+
+GROUPS = [group_a, group_b, group_c, group_d]
 
 for g in GROUPS:
     try:
