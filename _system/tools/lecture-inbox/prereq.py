@@ -30,9 +30,12 @@ def offer_ffmpeg_install(ask=input, run=subprocess.run) -> bool:
     if answer.strip().lower() != "y":
         return False
     try:
-        run(WINGET_COMMAND)
+        result = run(WINGET_COMMAND)
     except OSError:
         print("winget을 실행하지 못했습니다. 위 명령을 직접 실행해 주세요.")
+        return False
+    if getattr(result, "returncode", 0) != 0:
+        print("ffmpeg 설치에 실패했습니다. 위 명령을 터미널에서 직접 실행해 확인해 주세요.")
         return False
     return True
 

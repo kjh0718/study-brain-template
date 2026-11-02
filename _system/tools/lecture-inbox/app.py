@@ -387,31 +387,49 @@ def _is_ours(host: str, port: int) -> "bool | None":
     return False
 
 
+def _claim_port(host: str, port: int) -> "tuple[socket.socket | None, bool | None]":
+    """포트를 먼저 독점해서 잡는다. 확인과 실행 사이에 다른 실행이 끼어들 틈이 없게 하려는 것이다.
+    잡았으면 (소켓, None). 못 잡았으면 (None, 이미 떠 있는 lecture-inbox인지)."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):  # Windows: 다른 프로세스가 같은 포트에 겹쳐 바인드하지 못하게 한다
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+    try:
+        sock.bind((host, port))
+    except OSError:
+        sock.close()
+        return None, _is_ours(host, port)
+    return sock, None
+
+
 def main(argv: "list[str] | None" = None) -> int:
     url = f"http://{HOST}:{PORT}/"
-    ours = _is_ours(HOST, PORT)
-    if ours:  # 같은 상태 파일을 쓰는 두 번째 워커를 만들지 않는다
-        webbrowser.open(url)
-        return 0
-    if ours is False:
-        print(f"포트 {PORT}를 다른 프로그램이 쓰고 있습니다. 그 프로그램을 끄고 다시 실행해 주세요.")
+    sock, ours = _claim_port(HOST, PORT)
+    if sock is None:
+        if ours:  # 같은 상태 파일을 쓰는 두 번째 워커를 만들지 않는다
+            webbrowser.open(url)
+            return 0
+        print(f"포트 {PORT}를 쓸 수 없습니다. 다른 프로그램이 쓰고 있거나 다른 창이 아직 시작하는 중입니다. "
+              "잠시 뒤 다시 실행하거나 그 프로그램을 끄고 다시 실행해 주세요.")
         return 1
     import prereq
     import uvicorn
 
-    if prereq.ffmpeg_path() is None:
-        prereq.offer_ffmpeg_install()  # 거절해도 계속한다. 업로드 전사는 ffmpeg 없이 된다
     try:
-        paths = Paths.at(data_home())
-        load_settings(paths.settings_file)
-        app = create_app(paths=paths)
-    except (ValueError, OSError, StateError) as e:
-        print(f"시작하지 못했습니다: {e}")
-        return 1
-    threading.Timer(1.5, webbrowser.open, [url]).start()
-    # access_log=False: 요청 경로·쿼리에 과목명이 들어가므로 접근 로그를 남기지 않는다
-    uvicorn.run(app, host=HOST, port=PORT, log_level="info", access_log=False)
-    return 0
+        if prereq.ffmpeg_path() is None:
+            prereq.offer_ffmpeg_install()  # 거절해도 계속한다. 업로드 전사는 ffmpeg 없이 된다
+        try:
+            paths = Paths.at(data_home())
+            load_settings(paths.settings_file)
+            app = create_app(paths=paths)
+        except (ValueError, OSError, StateError) as e:
+            print(f"시작하지 못했습니다: {e}")
+            return 1
+        threading.Timer(1.5, webbrowser.open, [url]).start()
+        # access_log=False: 요청 경로·쿼리에 과목명이 들어가므로 접근 로그를 남기지 않는다
+        uvicorn.Server(uvicorn.Config(app, log_level="info", access_log=False)).run(sockets=[sock])
+        return 0
+    finally:
+        sock.close()
 
 
 if __name__ == "__main__":

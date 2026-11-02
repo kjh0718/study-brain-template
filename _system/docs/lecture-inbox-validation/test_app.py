@@ -239,6 +239,56 @@ def group_h():
         text3 = (root / "inbox" / sweep_bundle / "안내.md").read_text(encoding="utf-8")
         check("H", "시작 정리: 안내.md 갱신", "week_01_01.md" not in text3 and "week_01_02.md" in text3)
 
+        # 단일 실행: 포트를 먼저 잡고, 못 잡았을 때만 상대가 우리 서버인지 본다
+        import http.server
+        import socket as _socket
+        import threading
+
+        def free_port():
+            with _socket.socket() as probe:
+                probe.bind(("127.0.0.1", 0))
+                return probe.getsockname()[1]
+
+        class Health(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                body = b'{"app": "lecture-inbox"}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *a):
+                pass
+
+        port = free_port()
+        first, why = app_mod._claim_port("127.0.0.1", port)
+        second, ours = app_mod._claim_port("127.0.0.1", port)
+        check("H", "빈 포트는 잡고 두 번째는 못 잡음", first is not None and why is None and second is None and ours is None)
+        first.close()
+        plain = _socket.socket()
+        plain.bind(("127.0.0.1", 0))
+        plain.listen(16)
+        sock, ours = app_mod._claim_port("127.0.0.1", plain.getsockname()[1])
+        check("H", "다른 프로그램이 쓰는 포트는 우리 것이 아님", sock is None and ours is False)
+        srv = http.server.HTTPServer(("127.0.0.1", 0), Health)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        sock, ours = app_mod._claim_port("127.0.0.1", srv.server_address[1])
+        check("H", "health가 우리 앱이면 ours", sock is None and ours is True)
+        opened, real_open, real_port = [], app_mod.webbrowser.open, app_mod.PORT
+        app_mod.webbrowser.open = opened.append
+        try:
+            app_mod.PORT = srv.server_address[1]
+            rc_ours = app_mod.main()
+            app_mod.PORT = plain.getsockname()[1]
+            rc_other = app_mod.main()
+        finally:
+            app_mod.webbrowser.open, app_mod.PORT = real_open, real_port
+            srv.shutdown()
+            srv.server_close()
+            plain.close()
+        check("H", "main: 우리 서버면 0·브라우저만, 다른 프로그램이면 1·브라우저 없음",
+              rc_ours == 0 and rc_other == 1 and len(opened) == 1)
+
         page = c.get("/")
         check("H", "화면 제공", "강의 수집 도구" in page.text and "frame-ancestors 'none'" in page.headers["content-security-policy"])
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text

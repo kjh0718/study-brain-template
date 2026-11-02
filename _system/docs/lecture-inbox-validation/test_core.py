@@ -760,6 +760,13 @@ def group_p():
         check("P", "거절·빈 답이면 실행 안 함", ran == [])
         check("P", "동의하면 winget", prereq.offer_ffmpeg_install(ask=lambda q: "y", run=ran.append) is True
               and ran == [prereq.WINGET_COMMAND])
+        import io
+        from types import SimpleNamespace
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            failed = prereq.offer_ffmpeg_install(ask=lambda q: "y", run=lambda cmd: SimpleNamespace(returncode=1))
+            okay = prereq.offer_ffmpeg_install(ask=lambda q: "y", run=lambda cmd: SimpleNamespace(returncode=0))
+        check("P", "winget 실패 코드면 False·안내", failed is False and okay is True and "설치에 실패했습니다" in out.getvalue())
         m = pathlib.Path(mt)
         (m / "large-v3").mkdir()
         (m / "large-v3" / "model.bin").write_bytes(b"")
