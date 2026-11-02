@@ -61,8 +61,10 @@ class Store:
         tmp = self.path.with_name(self.path.name + ".tmp")
         try:
             tmp.parent.mkdir(parents=True, exist_ok=True)
-            tmp.write_text(json.dumps({"version": 1, "bundles": self.bundles, "items": self.items},
-                                      ensure_ascii=False, indent=1), encoding="utf-8")
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump({"version": 1, "bundles": self.bundles, "items": self.items}, f, ensure_ascii=False, indent=1)
+                f.flush()
+                os.fsync(f.fileno())  # 정전으로 빈 jobs.json이 남지 않게 디스크에 내린 뒤 바꾼다
             os.replace(tmp, self.path)
         except BaseException:
             tmp.unlink(missing_ok=True)
@@ -105,6 +107,18 @@ class Store:
             item.update(fields)
             self._write()
             return dict(item)
+
+    def claim(self, item_id: str, from_statuses: "set[str] | tuple[str, ...]", **fields) -> "dict | None":
+        """현재 상태가 from_statuses일 때만 바꾼다. 항목이 없거나 상태가 달라졌으면 None."""
+        with self.lock:
+            for item in self.items:
+                if item["id"] == item_id:
+                    if item["status"] not in from_statuses:
+                        return None
+                    item.update(fields)
+                    self._write()
+                    return dict(item)
+            return None
 
     def remove(self, item_id: str) -> dict:
         with self.lock:
@@ -154,6 +168,10 @@ def keep_awake(active: bool, set_state: "Callable[[int], int] | None" = None) ->
     set_state(ES_CONTINUOUS | ES_SYSTEM_REQUIRED if active else ES_CONTINUOUS)
 
 
+class _Gone(Exception):
+    """작업 도중 항목이 지워졌거나 상태가 바뀌어 더 진행하면 안 된다."""
+
+
 class Worker:
     def __init__(self, store: Store, inbox: Path, work_root: Path, *, model: Callable[[], str],
                  download: Callable[[str, Path], None], engine_factory: Callable[[str], object],
@@ -177,8 +195,9 @@ class Worker:
             self._wake.clear()  # run_once 전에 지워야 그 사이의 wake()를 놓치지 않는다
             try:
                 busy = self.run_once()
-            except Exception:
-                log.exception("워커 루프 오류")
+            except Exception as e:
+                # 서명된 URL이 예외 문구에 섞일 수 있어 메시지·트레이스백은 남기지 않는다
+                log.error("워커 루프 오류: %s", type(e).__name__)
                 self._wake.wait(5)
                 continue
             if not busy:
@@ -189,15 +208,32 @@ class Worker:
         with GUIDE_LOCK:
             write_guide(self.inbox / bundle, self.store.bundles[bundle], self.store.items_in(bundle))
 
+    def _guide(self, bundle: str) -> None:
+        try:
+            self.refresh_guide(bundle)
+        except Exception:
+            log.exception("안내.md를 쓰지 못했습니다")
+
     def _set(self, item_id: str, **fields) -> None:
         try:
             item = self.store.update(item_id, **fields)
-        except KeyError:  # 작업 도중 사용자가 항목을 지웠다
-            return
+        except KeyError:  # 작업 도중 사용자가 항목을 지웠다. 더 진행하지 않는다
+            raise _Gone from None
+        self._guide(item["bundle"])
+
+    def _claim(self, item_id: str, from_status: str, **fields) -> None:
+        """다음 작업으로 고른 뒤 다른 스레드가 항목을 지우거나 바꿨는지 원자적으로 확인하며 상태를 바꾼다."""
+        item = self.store.claim(item_id, (from_status,), **fields)
+        if item is None:
+            raise _Gone
+        self._guide(item["bundle"])
+
+    def _forget(self, item: dict) -> None:
+        # 항목이 정말 사라졌을 때만 작업 폴더를 지운다. 상태만 바뀐 경우는 다른 쪽이 쓰고 있을 수 있다.
         try:
-            self.refresh_guide(item["bundle"])
-        except Exception:
-            log.exception("안내.md를 쓰지 못했습니다")
+            self.store.find(item["id"])
+        except KeyError:
+            shutil.rmtree(self.work_root / item["id"], ignore_errors=True)
 
     def run_once(self) -> bool:
         item = next_item(self.store.all_items(), self.school is not None)
@@ -210,23 +246,33 @@ class Worker:
                 self._download(item)
             else:
                 self._transcribe(item)
-        except Exception:
-            log.exception("작업 실패")
-            self._set(item["id"], status=FAILED, error=GENERIC_ERROR)
+        except _Gone:
+            self._forget(item)
+        except Exception as e:
+            # 서명된 URL이 예외 문구에 섞일 수 있어 종류만 남긴다(메시지·트레이스백 없음)
+            log.error("작업 실패: %s (항목 %s)", type(e).__name__, item["id"][:4])
+            try:
+                self._set(item["id"], status=FAILED, error=GENERIC_ERROR)
+            except _Gone:
+                self._forget(item)
         finally:
             self.progress.pop(item["id"], None)
             keep_awake(False, self.set_state)
         return True
 
     def _download(self, item: dict) -> None:
-        self._set(item["id"], status=DOWNLOADING, error=None)
-        school, work = self.school, self.work_root / item["id"]
+        school = self.school  # 한 번만 읽는다: 도중에 로그아웃·재로그인이 일어날 수 있다
+        if school is None:
+            return  # 로그인 대기 상태 그대로 둔다
+        self._claim(item["id"], DOWNLOAD_WAIT, status=DOWNLOADING, error=None)
+        work = self.work_root / item["id"]
         try:
             stream, _ = school.stream(item["source"]["lecture_id"])
             work.mkdir(parents=True, exist_ok=True)
             self.download(stream, work / "video.mp4")
         except SchoolExpired:
-            self.school = None
+            if self.school is school:  # 그 사이 새로 로그인했다면 그 세션은 지우지 않는다
+                self.school = None
             self._set(item["id"], status=DOWNLOAD_WAIT)
         except UserError as e:
             self._set(item["id"], status=FAILED, error=str(e))
@@ -235,11 +281,8 @@ class Worker:
 
     def _transcribe(self, item: dict) -> None:
         item_id, work = item["id"], self.work_root / item["id"]
-        model = item.get("model")
-        if not model:
-            model = self.model()
-            self._set(item_id, model=model)
-        self._set(item_id, status=TRANSCRIBING, error=None)
+        model = item.get("model") or self.model()  # 이어서 할 때는 기록된 모델을 쓴다
+        self._claim(item_id, TRANSCRIBE_WAIT, status=TRANSCRIBING, error=None, model=model)
         self.progress[item_id] = "모델 준비 중"
         if self._engine is None or self._engine_model != model:
             self._engine, self._engine_model = self.engine_factory(model), model
@@ -250,12 +293,25 @@ class Worker:
         if not segments:
             self._set(item_id, status=FAILED, error=NO_SPEECH)  # work는 남긴다
             return
-        folder = self.inbox / item["bundle"]
+        try:
+            self.store.find(item_id)  # 지워진 항목의 전사를 묶음에 만들지 않는다
+        except KeyError:
+            raise _Gone from None
+        folder, data = self.inbox / item["bundle"], to_markdown(segments).encode("utf-8")
+        dest, created = folder / item["filename"], True
         try:
             folder.mkdir(parents=True, exist_ok=True)
-            write_new_file(folder / item["filename"], to_markdown(segments).encode("utf-8"))
+            write_new_file(dest, data)
         except FileExistsError:
-            self._set(item_id, status=FAILED, error=NAME_TAKEN)  # 체크포인트는 남긴다
-            return
-        self._set(item_id, status=DONE, error=None, repetitions=unresolved)
+            # 파일은 썼는데 DONE 기록 전에 멈췄다면 다시 시도했을 때 내용이 같다. 그 경우는 완료로 본다.
+            if dest.read_bytes() != data:
+                self._set(item_id, status=FAILED, error=NAME_TAKEN)  # 체크포인트는 남긴다
+                return
+            created = False
+        try:
+            self._set(item_id, status=DONE, error=None, repetitions=unresolved)
+        except _Gone:
+            if created:
+                dest.unlink(missing_ok=True)
+            raise
         shutil.rmtree(work, ignore_errors=True)  # 받은 영상·업로드 사본. 사용자 PC의 원본은 건드릴 수 없다

@@ -50,7 +50,7 @@ def captured_logs(name):
 
     class H(logging.Handler):
         def emit(self, record):
-            msgs.append(record.getMessage())
+            msgs.append(logging.Formatter().format(record))  # 트레이스백까지 포함한 실제 출력 문구
 
     lg = logging.getLogger(name)
     h, old = H(), lg.propagate
@@ -351,8 +351,17 @@ def group_e():
         factory_calls.append(model)
         return Engine()
 
+    hooks = {}  # 작업 도중에 끼어들 동작(항목 삭제 등)
+
+    def fake_audio(path):
+        if hooks.get("audio"):
+            hooks["audio"]()
+        return [0.0] * SR * 30
+
     def fake_download(stream, dest):
         downloads.append((stream, dest))
+        if hooks.get("download"):
+            hooks["download"]()
         if "leak" in stream:
             raise RuntimeError(stream)  # 서명된 URL이 예외 문구에 섞여도 화면에는 안 나가야 한다
         dest.write_bytes(b"video")
@@ -389,7 +398,7 @@ def group_e():
         inbox, work = d / "inbox", d / "work"
         bdir = inbox / B
         w = Worker(st, inbox, work, model=lambda: cur_model[0], download=fake_download, engine_factory=factory,
-                   load_audio=lambda path: [0.0] * SR * 30, set_state=rec.append)
+                   load_audio=fake_audio, set_state=rec.append)
 
         def add(filename, session):
             item = st.add_item(bundle=B, kind="transcript", status=TRANSCRIBE_WAIT, filename=filename, week=3, session=session,
@@ -448,7 +457,8 @@ def group_e():
         w.run_once()
         check("E", "실패 메시지에 URL 없음", st.find(d3)["status"] == FAILED and "https://" not in st.find(d3)["error"]
               and st.find(d3)["error"] == jobs.GENERIC_ERROR)
-        check("E", "예외는 로그에 남음", any("작업 실패" in m for m in logs))
+        check("E", "예외는 종류만 로그에 남음", any("작업 실패: RuntimeError" in m for m in logs))
+        check("E", "로그에 서명된 URL 없음", not any("SECRET" in m or "https://" in m for m in logs), str(logs))
         w.run_once()
         check("E", "UserError는 문구 그대로 실패", st.find(d4)["status"] == FAILED and st.find(d4)["error"] == "강의 영상 주소를 찾을 수 없습니다.")
         w.run_once()
@@ -460,15 +470,71 @@ def group_e():
         check("E", "refresh_guide는 없는 묶음이면 KeyError", raises(KeyError, w.refresh_guide, "없는묶음"))
         rec.clear()
         check("E", "할 일 없으면 False·절전 해제", w.run_once() is False and rec == [0x80000000])
+        # 작업 도중 항목이 지워지면 중단하고 묶음에도 work에도 남기지 않는다 (이 시점에 로그인은 풀려 있다)
+        g1 = add("week_03_12.md", 12)
+        hooks["audio"] = lambda: st.remove(g1)
+        w.run_once()
+        hooks.clear()
+        check("E", "전사 중 삭제: 파일·work 없음", not (bdir / "week_03_12.md").exists() and not (work / g1).exists())
+        g2, orig_find = add("week_03_13.md", 13), st.find
+        st.find = lambda i: (lambda r: (st.remove(i), r)[1])(orig_find(i))  # 쓰기 직전 점검 직후에 지워진다
+        try:
+            w.run_once()
+        finally:
+            st.find = orig_find
+        check("E", "쓰기 직후 삭제: 만든 파일 되돌림·work 없음", not (bdir / "week_03_13.md").exists() and not (work / g2).exists())
+        same = "[00:00:00] 안녕하세요\n[00:00:05] 다음입니다\n".encode("utf-8")
+        g3 = add("week_03_15.md", 15)
+        (bdir / "week_03_15.md").write_bytes(same)  # 이전 시도가 쓰고 DONE 기록 전에 멈춘 상태
+        w.run_once()
+        check("E", "같은 내용이 이미 있으면 완료로 봄", st.find(g3)["status"] == DONE and st.find(g3)["error"] is None
+              and (bdir / "week_03_15.md").read_bytes() == same and not (work / g3).exists())
+        cl = st.add_item(bundle=B, kind="transcript", status=TRANSCRIBE_WAIT, filename="week_03_16.md", week=3, session=16)["id"]
+        check("E", "claim은 상태가 맞을 때만", st.claim(cl, (DOWNLOAD_WAIT,), status=DONE) is None and st.find(cl)["status"] == TRANSCRIBE_WAIT
+              and st.claim("nope", (TRANSCRIBE_WAIT,), status=DONE) is None
+              and st.claim(cl, (TRANSCRIBE_WAIT,), status=FAILED)["status"] == FAILED)
+        st.remove(cl)
+        g4 = mk("week_03_17.md", 17, "ok")
+        before = len(downloads)
+        w._download(st.find(g4))  # 로그인이 없으면 상태를 건드리지 않는다
+        check("E", "로그인 없으면 다운로드 대기 유지", st.find(g4)["status"] == DOWNLOAD_WAIT and len(downloads) == before)
+        st.remove(g4)
+        st.remove(d4)
+        st.remove(d3)
+        other = FakeSchool()
+
+        class Stale(FakeSchool):
+            def stream(self, lecture_id):
+                w.school = other  # 다운로드 도중 새로 로그인했다
+                raise school.SchoolExpired()
+
+        w.school = Stale()
+        w.run_once()
+        check("E", "만료 처리가 새 로그인 세션을 지우지 않음", w.school is other and st.find(d2)["status"] == DOWNLOAD_WAIT)
+        st.remove(d2)
+        g5 = mk("week_03_18.md", 18, "ok")
+        hooks["download"] = lambda: st.remove(g5)
+        w.run_once()
+        hooks.clear()
+        check("E", "다운로드 중 삭제: 대기 전환·work 없음", not (work / g5).exists() and not [i for i in st.all_items() if i["id"] == g5])
+        w.school = None
+        fsyncs = []
+        real_fsync = jobs.os.fsync
+        jobs.os.fsync = lambda fd: (fsyncs.append(fd), real_fsync(fd))[1]
+        try:
+            st.save()
+        finally:
+            jobs.os.fsync = real_fsync
+        check("E", "저장 전 fsync", len(fsyncs) == 1)
         # 백그라운드 스레드: 대기 중이다가 wake()로 깨어나 처리한다
         i8 = add("week_03_11.md", 11)
         w.start()
         w.wake()
-        for _ in range(100):
-            if st.find(i8)["status"] == DONE:
+        for _ in range(100):  # DONE 뒤에도 안내.md 갱신과 work 삭제가 남아 있으니 끝까지 기다린다
+            if st.find(i8)["status"] == DONE and not (work / i8).exists():
                 break
             time.sleep(0.05)
-        check("E", "start·wake로 백그라운드 처리", st.find(i8)["status"] == DONE)
+        check("E", "start·wake로 백그라운드 처리", st.find(i8)["status"] == DONE and not (work / i8).exists())
 
 
 GROUPS = [group_a, group_b, group_c, group_d, group_e]
