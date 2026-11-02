@@ -6,7 +6,7 @@
 # 코어: 시스템 Python, 표준 라이브러리만 쓴다
 python _system/docs/lecture-inbox-validation/test_core.py
 
-# 앱: FastAPI가 필요하므로 uv 환경에서 돈다 (아직 없음, 이후 task에서 추가)
+# 앱: FastAPI가 필요하므로 uv 환경에서 돈다
 $env:UV_PROJECT_ENVIRONMENT = "$env:LOCALAPPDATA\lecture-inbox\venv"
 uv run --project _system/tools/lecture-inbox python _system/docs/lecture-inbox-validation/test_app.py
 ```
@@ -18,3 +18,4 @@ fixture는 임시 폴더에만 만들고 저장소에는 아무것도 쓰지 않
 | | 내용 |
 |---|---|
 | A | 설정과 경로. 데이터 폴더 생성, `settings.json` 기본값과 잘못된 모델 거절, `LECTURE_INBOX_HOME` 우선순위, 저장소 루트, 로컬 전용 바인드 |
+| H | API(`test_app.py`). Host·헤더 검사, 로그인·422 문구, 학기·학번 전각 숫자 거절, 업로드(PDF·녹음·크기 제한), 묶음 등록 충돌, 재시도·삭제 |

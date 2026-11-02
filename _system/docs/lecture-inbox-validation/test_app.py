@@ -1,0 +1,201 @@
+"""lecture-inbox API(`_system/tools/lecture-inbox/app.py`)의 검사.
+
+  uv run --project _system/tools/lecture-inbox python _system/docs/lecture-inbox-validation/test_app.py
+
+FastAPI가 필요해서 uv 환경에서 돈다. 임시 폴더에만 쓰고 저장소에는 아무것도 쓰지 않는다.
+종료 코드 0이면 문제 없음.
+"""
+import datetime
+import pathlib
+import shutil
+import sys
+import tempfile
+import traceback
+from urllib.parse import quote
+
+sys.dont_write_bytecode = True
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
+HERE = pathlib.Path(__file__).resolve().parent
+TOOL = HERE.parents[2] / "_system/tools/lecture-inbox"
+sys.path.insert(0, str(TOOL))
+
+results = []
+
+
+def check(group, name, cond, note=""):
+    results.append((group, name, "PASS" if cond else "FAIL", note))
+    return bool(cond)
+
+
+def group_h():
+    import app as app_mod
+    import jobs
+    from bundle import bundle_dir_name
+    from config import Paths
+    from fastapi.testclient import TestClient
+    from school import SchoolExpired, UserError
+
+    class FakeSchool:
+        fail = True
+        expired = False
+
+        def login(self, student_id, password):
+            if FakeSchool.fail:
+                raise UserError("학교 로그인이 확인되지 않았습니다.")
+
+        def courses(self):
+            if FakeSchool.expired:
+                raise SchoolExpired("학교 로그인이 만료되었습니다.")
+            return [{"id": "123", "name": "자료구조", "year": "2026", "semester": "2학기"}]
+
+        def lectures(self, identifier):
+            return [{"id": "9001", "title": "3주차 1차시 트리", "url": "https://x/9001"}]
+
+    H = {"X-Lecture-Inbox": "1"}
+    tmp = pathlib.Path(tempfile.mkdtemp(prefix="lecture-inbox-app-"))
+    try:
+        root = tmp / "vault"
+        (root / "inbox").mkdir(parents=True)
+        (root / "SECOND-BRAIN.md").write_text("x", encoding="utf-8")
+        try:
+            app_mod.create_app(root=tmp / "none", paths=Paths.at(tmp / "h0"), start_worker=False)
+            check("H", "루트 표지 없으면 RuntimeError", False)
+        except RuntimeError:
+            check("H", "루트 표지 없으면 RuntimeError", True)
+
+        paths = Paths.at(tmp / "h")
+        app = app_mod.create_app(root=root, paths=paths, school_factory=FakeSchool, start_worker=False,
+                                 allowed_hosts=frozenset({"testserver"}))
+        c = TestClient(app)
+        store, worker = app.state.store, app.state.worker
+        COURSE = "자료구조"
+        bdir = root / "inbox" / bundle_dir_name(COURSE, datetime.date.today())
+        guide = lambda: (bdir / "안내.md").read_text(encoding="utf-8")
+
+        def upload(kind, name, data, term="2026-2", **extra):
+            params = {"kind": kind, "course": COURSE, "term": term, "ecampusId": "123", **extra}
+            return c.post("/api/uploads", params=params, content=data, headers={**H, "X-Filename": quote(name)})
+
+        def row(week, session):
+            return {"id": "9001", "title": f"{week}주차 {session}차시", "week": week, "session": session}
+
+        def post_lectures(term="2026-2", rows=None):
+            body = {"course": {"course": COURSE, "term": term, "ecampusId": "123"},
+                    "lectures": rows or [row(3, 2)]}
+            return c.post("/api/lectures", json=body, headers=H)
+
+        check("H", "외부 Host 거절", c.get("/api/status", headers={**H, "host": "evil.example"}).status_code == 403)
+        check("H", "헤더 없는 API 거절", c.get("/api/status").status_code == 403)
+        r = c.get("/api/status", headers=H)
+        check("H", "보안 헤더", r.headers.get("cache-control") == "no-store"
+              and r.headers.get("x-content-type-options") == "nosniff"
+              and r.headers.get("referrer-policy") == "no-referrer")
+        check("H", "health", c.get("/api/health", headers=H).json() == {"app": "lecture-inbox"})
+
+        r = c.post("/api/login", json={"studentId": "20261234", "password": "pw-secret-123"}, headers=H)
+        check("H", "로그인 실패 401·비번 비노출", r.status_code == 401 and "pw-secret-123" not in r.text)
+        r = c.post("/api/login", json={"studentId": "abc", "password": "pw-secret-123"}, headers=H)
+        check("H", "422 문구 고정", r.status_code == 422 and r.json() == {"detail": "입력 형식을 확인해 주세요."})
+        r = c.post("/api/login", json={"studentId": "２０２６１２３４", "password": "pw-secret-123"}, headers=H)
+        check("H", "전각 숫자 학번 422", r.status_code == 422)
+        check("H", "비로그인 목록 401", c.get("/api/courses", headers=H).status_code == 401)
+
+        FakeSchool.fail = False
+        r = c.post("/api/login", json={"studentId": "20261234", "password": "pw-secret-123"}, headers=H)
+        check("H", "로그인 성공", r.status_code == 200 and worker.school is not None)
+        check("H", "term 변환", c.get("/api/courses", headers=H).json()["courses"][0]["term"] == "2026-2")
+        lec = c.get("/api/courses/123/lectures", headers=H).json()["lectures"][0]
+        check("H", "주차 제안", (lec["week"], lec["session"]) == (3, 1))
+        check("H", "상태에 학번 없음", "20261234" not in c.get("/api/status", headers=H).text)
+        FakeSchool.expired = True
+        s = worker.school
+        check("H", "만료 409", c.get("/api/courses", headers=H).status_code == 409 and worker.school is None)
+        FakeSchool.expired = False
+        worker.school = s
+
+        r = upload("resource", "3주차 강의자료.pdf", b"%PDF-1.7 body")
+        check("H", "PDF 묶음 저장", r.status_code == 202 and (bdir / "3주차 강의자료.pdf").read_bytes() == b"%PDF-1.7 body")
+        check("H", "안내에 자료 완료", "- 종류: 자료" in guide() and "- 상태: 완료" in guide())
+        check("H", "같은 PDF 409·보존", upload("resource", "3주차 강의자료.pdf", b"%PDF-other").status_code == 409
+              and (bdir / "3주차 강의자료.pdf").read_bytes() == b"%PDF-1.7 body")
+        r = upload("resource", "slides.pptx", b"PK\x03\x04")
+        check("H", "비PDF 거절", r.status_code == 400 and "PDF" in r.json()["detail"])
+        r = upload("resource", "fake.pdf", b"PK\x03\x04 not pdf")
+        check("H", "확장자만 PDF면 거절", r.status_code == 400 and not (bdir / "fake.pdf").exists())
+
+        r = upload("recording", "새 녹음 12.m4a", b"\x00" * 10, week=3, session=1)
+        check("H", "녹음은 대기·묶음엔 없음", r.status_code == 202 and not (bdir / "week_03_01.md").exists()
+              and "- 상태: 대기" in guide())
+        rec = next(i for i in store.all_items() if i["filename"] == "week_03_01.md")
+        check("H", "녹음 media 설정", rec["status"] == jobs.TRANSCRIBE_WAIT
+              and pathlib.Path(rec["media"]).read_bytes() == b"\x00" * 10
+              and pathlib.Path(rec["media"]).parent == paths.work / rec["id"])
+        check("H", "상태에 media 비노출", "media" not in c.get("/api/status", headers=H).json()["items"][0])
+        check("H", "같은 주차·차시 409", upload("recording", "b.m4a", b"\x00", week=3, session=1).status_code == 409)
+        check("H", "녹음 주차 누락 422", upload("recording", "b.m4a", b"\x00").status_code == 422)
+        check("H", "업로드 임시 폴더 정리", sorted(p.name for p in paths.work.iterdir()) == [rec["id"]])
+
+        orig = app_mod.MAX_MEDIA_BYTES
+        app_mod.MAX_MEDIA_BYTES = 5
+        try:
+            check("H", "크기 초과 413", upload("recording", "c.m4a", b"\x00" * 10, week=4, session=1).status_code == 413)
+            r = c.post("/api/uploads", params={"kind": "recording", "course": COURSE, "term": "2026-2", "ecampusId": "123",
+                                               "week": 4, "session": 1},
+                       content=b"\x00" * 10, headers={**H, "X-Filename": "d.m4a", "Content-Length": "3"})
+            check("H", "받는 도중 초과 413", r.status_code == 413)
+        finally:
+            app_mod.MAX_MEDIA_BYTES = orig
+        r = c.post("/api/uploads", params={"kind": "resource", "course": COURSE, "term": "2026-2"},
+                   content=iter([b"%PDF-1"]), headers={**H, "X-Filename": "n.pdf"})
+        check("H", "Content-Length 없으면 411", r.status_code == 411)
+        check("H", "실패한 업로드 흔적 없음", sorted(p.name for p in paths.work.iterdir()) == [rec["id"]])
+
+        check("H", "학기 형식 422", post_lectures(term="2026-3").status_code == 422)
+        check("H", "전각 숫자 학기 422", post_lectures(term="２０２６-1").status_code == 422)
+        check("H", "요청 내 중복 409", post_lectures(rows=[row(3, 2), row(3, 2)]).status_code == 409)
+        check("H", "다른 학기 같은 묶음 409", post_lectures(term="2026-1").status_code == 409)
+        r = post_lectures()
+        check("H", "묶음 등록 202", r.status_code == 202)
+        rid = next(i["id"] for i in store.all_items() if i["filename"] == "week_03_02.md")
+        check("H", "안내에 이캠퍼스 출처", "이캠퍼스 강의" in guide())
+        check("H", "예약된 이름과 겹치면 409", post_lectures().status_code == 409)
+
+        (paths.work / rid).mkdir()
+        (paths.work / rid / "video.mp4").write_bytes(b"v")
+        check("H", "대기 항목은 재시도 불가", c.post(f"/api/items/{rid}/retry", headers=H).status_code == 409)
+        store.update(rid, status=jobs.FAILED, error="x")
+        r = c.post(f"/api/items/{rid}/retry", headers=H)
+        check("H", "미디어 없는 실패는 다운로드 재시도", r.status_code == 200
+              and store.find(rid)["status"] == jobs.DOWNLOAD_WAIT)
+        store.update(rid, status=jobs.FAILED, media=str(paths.work / rid / "video.mp4"))
+        c.post(f"/api/items/{rid}/retry", headers=H)
+        check("H", "미디어 있는 실패는 전사 재시도", store.find(rid)["status"] == jobs.TRANSCRIBE_WAIT)
+        store.update(rid, status=jobs.TRANSCRIBING)
+        check("H", "진행 중 삭제 409", c.delete(f"/api/items/{rid}", headers=H).status_code == 409)
+        store.update(rid, status=jobs.DOWNLOAD_WAIT)
+        check("H", "대기 항목 삭제", c.delete(f"/api/items/{rid}", headers=H).status_code == 200
+              and not (paths.work / rid).exists())
+        check("H", "없는 항목 404", c.delete(f"/api/items/{rid}", headers=H).status_code == 404)
+
+        check("H", "화면 제공", "강의 수집 도구" in c.get("/").text)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+try:
+    group_h()
+except Exception:
+    check("H", "그룹 실행", False, traceback.format_exc().strip().splitlines()[-1])
+
+shown = None
+for g, name, verdict, note in results:
+    if g != shown:
+        print(f"\n[{g}]")
+        shown = g
+    print(f"  {verdict}  {name}" + (f"   ({note})" if verdict == "FAIL" and note else ""))
+fails = [r for r in results if r[2] == "FAIL"]
+print(f"\nPASS {len(results) - len(fails)} / FAIL {len(fails)}")
+sys.exit(1 if fails else 0)
