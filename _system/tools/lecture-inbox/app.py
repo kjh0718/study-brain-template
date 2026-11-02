@@ -31,7 +31,6 @@ INVALID = "입력 형식을 확인해 주세요."
 NEED_PDF = "PDF만 받습니다. PPT·HWP·이미지는 PDF로 변환해 주세요."
 SAVING = "업로드를 저장하는 중입니다."
 DELETABLE = (DOWNLOAD_WAIT, TRANSCRIBE_WAIT, FAILED)
-PDF_KINDS = {"resource", "past-exam", "assignment"}
 
 TERM = r"^[0-9]{4}-(1|2|summer|winter)$"  # \d는 전각 숫자도 받으므로 [0-9]를 쓴다
 LECTURE_ID = r"^[0-9]{1,12}$"
@@ -127,7 +126,9 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         else:
             response = await call_next(request)
         response.headers.update({"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
-                                 "Referrer-Policy": "no-referrer"})
+                                 "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY",
+                                 "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                                                            "style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"})
         return response
 
     @app.exception_handler(RequestValidationError)
@@ -301,7 +302,8 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             try:
                 tmp.rename(work)
                 (work / "upload.part").rename(work / name)
-                store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name))
+                if store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name)) is None:
+                    raise HTTPException(409, "업로드 항목이 그 사이에 바뀌었습니다. 다시 올려 주세요.")
             except BaseException:
                 store.remove(item["id"])
                 shutil.rmtree(work, ignore_errors=True)
@@ -313,6 +315,8 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             item = store.find(item_id)
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
+        if item["status"] == FAILED and item["source"]["type"] == "upload" and not item.get("media"):
+            raise HTTPException(409, "올리던 도중 멈춘 항목입니다. 지우고 다시 올려 주세요.")  # 되살릴 파일이 없다
         target = TRANSCRIBE_WAIT if item.get("media") else DOWNLOAD_WAIT
         item = store.claim(item_id, (FAILED,), status=target, error=None)
         if item is None:
@@ -330,9 +334,11 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         if item["status"] not in DELETABLE:
             raise HTTPException(409, "진행 중이거나 끝난 항목은 지울 수 없습니다.")
         try:
-            store.remove(item_id)
+            removed = store.remove(item_id, DELETABLE)  # 확인과 삭제를 한 번에 해야 워커가 집은 항목을 지우지 않는다
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
+        if removed is None:
+            raise HTTPException(409, "진행 중이거나 끝난 항목은 지울 수 없습니다.")
         shutil.rmtree(paths.work / item_id, ignore_errors=True)  # 파일이 잠겨 있으면 워커가 _Gone에서 다시 지운다
         guide(item["bundle"])
         return {"deleted": item_id}

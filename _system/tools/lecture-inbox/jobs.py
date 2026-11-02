@@ -120,9 +120,12 @@ class Store:
                     return dict(item)
             return None
 
-    def remove(self, item_id: str) -> dict:
+    def remove(self, item_id: str, from_statuses: "set[str] | tuple[str, ...] | None" = None) -> "dict | None":
+        """from_statuses를 주면 그 상태일 때만 지우고, 아니면 None. 항목이 없으면 KeyError."""
         with self.lock:
             item = self._get(item_id)
+            if from_statuses is not None and item["status"] not in from_statuses:
+                return None
             self.items.remove(item)
             self._write()
             return dict(item)

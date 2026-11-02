@@ -93,6 +93,8 @@ def group_h():
         check("H", "보안 헤더", r.headers.get("cache-control") == "no-store"
               and r.headers.get("x-content-type-options") == "nosniff"
               and r.headers.get("referrer-policy") == "no-referrer")
+        check("H", "프레임 차단 헤더", r.headers.get("x-frame-options") == "DENY"
+              and "frame-ancestors 'none'" in r.headers.get("content-security-policy", ""))
         check("H", "health", c.get("/api/health", headers=H).json() == {"app": "lecture-inbox"})
 
         r = c.post("/api/login", json={"studentId": "20261234", "password": "pw-secret-123"}, headers=H)
@@ -179,6 +181,33 @@ def group_h():
         check("H", "대기 항목 삭제", c.delete(f"/api/items/{rid}", headers=H).status_code == 200
               and not (paths.work / rid).exists())
         check("H", "없는 항목 404", c.delete(f"/api/items/{rid}", headers=H).status_code == 404)
+
+        # 경합 보강: 저장소 호출 결과가 중간에 달라진 경우를 흉내 낸다.
+        real_claim = store.claim
+        store.claim = lambda *a, **k: None
+        try:
+            r = upload("recording", "race.m4a", b"\x00", week=7, session=1)
+        finally:
+            store.claim = real_claim
+        check("H", "업로드 claim 실패 409·되돌림", r.status_code == 409
+              and not any(i["filename"] == "week_07_01.md" for i in store.all_items())
+              and sorted(p.name for p in paths.work.iterdir()) == [rec["id"]])
+        hole = store.add_item(kind="transcript", bundle=rec["bundle"], filename="week_08_01.md", status=jobs.FAILED,
+                              error="x", source={"type": "upload", "name": "x.m4a"})
+        check("H", "업로드 자리표시자 재시도 409", c.post(f"/api/items/{hole['id']}/retry", headers=H).status_code == 409
+              and store.find(hole["id"])["status"] == jobs.FAILED)
+        check("H", "조건부 remove는 상태가 다르면 None", store.remove(hole["id"], from_statuses=(jobs.DONE,)) is None
+              and store.remove(hole["id"], from_statuses=(jobs.FAILED,))["id"] == hole["id"])
+        busy = store.add_item(kind="transcript", bundle=rec["bundle"], filename="week_09_01.md",
+                              status=jobs.TRANSCRIBING, error=None, source={"type": "ecampus", "lecture_id": "1", "title": "t"})
+        real_find = store.find
+        store.find = lambda i: {**real_find(i), "status": jobs.FAILED}  # 확인 뒤에 워커가 집은 상황
+        try:
+            r = c.delete(f"/api/items/{busy['id']}", headers=H)
+        finally:
+            store.find = real_find
+        check("H", "삭제 확인 뒤 상태 바뀌면 409·보존", r.status_code == 409 and store.find(busy["id"])["status"] == jobs.TRANSCRIBING)
+        store.remove(busy["id"])
 
         check("H", "화면 제공", "강의 수집 도구" in c.get("/").text)
     finally:
