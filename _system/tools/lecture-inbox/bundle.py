@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+import threading
 from datetime import date
 from pathlib import Path
 
@@ -73,11 +74,9 @@ def _item_lines(item: dict) -> list[str]:
         if item["status"] == "done":
             if item.get("model"):
                 lines.append(f"- 모델: {_one(item['model'])}")
-            reps = item.get("repetitions")
-            if reps:
-                if isinstance(reps, (list, tuple)):
-                    reps = ", ".join(map(str, reps))
-                lines.append(f"- 반복 감지 구간: {_one(reps)}")
+            reps = item.get("repetitions")  # 끝내 해결하지 못한 구간 수. 0도 기록이다
+            if reps is not None:
+                lines.append(f"- 반복 감지 구간: {reps}")
     return lines
 
 
@@ -105,9 +104,20 @@ def render_guide(meta: dict, items: list[dict], present: set[str]) -> str:
     return "\n".join(out) + "\n"
 
 
+# 요청 스레드와 워커가 같은 묶음의 안내.md를 쓴다. Windows에서는 동시에 os.replace하면 PermissionError가 나므로
+# 쓰기를 직렬화한다. 오래된 스냅샷이 나중에 덮어쓰지 않으려면 호출자가 이 잠금 안에서 items를 읽어야 한다
+# (jobs.Worker.refresh_guide). 재진입 가능해서 그 호출자가 잠근 채 write_guide를 불러도 된다.
+GUIDE_LOCK = threading.RLock()
+
+
 def write_guide(folder: Path, meta: dict, items: list[dict]) -> None:
-    folder.mkdir(parents=True, exist_ok=True)
-    present = {p.name for p in folder.iterdir()}
-    partial = folder / ".안내.md.partial"
-    partial.write_text(render_guide(meta, items, present), encoding="utf-8", newline="\n")
-    os.replace(partial, folder / "안내.md")
+    with GUIDE_LOCK:
+        folder.mkdir(parents=True, exist_ok=True)
+        present = {p.name for p in folder.iterdir()}
+        partial = folder / ".안내.md.partial"
+        try:
+            partial.write_text(render_guide(meta, items, present), encoding="utf-8", newline="\n")
+            os.replace(partial, folder / "안내.md")
+        except BaseException:
+            partial.unlink(missing_ok=True)
+            raise

@@ -7,15 +7,19 @@
 """
 import contextlib
 import datetime
+import logging
 import pathlib
 import shutil
 import sys
 import tempfile
+import threading
+import time
 import traceback
 
 sys.dont_write_bytecode = True
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
@@ -39,6 +43,26 @@ def tmpdir():
         shutil.rmtree(d, ignore_errors=True)
 
 
+@contextlib.contextmanager
+def captured_logs(name):
+    """모듈 로그를 stderr 대신 목록에 모은다. 경고가 의도된 검사에서 출력을 깨끗하게 둔다."""
+    msgs = []
+
+    class H(logging.Handler):
+        def emit(self, record):
+            msgs.append(record.getMessage())
+
+    lg = logging.getLogger(name)
+    h, old = H(), lg.propagate
+    lg.addHandler(h)
+    lg.propagate = False
+    try:
+        yield msgs
+    finally:
+        lg.removeHandler(h)
+        lg.propagate = old
+
+
 def raises(exc, fn, *args):
     try:
         fn(*args)
@@ -52,7 +76,7 @@ def raises(exc, fn, *args):
 META = {"course": "자료구조", "term": "2026-2", "ecampus_id": "12345", "code": "CSE2010", "section": "01", "created": "2026-11-02"}
 _BASE = {"bundle": "20261102-자료구조", "kind": "transcript", "status": "done", "error": None, "week": 3, "session": 1,
          "date": "2026-10-20", "source": {"type": "ecampus", "lecture_id": "9", "title": "3주차 1차시"},
-         "media": "a.mp4", "model": "large-v3", "repetitions": "01:02-01:10", "created": "2026-11-02T10:00:00"}
+         "media": "a.mp4", "model": "large-v3", "repetitions": 2, "created": "2026-11-02T10:00:00"}
 DONE_PRESENT = {**_BASE, "id": "t1", "filename": "week_03_01.md"}
 DONE_MOVED = {**_BASE, "id": "t2", "filename": "week_03_02.md", "session": 2, "created": "2026-11-02T10:01:00"}
 WAITING = {**_BASE, "id": "t3", "filename": "week_03_03.md", "session": 3, "status": "queued", "date": None,
@@ -105,8 +129,39 @@ def group_b():
         evil = {**WAITING, "source": {"type": "ecampus", "lecture_id": "1", "title": "제목\n### 가짜 항목"}}
         check("B", "줄바꿈 주입 무력화", "\n### 가짜" not in bundle.render_guide(META, [evil], set()))
         check("B", "수업일 미확인", "- 수업일: 미확인" in bundle.render_guide(META, [WAITING], set()))
+        check("B", "반복 감지 구간 수 표시", "- 반복 감지 구간: 2\n" in text)
+        zero = bundle.render_guide(META, [{**DONE_PRESENT, "repetitions": 0}], {"week_03_01.md"})
+        check("B", "반복 0도 표시", "- 반복 감지 구간: 0\n" in zero)
+        check("B", "반복 기록 없으면 줄 없음", "반복 감지" not in bundle.render_guide(
+            META, [{**DONE_PRESENT, "repetitions": None}], {"week_03_01.md"}))
         bundle.write_guide(d / "20261102-자료구조", META, [WAITING])
         check("B", "지운 묶음 다시 만듦", (d / "20261102-자료구조" / "안내.md").is_file())
+        # 요청 스레드와 워커가 같은 묶음의 안내.md를 동시에 쓴다
+        gd, errors = d / "20261102-자료구조", []
+
+        def hammer():
+            try:
+                for _ in range(30):
+                    bundle.write_guide(gd, META, [WAITING, FAILED])
+            except Exception as e:
+                errors.append(repr(e))
+
+        threads = [threading.Thread(target=hammer) for _ in range(8)]
+        for th in threads:
+            th.start()
+        for th in threads:
+            th.join()
+        check("B", "동시 안내.md 쓰기 안전", not errors and not [p for p in gd.iterdir() if p.name.endswith(".partial")], str(errors[:1]))
+        real_replace = bundle.os.replace
+
+        def boom(*a):
+            raise PermissionError("locked")
+        bundle.os.replace = boom
+        try:
+            failed = raises(PermissionError, bundle.write_guide, gd, META, [WAITING])
+        finally:
+            bundle.os.replace = real_replace
+        check("B", "replace 실패 시 partial 정리", failed and not [p for p in gd.iterdir() if p.name.endswith(".partial")])
 
 
 def group_c():
@@ -146,6 +201,13 @@ def group_c():
 
 
 def group_d():
+    with captured_logs("transcriber") as logs:
+        _group_d_checks()
+    check("D", "반복 경고는 로그로 남음", any("너무 길어" in m for m in logs) and any("해결하지 못해" in m for m in logs)
+          and any("재디코딩 실패" in m for m in logs), str(logs))
+
+
+def _group_d_checks():
     import transcriber
     from transcript import Segment as S, append_checkpoint, read_checkpoint
     SR = transcriber.SAMPLE_RATE
@@ -250,7 +312,166 @@ def group_d():
         check("D", "빈 텍스트 무시", [s.text for s in segs10] == ["내용"] and len(read_checkpoint(w10 / "segments.jsonl")) == 1)
 
 
-GROUPS = [group_a, group_b, group_c, group_d]
+def group_e():
+    import json
+    import jobs
+    import school
+    import transcriber
+    from jobs import (DONE, DOWNLOAD_WAIT, DOWNLOADING, FAILED, NAME_TAKEN, NO_SPEECH, TRANSCRIBE_WAIT, TRANSCRIBING,
+                      ConflictError, StateError, Store, Worker, keep_awake, next_item, waiting_login)
+    from transcript import Segment as S
+    SR = transcriber.SAMPLE_RATE
+    B = "20261102-자료구조"
+    ITEMS = [
+        {"id": "a", "status": TRANSCRIBE_WAIT, "created": "2026-11-02T10:00:00"},
+        {"id": "b", "status": DOWNLOAD_WAIT, "created": "2026-11-02T10:02:00"},
+        {"id": "c", "status": DOWNLOAD_WAIT, "created": "2026-11-02T10:01:00"},
+        {"id": "d", "status": DONE, "created": "2026-11-02T09:00:00"},
+    ]
+
+    class Engine:
+        mode = "speech"
+
+        def segments(self, audio, offset, **options):
+            if self.mode == "speech":
+                yield S(offset, offset + 5, "안녕하세요")
+                yield S(offset + 5, offset + 10, "다음입니다")
+
+    class FakeSchool:
+        def stream(self, lecture_id):
+            if lecture_id == "expired":
+                raise school.SchoolExpired()
+            if lecture_id == "user":
+                raise school.UserError("강의 영상 주소를 찾을 수 없습니다.")
+            return f"https://signed.example/{lecture_id}?token=SECRET", {}
+
+    cur_model, factory_calls, rec, downloads = ["large-v3"], [], [], []
+
+    def factory(model):
+        factory_calls.append(model)
+        return Engine()
+
+    def fake_download(stream, dest):
+        downloads.append((stream, dest))
+        if "leak" in stream:
+            raise RuntimeError(stream)  # 서명된 URL이 예외 문구에 섞여도 화면에는 안 나가야 한다
+        dest.write_bytes(b"video")
+
+    with tmpdir() as t, captured_logs("jobs") as logs:
+        d = pathlib.Path(t)
+        p = d / "state" / "jobs.json"
+        st = Store(p)
+        st.add_bundle(B, META)
+        st.add_item(bundle=B, kind="transcript", status=DONE, filename="x.md", week=1, session=1)
+        check("E", "저장 왕복·tmp 없음", Store(p).items == st.items and Store(p).bundles == st.bundles
+              and not p.with_name("jobs.json.tmp").exists())
+        check("E", "파일 형식", json.loads(p.read_text(encoding="utf-8"))["version"] == 1)
+        p.write_text("{broken", encoding="utf-8")
+        check("E", "깨진 상태 파일은 거부·보존", raises(StateError, Store, p) and p.read_text(encoding="utf-8") == "{broken")
+        p2 = d / "jobs2.json"
+        p2.write_text(json.dumps({"version": 1, "bundles": {}, "items": [
+            {"id": "1", "status": DOWNLOADING, "created": "1"}, {"id": "2", "status": TRANSCRIBING, "created": "2"}]}), encoding="utf-8")
+        check("E", "재시작 시 진행 중 상태 복귀", [i["status"] for i in Store(p2).items] == [DOWNLOAD_WAIT, TRANSCRIBE_WAIT])
+        check("E", "다른 학기 같은 묶음 거절", raises(ConflictError, st.add_bundle, B, {**META, "term": "2026-1"}))
+        check("E", "같은 묶음 다시 추가는 통과", st.add_bundle(B, dict(META)) is None)
+        check("E", "로그인 시 다운로드 먼저", next_item(ITEMS, True)["status"] == DOWNLOAD_WAIT)
+        check("E", "같은 상태는 created 순", next_item(ITEMS, True)["id"] == "c" and next_item(ITEMS, False)["id"] == "a")
+        check("E", "비로그인 시 전사만", next_item(ITEMS, False)["status"] == TRANSCRIBE_WAIT and waiting_login(ITEMS) == 2)
+        check("E", "할 일 없으면 None", next_item([ITEMS[3]], True) is None)
+        keep_awake(True, rec.append)
+        keep_awake(False, rec.append)
+        check("E", "절전 방지 플래그", rec == [0x80000001, 0x80000000])
+        keep_awake(False)  # 기본 set_state: 실제 API 호출(Windows) 또는 무동작이 예외 없이 끝난다
+        rec.clear()
+
+        st = Store(d / "state" / "w.json")
+        st.add_bundle(B, META)
+        inbox, work = d / "inbox", d / "work"
+        bdir = inbox / B
+        w = Worker(st, inbox, work, model=lambda: cur_model[0], download=fake_download, engine_factory=factory,
+                   load_audio=lambda path: [0.0] * SR * 30, set_state=rec.append)
+
+        def add(filename, session):
+            item = st.add_item(bundle=B, kind="transcript", status=TRANSCRIBE_WAIT, filename=filename, week=3, session=session,
+                               date=None, source={"type": "upload", "name": "a.m4a"}, media="unused", model=None,
+                               repetitions=None, error=None)
+            (work / item["id"]).mkdir(parents=True)
+            (work / item["id"] / "upload.m4a").write_bytes(b"audio")
+            return item["id"]
+
+        # 업로드 전사 성공
+        ok = add("week_03_01.md", 1)
+        check("E", "처리했으면 True", w.run_once() is True)
+        check("E", "전사 파일·안내 완료", (bdir / "week_03_01.md").read_text(encoding="utf-8").startswith("[00:00:00] ")
+              and "- 상태: 완료" in (bdir / "안내.md").read_text(encoding="utf-8"))
+        check("E", "성공 후 work 삭제", not (work / ok).exists() and st.find(ok)["repetitions"] == 0 and st.find(ok)["status"] == DONE)
+        check("E", "작업 후 절전 해제", rec[0] == 0x80000001 and rec[-1] == 0x80000000)
+        check("E", "진행 표시는 끝나면 사라짐", ok not in w.progress)
+        # 0줄
+        Engine.mode = "silent"
+        i2 = add("week_03_02.md", 2)
+        w.run_once()
+        check("E", "무음은 실패", st.find(i2)["error"] == NO_SPEECH and not (bdir / "week_03_02.md").exists() and (work / i2).exists())
+        # 이름 충돌
+        Engine.mode = "speech"
+        i3 = add("week_03_03.md", 3)
+        (bdir / "week_03_03.md").write_bytes(b"user")
+        w.run_once()
+        check("E", "최종 쓰기 충돌은 실패·기존 보존", st.find(i3)["error"] == NAME_TAKEN
+              and (bdir / "week_03_03.md").read_bytes() == b"user" and (work / i3).exists())
+        # 모델 고정: settings는 중간에 turbo로 바뀌었다
+        cur_model[0] = "large-v3-turbo"
+        i5 = add("week_03_05.md", 5)
+        st.update(i5, model="large-v3")
+        w.run_once()
+        check("E", "이어하기는 기록된 모델", factory_calls == ["large-v3"] and st.find(i5)["status"] == DONE)
+        i6 = add("week_03_06.md", 6)
+        w.run_once()
+        check("E", "새 항목은 현재 모델을 기록·엔진 교체", st.find(i6)["model"] == "large-v3-turbo"
+              and factory_calls == ["large-v3", "large-v3-turbo"])
+        # 다운로드
+        mk = lambda fn, sess, lid: st.add_item(bundle=B, kind="transcript", status=DOWNLOAD_WAIT, filename=fn, week=3, session=sess,
+                                               date=None, source={"type": "ecampus", "lecture_id": lid, "title": "t"}, error=None,
+                                               model=None, repetitions=None)["id"]
+        d1, d3, d4, d2 = (mk("week_03_07.md", 7, "ok"), mk("week_03_08.md", 8, "leak"),
+                          mk("week_03_09.md", 9, "user"), mk("week_03_10.md", 10, "expired"))
+        rec.clear()
+        check("E", "비로그인이면 다운로드 안 함", not w.run_once() and st.find(d1)["status"] == DOWNLOAD_WAIT and rec == [0x80000000])
+        names = st.reserved_names(B, bdir)
+        check("E", "같은 이름 예약", "week_03_07.md" in names and "week_03_03.md" in names)
+        check("E", "완료 항목 이름은 폴더에서만", "week_03_01.md" in names
+              and "week_03_01.md" not in st.reserved_names(B, d / "nowhere"))
+        w.school = FakeSchool()
+        w.run_once()
+        check("E", "다운로드 성공 → 전사 대기", st.find(d1)["status"] == TRANSCRIBE_WAIT and st.find(d1)["media"].endswith("video.mp4")
+              and downloads[0][1] == work / d1 / "video.mp4")
+        w.run_once()
+        check("E", "실패 메시지에 URL 없음", st.find(d3)["status"] == FAILED and "https://" not in st.find(d3)["error"]
+              and st.find(d3)["error"] == jobs.GENERIC_ERROR)
+        check("E", "예외는 로그에 남음", any("작업 실패" in m for m in logs))
+        w.run_once()
+        check("E", "UserError는 문구 그대로 실패", st.find(d4)["status"] == FAILED and st.find(d4)["error"] == "강의 영상 주소를 찾을 수 없습니다.")
+        w.run_once()
+        check("E", "세션 만료면 대기로", st.find(d2)["status"] == DOWNLOAD_WAIT and w.school is None)
+        w.run_once()  # 로그인이 풀렸으니 받아 둔 d1을 전사한다
+        check("E", "받은 영상 전사 후 완료", st.find(d1)["status"] == DONE and (bdir / "week_03_07.md").is_file())
+        guide = (bdir / "안내.md").read_text(encoding="utf-8")
+        check("E", "안내에 실패 문구·대기 반영", "- 상태: 실패 — 강의 영상 주소를 찾을 수 없습니다." in guide and "- 상태: 대기" in guide)
+        check("E", "refresh_guide는 없는 묶음이면 KeyError", raises(KeyError, w.refresh_guide, "없는묶음"))
+        rec.clear()
+        check("E", "할 일 없으면 False·절전 해제", w.run_once() is False and rec == [0x80000000])
+        # 백그라운드 스레드: 대기 중이다가 wake()로 깨어나 처리한다
+        i8 = add("week_03_11.md", 11)
+        w.start()
+        w.wake()
+        for _ in range(100):
+            if st.find(i8)["status"] == DONE:
+                break
+            time.sleep(0.05)
+        check("E", "start·wake로 백그라운드 처리", st.find(i8)["status"] == DONE)
+
+
+GROUPS = [group_a, group_b, group_c, group_d, group_e]
 
 for g in GROUPS:
     try:
