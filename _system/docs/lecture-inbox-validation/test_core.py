@@ -109,7 +109,43 @@ def group_b():
         check("B", "지운 묶음 다시 만듦", (d / "20261102-자료구조" / "안내.md").is_file())
 
 
-GROUPS = [group_a, group_b]
+def group_c():
+    import repetition
+    import transcript
+    S = transcript.Segment
+    check("C", "hms", transcript.format_hms(3725.9) == "01:02:05")
+    check("C", "md 형식", transcript.to_markdown([S(0, 1, "안녕"), S(65.2, 70, "둘")]) == "[00:00:00] 안녕\n[00:01:05] 둘\n")
+    with tmpdir() as t:
+        d = pathlib.Path(t)
+        ck = d / "ck.jsonl"
+        check("C", "없는 체크포인트", transcript.read_checkpoint(d / "none.jsonl") == [])
+        for s in (S(0, 2, "가"), S(2, 4, "나")):
+            transcript.append_checkpoint(ck, s)
+        good = ck.read_bytes()
+        with open(ck, "ab") as f:
+            f.write(b'{"start": 4, "end"')  # 쓰다 끊긴 줄
+        check("C", "잘린 줄 버림", transcript.read_checkpoint(ck) == [S(0, 2, "가"), S(2, 4, "나")])
+        check("C", "잘린 줄 바이트 단위 truncate", ck.read_bytes() == good)
+        transcript.append_checkpoint(ck, S(4, 6, "다"))
+        check("C", "truncate 후 이어 쓰기", len(transcript.read_checkpoint(ck)) == 3)
+        with open(ck, "ab") as f:
+            f.write('{"start": 6, "end": 8, "text": "한'.encode("utf-8")[:-1])  # 한글 중간에서 끊김
+        check("C", "멀티바이트 중간에서 끊겨도 버림", len(transcript.read_checkpoint(ck)) == 3)
+        bad = d / "bad.jsonl"
+        bad.write_bytes(good.replace(b'"end": 2', b'"end"', 1))
+        check("C", "중간 줄 깨짐은 ValueError", raises(ValueError, transcript.read_checkpoint, bad))
+        nonl = d / "nonl.jsonl"
+        nonl.write_bytes(good.rstrip(b"\n"))  # 마지막 줄은 온전하지만 개행만 없음
+        check("C", "개행 없는 온전한 줄 유지", transcript.read_checkpoint(nonl) == [S(0, 2, "가"), S(2, 4, "나")])
+        transcript.append_checkpoint(nonl, S(4, 6, "다"))
+        check("C", "개행 보충 후 이어 쓰기", len(transcript.read_checkpoint(nonl)) == 3)
+    rep = [S(i, i + 1, "같은 말을 반복합니다") for i in range(3)]
+    check("C", "반복 3회 탐지", repetition.find_repetition_span([S(-1, 0, "시작")] + rep) == (1, 3))
+    check("C", "짧은 반복은 정상", repetition.find_repetition_span([S(i, i + 1, "네") for i in range(5)]) is None)
+    check("C", "2회는 반복 아님", repetition.find_repetition_span(rep[:2]) is None)
+
+
+GROUPS = [group_a, group_b, group_c]
 
 for g in GROUPS:
     try:
