@@ -13,8 +13,13 @@ _RESERVED = re.compile(r"(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])")
 
 def safe_name(value: str) -> str:
     value = re.sub(r'[\\/:*?"<>|\x00-\x1f\x7f]', "_", value).strip(" .")
-    value = value.encode("utf-8")[:120].decode("utf-8", errors="ignore")
-    value = value or "미분류"
+    # 길면 확장자는 두고 stem만 줄인다. 자른 뒤 끝의 공백·점은 Windows가 조용히 지우므로 다시 뗀다.
+    stem, ext = os.path.splitext(value)
+    if len(ext.encode("utf-8")) > 16:
+        stem, ext = value, ""
+    room = 120 - len(ext.encode("utf-8"))
+    stem = stem.encode("utf-8")[:room].decode("utf-8", errors="ignore").strip(" .")
+    value = (stem + ext) if stem else "미분류"
     # Windows는 확장자가 붙어도 첫 마디가 예약 이름이면 장치로 취급한다.
     if _RESERVED.fullmatch(value.split(".")[0].rstrip(" ")):
         value = "_" + value

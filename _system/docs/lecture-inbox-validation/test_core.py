@@ -82,6 +82,11 @@ def group_b():
     check("B", "폴더 이름", bundle.bundle_dir_name("자료/구조", date(2026, 11, 2)) == "20261102-자료_구조")
     check("B", "예약 이름", bundle.safe_name("CON.pdf") == "_CON.pdf" and bundle.safe_name("a<b>.pdf") == "a_b_.pdf")
     check("B", "예약 이름 아님", bundle.safe_name("console.pdf") == "console.pdf" and bundle.safe_name("com10.pdf") == "com10.pdf")
+    long_ko = bundle.safe_name("가" * 45 + ".pdf")
+    check("B", "긴 한글 이름 확장자 보존", long_ko.endswith(".pdf") and len(long_ko.encode("utf-8")) <= 120)
+    tails = [bundle.safe_name(n) for n in ("a" * 119 + " b.pdf", "a" * 119 + ". b", "a" * 118 + " . x", "가" * 40 + " " * 5)]
+    check("B", "끝에 공백·점 없음", all(n and not n.endswith((" ", ".")) for n in tails), repr(tails))
+    check("B", "자른 뒤 예약 이름", bundle.safe_name("CON" + " " * 130 + ".pdf") == "_CON.pdf")
     check("B", "전사 이름", bundle.transcript_name(3, 1) == "week_03_01.md")
     with tmpdir() as t:
         d = pathlib.Path(t)
