@@ -744,7 +744,36 @@ def group_g():
         check("G", "예외에도 partial 정리", ok and not (d / "b.mp4.part").exists())
 
 
-GROUPS = [group_a, group_b, group_c, group_d, group_e, group_f, group_g]
+def group_p():
+    import prereq
+    with tmpdir() as t, tmpdir() as t2, tmpdir() as mt:
+        check("P", "PATH 우선", prereq.ffmpeg_path({"LOCALAPPDATA": t}, which=lambda n: "C:/x/ffmpeg.exe") == "C:/x/ffmpeg.exe")
+        (links := pathlib.Path(t, "Microsoft/WinGet/Links")).mkdir(parents=True)
+        (links / "ffmpeg.exe").write_bytes(b"")
+        check("P", "WinGet Links 대체", prereq.ffmpeg_path({"LOCALAPPDATA": t}, which=lambda n: None) == str(links / "ffmpeg.exe"))
+        check("P", "없으면 None", prereq.ffmpeg_path({"LOCALAPPDATA": t2}, which=lambda n: None) is None)
+        check("P", "LOCALAPPDATA 없어도 None", prereq.ffmpeg_path({}, which=lambda n: None) is None)
+        check("P", "winget 명령 고정", prereq.WINGET_COMMAND == ["winget", "install", "--id", "Gyan.FFmpeg", "-e"])
+        ran = []
+        for answer in ("n", "", "yes please"):
+            prereq.offer_ffmpeg_install(ask=lambda q: answer, run=ran.append)
+        check("P", "거절·빈 답이면 실행 안 함", ran == [])
+        check("P", "동의하면 winget", prereq.offer_ffmpeg_install(ask=lambda q: "y", run=ran.append) is True
+              and ran == [prereq.WINGET_COMMAND])
+        m = pathlib.Path(mt)
+        (m / "large-v3").mkdir()
+        (m / "large-v3" / "model.bin").write_bytes(b"")
+
+        def boom(*a, **k):
+            raise AssertionError("받으면 안 됨")
+        check("P", "모델 있으면 안 받음", prereq.ensure_model("large-v3", m, download=boom) == m / "large-v3")
+        got = []
+        out = prereq.ensure_model("large-v3-turbo", m, download=lambda n, output_dir: got.append((n, output_dir)) or output_dir)
+        check("P", "없으면 받음", got == [("large-v3-turbo", str(m / "large-v3-turbo"))] and out == m / "large-v3-turbo")
+        check("P", "prereq는 맨 위에서 faster_whisper를 import하지 않음", "faster_whisper" not in sys.modules)
+
+
+GROUPS = [group_a, group_b, group_c, group_d, group_e, group_f, group_g, group_p]
 
 for g in GROUPS:
     try:

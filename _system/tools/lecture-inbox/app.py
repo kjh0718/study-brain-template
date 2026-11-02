@@ -1,10 +1,14 @@
 """lecture-inbox 로컬 API. 요청 본문·학번·비밀번호·서명된 URL은 로그와 오류 응답에 남기지 않는다."""
 import contextlib
 import datetime as dt
+import json
 import logging
 import secrets
 import shutil
+import socket
 import threading
+import urllib.request
+import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
@@ -18,9 +22,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, SecretStr
 
 from bundle import bundle_dir_name, safe_name, transcript_name, write_new_file
-from config import MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
+from config import HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
 from hls import download_hls
-from jobs import (DONE, DOWNLOAD_WAIT, FAILED, TRANSCRIBE_WAIT, ConflictError, Store, Worker, waiting_login)
+from jobs import (DONE, DOWNLOAD_WAIT, FAILED, TRANSCRIBE_WAIT, ConflictError, StateError, Store, Worker, waiting_login)
 from school import SchoolExpired, SchoolSession, UserError, suggest_week, to_term
 from transcriber import WhisperEngine, load_audio as default_load_audio
 
@@ -315,6 +319,21 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         """옮기는 중인 업로드(FAILED, media 없음). 되살릴 파일이 없고 업로드 쪽이 정리를 맡는다."""
         return item["status"] == FAILED and item["source"]["type"] == "upload" and not item.get("media")
 
+    def sweep_leftovers() -> None:
+        """비정상 종료로 남은 업로드 임시 폴더와 자리표시자를 치운다. API로는 지울 수 없게 막아 둔 항목이다.
+        워커가 시작되기 전, 서버가 하나뿐일 때만 부른다(main이 두 번째 서버를 막는다)."""
+        for tmp in paths.work.glob("up-*"):
+            shutil.rmtree(tmp, ignore_errors=True)
+        touched = set()
+        for item in store.all_items():
+            if is_upload_placeholder(item):
+                with contextlib.suppress(KeyError):
+                    store.remove(item["id"])
+                shutil.rmtree(paths.work / item["id"], ignore_errors=True)
+                touched.add(item["bundle"])
+        for bundle in touched:
+            guide(bundle)
+
     @app.post("/api/items/{item_id}/retry")
     def retry(item_id: str):
         try:
@@ -349,8 +368,51 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         guide(item["bundle"])
         return {"deleted": item_id}
 
+    sweep_leftovers()
     return app
 
 
+def _is_ours(host: str, port: int) -> "bool | None":
+    """True면 이미 떠 있는 lecture-inbox, False면 다른 프로그램이 쓰는 포트, None이면 비어 있음."""
+    try:
+        req = urllib.request.Request(f"http://{host}:{port}/api/health", headers={"X-Lecture-Inbox": "1"})
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=2) as r:  # 프록시를 거치지 않는다
+            return json.load(r) == {"app": "lecture-inbox"}
+    except (OSError, ValueError):  # HTTPError·URLError·소켓 오류는 OSError, 깨진 JSON은 ValueError
+        pass
+    try:
+        socket.create_connection((host, port), timeout=1).close()
+    except OSError:
+        return None
+    return False
+
+
 def main(argv: "list[str] | None" = None) -> int:
-    raise NotImplementedError("서버 실행은 Task 10에서 완성한다")
+    url = f"http://{HOST}:{PORT}/"
+    ours = _is_ours(HOST, PORT)
+    if ours:  # 같은 상태 파일을 쓰는 두 번째 워커를 만들지 않는다
+        webbrowser.open(url)
+        return 0
+    if ours is False:
+        print(f"포트 {PORT}를 다른 프로그램이 쓰고 있습니다. 그 프로그램을 끄고 다시 실행해 주세요.")
+        return 1
+    import prereq
+    import uvicorn
+
+    if prereq.ffmpeg_path() is None:
+        prereq.offer_ffmpeg_install()  # 거절해도 계속한다. 업로드 전사는 ffmpeg 없이 된다
+    try:
+        paths = Paths.at(data_home())
+        load_settings(paths.settings_file)
+        app = create_app(paths=paths)
+    except (ValueError, OSError, StateError) as e:
+        print(f"시작하지 못했습니다: {e}")
+        return 1
+    threading.Timer(1.5, webbrowser.open, [url]).start()
+    # access_log=False: 요청 경로·쿼리에 과목명이 들어가므로 접근 로그를 남기지 않는다
+    uvicorn.run(app, host=HOST, port=PORT, log_level="info", access_log=False)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

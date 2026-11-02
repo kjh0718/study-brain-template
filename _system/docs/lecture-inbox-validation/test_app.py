@@ -215,6 +215,30 @@ def group_h():
         check("H", "삭제 확인 뒤 상태 바뀌면 409·보존", r.status_code == 409 and store.find(busy["id"])["status"] == jobs.TRANSCRIBING)
         store.remove(busy["id"])
 
+        # 시작 정리: 비정상 종료로 남은 up-* 임시 폴더와 업로드 자리표시자를 치운다
+        paths3 = Paths.at(tmp / "h3")
+        pre = jobs.Store(paths3.state_file)
+        sweep_bundle = bundle_dir_name(COURSE, datetime.date.today())
+        pre.add_bundle(sweep_bundle, {"course": COURSE, "term": "2026-2", "ecampus_id": "123", "code": None, "section": None})
+        up_src = {"type": "upload", "name": "x.m4a"}
+        hole2 = pre.add_item(kind="transcript", bundle=sweep_bundle, filename="week_01_01.md", status=jobs.FAILED,
+                             week=1, session=1, error=app_mod.SAVING, source=up_src)
+        keep_media = pre.add_item(kind="transcript", bundle=sweep_bundle, filename="week_01_02.md", status=jobs.FAILED,
+                                  week=1, session=2, error="x", source=up_src, media=str(paths3.work / "m" / "x.m4a"))
+        keep_dl = pre.add_item(kind="transcript", bundle=sweep_bundle, filename="week_01_03.md", status=jobs.FAILED,
+                               week=1, session=3, error="x", source={"type": "ecampus", "lecture_id": "1", "title": "t"})
+        for d in ("up-aaaaaa", hole2["id"], keep_media["id"]):
+            (paths3.work / d).mkdir()
+            (paths3.work / d / "f").write_bytes(b"1")
+        (paths3.work / "other").mkdir()
+        app3 = app_mod.create_app(root=root, paths=paths3, start_worker=False, allowed_hosts=frozenset({"testserver"}))
+        left = {i["id"] for i in app3.state.store.all_items()}
+        check("H", "시작 정리: 자리표시자만 제거", left == {keep_media["id"], keep_dl["id"]})
+        check("H", "시작 정리: up-*와 자리표시자 작업 폴더 제거",
+              sorted(p.name for p in paths3.work.iterdir()) == sorted([keep_media["id"], "other"]))
+        text3 = (root / "inbox" / sweep_bundle / "안내.md").read_text(encoding="utf-8")
+        check("H", "시작 정리: 안내.md 갱신", "week_01_01.md" not in text3 and "week_01_02.md" in text3)
+
         page = c.get("/")
         check("H", "화면 제공", "강의 수집 도구" in page.text and "frame-ancestors 'none'" in page.headers["content-security-policy"])
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
