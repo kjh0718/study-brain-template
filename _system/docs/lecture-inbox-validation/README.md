@@ -1,0 +1,20 @@
+# lecture-inbox Validation
+
+[`_system/tools/lecture-inbox/`](../../tools/lecture-inbox/README.md)의 코어 로직과 API가 계약을 지키는지 검사한다.
+
+```bash
+# 코어: 시스템 Python, 표준 라이브러리만 쓴다
+python _system/docs/lecture-inbox-validation/test_core.py
+
+# 앱: FastAPI가 필요하므로 uv 환경에서 돈다 (아직 없음, 이후 task에서 추가)
+$env:UV_PROJECT_ENVIRONMENT = "$env:LOCALAPPDATA\lecture-inbox\venv"
+uv run --project _system/tools/lecture-inbox python _system/docs/lecture-inbox-validation/test_app.py
+```
+
+fixture는 임시 폴더에만 만들고 저장소에는 아무것도 쓰지 않는다. 종료 코드 0이면 문제 없음. 마지막 줄은 `PASS n / FAIL n`이다. `test_core.py`만 [`run_all.py`](../run_all.py)에 등록돼 있다.
+
+## 검사 항목
+
+| | 내용 |
+|---|---|
+| A | 설정과 경로. 데이터 폴더 생성, `settings.json` 기본값과 잘못된 모델 거절, `LECTURE_INBOX_HOME` 우선순위, 저장소 루트, 로컬 전용 바인드 |

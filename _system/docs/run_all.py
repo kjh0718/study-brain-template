@@ -80,6 +80,13 @@ SUITES = [
         "needs": ["_system/hooks/session_context.py"],
         "pattern": r"PASS \d+ / FAIL \d+",
     },
+    {
+        "name": "lecture-inbox 검사",
+        "dir": "lecture-inbox-validation",
+        "script": "test_core.py",
+        "needs": ["_system/tools/lecture-inbox/config.py"],
+        "pattern": r"PASS \d+ / FAIL \d+",
+    },
 ]
 
 
