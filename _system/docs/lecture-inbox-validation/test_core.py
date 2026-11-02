@@ -537,7 +537,97 @@ def group_e():
         check("E", "start·wake로 백그라운드 처리", st.find(i8)["status"] == DONE and not (work / i8).exists())
 
 
-GROUPS = [group_a, group_b, group_c, group_d, group_e]
+COURSES_HTML = """<a href="/login/logout.php">로그아웃</a><table>
+<tr><td>2026</td><td>2학기</td><td><span>교과</span>
+<a class="coursefullname" href="https://ecampus.sejong.ac.kr/course/view.php?id=42">자료 &amp; <b>구조</b></a></td></tr>
+<tr><td>2026</td><td>2학기</td><td><a class="coursefullname" href="/course/view.php?id=42">중복</a></td></tr>
+<tr><td>2026</td><td>2학기</td><td><a class="coursefullname" href="https://evil.example/course/view.php?id=99">외부</a></td></tr>
+</table>"""
+LECTURES_HTML = """<ul><li class="activity vod modtype_vod" id="module-123">
+<a><span class="instancename">1주차 <b>소개</b><span class="accesshide"> 동영상</span></span></a></li>
+<li class="activity label" id="module-456"><span class="instancename">공지</span></li>
+<li class="activity vod" id="module-invalid"><span class="instancename">잘못된 ID</span></li></ul>"""
+
+
+def group_f():
+    import html as htmllib
+    import json
+    import school
+    from urllib.request import Request
+
+    def parse_courses(h):
+        p = school.CourseParser()
+        p.feed(h)
+        return list(p.courses.values())
+
+    def parse_lectures(h):
+        p = school.LectureParser()
+        p.feed(h)
+        return list(p.lectures.values())
+
+    def player(config):
+        return '<title>강의</title><video data-setup-lazy="' + htmllib.escape(config, quote=True) + '"></video>'
+
+    check("F", "SchoolExpired는 UserError", issubclass(school.SchoolExpired, school.UserError))
+    check("F", "과목 파싱·외부·중복 제외", parse_courses(COURSES_HTML) == [{"id": "42", "name": "자료 & 구조", "year": "2026", "semester": "2학기"}])
+    check("F", "강의 파싱·accesshide 제외", [(l["id"], l["title"]) for l in parse_lectures(LECTURES_HTML)] == [("123", "1주차 소개")])
+    check("F", "m3u8 추출", school.extract_stream(player('{"sources": {"src": "https://cdn.example/v/index.m3u8"}}')) == ("https://cdn.example/v/index.m3u8", "강의"))
+    escaped = json.dumps({"sources": {"src": "https://cdn.example.com/token/index.m3u8"}}).replace("/", r"\/")
+    check("F", "이스케이프된 주소 복원", school.extract_stream(player(escaped))[0] == "https://cdn.example.com/token/index.m3u8")
+    check("F", "http 거절", raises(school.UserError, school.extract_stream, player('{"sources": {"src": "http://cdn.example/index.m3u8"}}')))
+    check("F", "자격증명 URL 거절", raises(school.UserError, school.extract_stream, player('{"sources": {"src": "https://u:p@cdn.example/index.m3u8"}}')))
+    check("F", "m3u8 아닌 주소 거절", raises(school.UserError, school.extract_stream, player('{"sources": {"src": "https://cdn.example/a.mp4"}}')))
+    check("F", "주소 없음 거절", raises(school.UserError, school.extract_stream, "<html></html>"))
+
+    req = Request("https://ecampus.sejong.ac.kr/login/index.php", data=b"x")
+    handler = school.SchoolRedirects()
+    check("F", "외부 리다이렉트 차단", raises(school.UserError, handler.redirect_request, req, None, 302, "", {}, "https://evil.example/login"))
+    check("F", "http 리다이렉트 차단", raises(school.UserError, handler.redirect_request, req, None, 302, "", {}, "http://ecampus.sejong.ac.kr/x"))
+    check("F", "닮은 호스트 차단", raises(school.UserError, handler.redirect_request, req, None, 302, "", {}, "https://ecampus.sejong.ac.kr.evil.com/x"))
+    same = handler.redirect_request(req, None, 302, "", {}, "https://ecampus.sejong.ac.kr/my/")
+    check("F", "학교 내부 리다이렉트 허용", same is not None and same.full_url == "https://ecampus.sejong.ac.kr/my/")
+
+    # 로그인 실패: 오류 문구에 학번·비밀번호가 없어야 한다
+    s = school.SchoolSession()
+    s.page = lambda path, form=None: (school.SCHOOL + "/login/index.php", "<html>실패</html>")
+    text = ""
+    try:
+        s.login("20250001", "pw-secret-123")
+    except school.UserError as e:
+        text = str(e) + repr(e)
+    check("F", "로그인 실패 메시지에 비밀번호 없음", text != "" and "pw-secret-123" not in text and "20250001" not in text)
+    s.page = lambda path, form=None: (school.SCHOOL + "/my/", '<a href="/login/logout.php">x</a>')
+    check("F", "로그인 성공", s.login("20250001", "pw-secret-123") is None)
+
+    calls = []
+    s.page = lambda path, form=None: (calls.append(path), (school.SCHOOL + "/local/ubion/user/index.php", COURSES_HTML))[1]
+    got = s.courses()
+    check("F", "목록 경로", calls == ["/local/ubion/user/index.php?year=all&semester=all"] and got[0]["id"] == "42")
+    s.page = lambda path, form=None: (calls.append(path), (school.SCHOOL + "/course/view.php?id=42", LECTURES_HTML))[1]
+    calls.clear()
+    check("F", "강의 경로·결과", s.lectures("42")[0]["url"] == school.SCHOOL + "/mod/vod/viewer.php?id=123" and calls == ["/course/view.php?id=42"])
+    s.page = lambda path, form=None: (calls.append(path), (school.SCHOOL + "/mod/vod/viewer.php?id=123", player('{"sources": {"src": "https://cdn.example/v/index.m3u8"}}')))[1]
+    calls.clear()
+    check("F", "스트림 경로·결과", s.stream("123") == ("https://cdn.example/v/index.m3u8", "강의") and calls == ["/mod/vod/viewer.php?id=123"])
+
+    # 만료: 로그인 페이지로 돌아오거나, 목록 화면에 logout 링크가 없다
+    for lp in ("/login.php", "/login/index.php"):
+        s.page = lambda path, form=None, lp=lp: (school.SCHOOL + lp, "")
+        check("F", f"만료 감지 {lp}", raises(school.SchoolExpired, s.lectures, "42"))
+    s.page = lambda path, form=None: (school.SCHOOL + "/local/ubion/user/index.php", "<table></table>")
+    check("F", "목록 화면에 logout 없으면 만료", raises(school.SchoolExpired, s.courses))
+
+    for (y, sem), want in {("2026", "2학기"): "2026-2", ("2026", "1학기"): "2026-1", ("2026", "여름계절수업"): "2026-summer",
+                           ("2026", "겨울계절수업"): "2026-winter", ("2026", "20"): "2026-2", ("2026", "10"): "2026-1",
+                           ("2026", "11"): "2026-summer", ("2026", "21"): "2026-winter",
+                           ("26", "2학기"): None, ("2026", "특별학기"): None, ("2026", "all"): None}.items():
+        check("F", f"term {y}/{sem}", school.to_term(y, sem) == want)
+    check("F", "주차 제안", school.suggest_week("3주차 1차시 자료구조 개요") == (3, 1) and school.suggest_week("1주차 소개") == (1, None)
+          and school.suggest_week("오리엔테이션") == (None, None))
+    check("F", "주차 제안 교시·범위", school.suggest_week("12주차 2교시") == (12, 2) and school.suggest_week("0주차 100차시") == (None, None))
+
+
+GROUPS = [group_a, group_b, group_c, group_d, group_e, group_f]
 
 for g in GROUPS:
     try:
