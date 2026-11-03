@@ -351,7 +351,7 @@ Core Type과 접두사, 저장 위치는 [`_system/schemas/common.md`](_system/s
 
 course-scoped 노트(LEC, RES, ASM, EXM, PEX, FAC, QST, REV)는 모두 실제 CRS에 연결돼야 하고, 원본과 노트의 저장 경로가 그 CRS의 `term`과 `<course-slug>`로 정해진다. 따라서 L1, L2, L3, L5는 원본을 보존하거나 노트를 만들기 전에 이 절차를 수행한다. L4와 L7이 QST·REV를 만들 때도 연결할 CRS를 이 절차로 확인한다. 저장소가 비어 있어 CRS가 하나도 없을 수 있다. 새 레이어 번호를 만들지 않는다.
 
-1. **course 확인.** 입력 내용, 파일명, 사용자 지정을 근거로 어느 과목인지 확인한다. 추측하지 않는다. `inbox/`의 강의 수집 도구 묶음에 있는 `안내.md`의 과목명·term·종류·주차·차시·수업일은 사용자 지정이다. 기존 CRS의 제목은 비슷한데 term이나 code가 다르거나 안내 값이 기존 CRS와 충돌할 때만 사용자에게 묻는다. 맞는 CRS가 없으면 묻지 않고 5단계로 만든다.
+1. **course 확인.** 입력 내용, 파일명, 사용자 지정을 근거로 어느 과목인지 확인한다. 추측하지 않는다. `inbox/`의 강의 수집 도구 묶음에 있는 `안내.md`의 과목명·term·학수번호·분반(있을 때)·종류·주차·차시·수업일은 사용자 지정이다. 기존 CRS의 제목은 비슷한데 term이나 code가 다르거나 안내 값이 기존 CRS와 충돌할 때만 사용자에게 묻는다. 맞는 CRS가 없으면 묻지 않고 5단계로 만든다.
 2. **term 확인.** 같은 근거로 어느 학기인지 확인한다. 형식은 [`course.md`](_system/schemas/course.md)가 정한 `YYYY-1`, `YYYY-2`, `YYYY-summer`, `YYYY-winter`다.
 3. **CRS 존재 확인.** `study/` 전체의 `course.md`에서 기존 CRS를 검색한다. 검색 키는 code(또는 title) + term + 분반이다. 일치하는 CRS가 있으면 그 ID를 사용한다.
 4. **course-slug 확인.** 기존 CRS가 있으면 그 `course.md`가 있는 폴더 `study/<term>/<course-slug>/`에서 `<course-slug>`를 확인한다. 이 입력의 원본과 노트 경로는 모두 이 값을 쓴다.

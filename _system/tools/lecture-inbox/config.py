@@ -46,6 +46,6 @@ def load_settings(path: Path) -> dict:
         path.write_text(json.dumps(settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         return settings
     settings = json.loads(path.read_text(encoding="utf-8"))
-    if settings.get("model") not in KNOWN_MODELS:
+    if not isinstance(settings, dict) or settings.get("model") not in KNOWN_MODELS:
         raise ValueError(f"settings.json의 model은 {', '.join(KNOWN_MODELS)} 중 하나여야 합니다")
     return settings

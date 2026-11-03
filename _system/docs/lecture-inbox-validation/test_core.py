@@ -7,6 +7,7 @@
 """
 import contextlib
 import datetime
+import http.client
 import logging
 import pathlib
 import shutil
@@ -16,6 +17,7 @@ import tempfile
 import threading
 import time
 import traceback
+import types
 
 sys.dont_write_bytecode = True
 for _stream in (sys.stdout, sys.stderr):
@@ -95,6 +97,9 @@ def group_a():
         check("A", "settings 기본값", config.load_settings(p.settings_file) == {"model": "large-v3"} and p.settings_file.is_file())
         p.settings_file.write_text('{"model": "nope"}', encoding="utf-8")
         check("A", "모르는 모델 거절", raises(ValueError, config.load_settings, p.settings_file))
+        for bad in ('"large-v3"', "[]", "null", "3"):
+            p.settings_file.write_text(bad, encoding="utf-8")
+            check("A", f"객체가 아닌 settings 거절 {bad}", raises(ValueError, config.load_settings, p.settings_file))
     check("A", "LECTURE_INBOX_HOME 우선", config.data_home({"LECTURE_INBOX_HOME": "X:/h", "LOCALAPPDATA": "Y:/"}) == pathlib.Path("X:/h"))
     check("A", "LOCALAPPDATA 기본", config.data_home({"LOCALAPPDATA": "Y:/a"}) == pathlib.Path("Y:/a/lecture-inbox"))
     check("A", "ROOT는 저장소 루트", (config.ROOT / "SECOND-BRAIN.md").is_file())
@@ -383,6 +388,8 @@ def group_e():
             {"id": "1", "status": DOWNLOADING, "created": "1"}, {"id": "2", "status": TRANSCRIBING, "created": "2"}]}), encoding="utf-8")
         check("E", "재시작 시 진행 중 상태 복귀", [i["status"] for i in Store(p2).items] == [DOWNLOAD_WAIT, TRANSCRIBE_WAIT])
         check("E", "다른 학기 같은 묶음 거절", raises(ConflictError, st.add_bundle, B, {**META, "term": "2026-1"}))
+        check("E", "다른 학수번호·분반 같은 묶음 거절", raises(ConflictError, st.add_bundle, B, {**META, "code": "X1"})
+              and raises(ConflictError, st.add_bundle, B, {**META, "section": "02"}))
         check("E", "같은 묶음 다시 추가는 통과", st.add_bundle(B, dict(META)) is None)
         check("E", "로그인 시 다운로드 먼저", next_item(ITEMS, True)["status"] == DOWNLOAD_WAIT)
         check("E", "같은 상태는 created 순", next_item(ITEMS, True)["id"] == "c" and next_item(ITEMS, False)["id"] == "a")
@@ -625,6 +632,20 @@ def group_f():
         check("F", f"term {y}/{sem}", school.to_term(y, sem) == want)
     check("F", "주차 제안", school.suggest_week("3주차 1차시 자료구조 개요") == (3, 1) and school.suggest_week("1주차 소개") == (1, None)
           and school.suggest_week("오리엔테이션") == (None, None))
+    check("F", "주차 제안 세 자리 숫자 거절", school.suggest_week("112주차 105차시") == (None, None)
+          and school.suggest_week("2026 12주차 3차시") == (12, 3))
+    for exc in (ConnectionResetError("x"), http.client.RemoteDisconnected("x"), http.client.IncompleteRead(b"a"), OSError("boom")):
+        def boom(request, timeout=None, exc=exc):
+            raise exc
+        fs = school.SchoolSession()
+        fs.opener = types.SimpleNamespace(open=boom)
+        msg, ok_cause = "", False
+        try:
+            fs.page("/x")
+        except school.UserError as e:
+            msg = str(e)
+            ok_cause = e.__cause__ is None and e.__suppress_context__
+        check("F", f"네트워크 예외 {type(exc).__name__} 변환", msg.startswith("학교 사이트에 연결하지 못했습니다") and ok_cause)
     check("F", "주차 제안 교시·범위", school.suggest_week("12주차 2교시") == (12, 2) and school.suggest_week("0주차 100차시") == (None, None))
 
 

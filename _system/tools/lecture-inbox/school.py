@@ -5,6 +5,7 @@
 보안 전제: TLS 검증을 끄지 않는다. 학번·비밀번호는 로그인 요청 본문에만 쓰고 오류·반환값에 싣지 않는다.
 쿠키는 메모리(CookieJar)에만 둔다. https://ecampus.sejong.ac.kr 밖으로 가는 리다이렉트는 막는다.
 """
+import http.client
 import http.cookiejar
 import json
 import re
@@ -172,7 +173,7 @@ class SchoolSession:
                 return response.url, body.decode("utf-8", errors="replace")
         except HTTPError as error:
             raise UserError(f"학교 사이트가 HTTP {error.code} 오류를 반환했습니다.") from None
-        except (URLError, TimeoutError, ssl.SSLError):
+        except (URLError, TimeoutError, ssl.SSLError, OSError, http.client.HTTPException):
             raise UserError("학교 사이트에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요. 계속 실패하면 운영자에게 알려 주세요.") from None
 
     def login(self, student_id: str, password: str):
@@ -226,4 +227,4 @@ def suggest_week(title: str) -> tuple[int | None, int | None]:
     def find(pattern):
         m = re.search(pattern, title)
         return int(m[1]) if m and 1 <= int(m[1]) <= 99 else None
-    return find(r"(\d{1,2})\s*주차"), find(r"(\d{1,2})\s*(?:차시|교시)")
+    return find(r"(?<!\d)(\d{1,2})\s*주차"), find(r"(?<!\d)(\d{1,2})\s*(?:차시|교시)")

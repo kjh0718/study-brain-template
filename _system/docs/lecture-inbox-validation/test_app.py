@@ -291,6 +291,11 @@ def group_h():
 
         page = c.get("/")
         check("H", "화면 제공", "강의 수집 도구" in page.text and "frame-ancestors 'none'" in page.headers["content-security-policy"])
+        # 브라우저 없이 확인할 수 있는 최소한: 화면 코드에 해당 규칙이 들어 있다(동작은 수동 확인)
+        check("H", "화면: 대기 삭제·로그인 배너 조건·수업일 자동 입력 없음",
+              '["failed", "download-wait", "transcribe-wait"].includes(it.status)' in page.text
+              and "!s.loggedIn && s.waitingLogin > 0" in page.text
+              and 'date: localDate(file.lastModified)' not in page.text and "파일 날짜 사용" in page.text)
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
               and "https://" not in page.text and 'src="' not in page.text)
     finally:

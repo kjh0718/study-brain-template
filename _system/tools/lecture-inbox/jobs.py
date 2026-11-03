@@ -78,8 +78,8 @@ class Store:
         with self.lock:
             old = self.bundles.get(name)
             if old is not None:
-                if any(old.get(k) != meta.get(k) for k in ("course", "term", "ecampus_id")):
-                    raise ConflictError(f"같은 이름의 묶음이 다른 과목·학기로 이미 있습니다: {name}")
+                if any(old.get(k) != meta.get(k) for k in ("course", "term", "ecampus_id", "code", "section")):
+                    raise ConflictError(f"같은 이름의 묶음이 다른 과목·학기·학수번호·분반으로 이미 있습니다: {name}")
                 return
             self.bundles[name] = meta
             self._write()

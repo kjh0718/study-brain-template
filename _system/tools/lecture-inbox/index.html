@@ -281,7 +281,7 @@ function dropzone(id, inputId, onFiles) {
 }
 
 dropzone("drop-rec", "in-rec", (files) => {
-  for (const file of files) recs.push({ file, week: "", session: "", date: localDate(file.lastModified), error: "" });
+  for (const file of files) recs.push({ file, week: "", session: "", date: "", fileDate: localDate(file.lastModified), error: "" });
   renderRecs(); update();
 });
 
@@ -307,9 +307,12 @@ function renderRecs() {
     const week = el("input", { type: "number", min: 1, max: 99, value: m.week, placeholder: "주차", on: { input: (e) => { m.week = e.target.value; update(); } } });
     const session = el("input", { type: "number", min: 1, max: 99, value: m.session, placeholder: "차시", on: { input: (e) => { m.session = e.target.value; update(); } } });
     const date = el("input", { type: "date", value: m.date, title: "수업일(비워도 됩니다)", on: { input: (e) => { m.date = e.target.value; } } });
+    // 파일 수정일은 수업일이 아닐 수 있으므로 사용자가 눌렀을 때만 채운다.
+    const useFileDate = el("button", { type: "button", cls: "sub", textContent: `파일 날짜 사용(${m.fileDate})`,
+      on: { click: () => { m.date = m.fileDate; renderRecs(); } } });
     box.append(el("div", { cls: "item" },
       el("div", { cls: "name", textContent: m.file.name }),
-      el("div", { cls: "row" }, week, "주차 ", session, "차시 ", date, removeBtn(recs, m, renderRecs)),
+      el("div", { cls: "row" }, week, "주차 ", session, "차시 ", date, ...(m.date ? [] : [useFileDate]), removeBtn(recs, m, renderRecs)),
       el("div", { cls: "bad", textContent: m.error })));
   }
 }
@@ -420,7 +423,7 @@ let lastSig = "";
 function renderStatus(s) {
   $("banners").replaceChildren();
   if (s.ffmpeg === false) $("banners").append(el("div", { cls: "banner" }, "이캠퍼스 받기에는 ffmpeg가 필요합니다: ", el("code", { textContent: "winget install Gyan.FFmpeg" })));
-  if (s.waitingLogin > 0) $("banners").append(el("div", { cls: "banner", textContent: `다시 로그인하면 남은 ${s.waitingLogin}개를 받습니다` }));
+  if (!s.loggedIn && s.waitingLogin > 0) $("banners").append(el("div", { cls: "banner", textContent: `다시 로그인하면 남은 ${s.waitingLogin}개를 받습니다` }));
   if (s.loggedIn !== loggedIn) { setLogin(s.loggedIn); if (s.loggedIn && !courses.length) loadCourses(); }
 
   const sig = JSON.stringify(s.items);
@@ -434,11 +437,11 @@ function renderStatus(s) {
       el("div", { cls: "name", textContent: it.filename }),
       el("div", { cls: "mut", textContent: `${KIND[it.kind] || it.kind} · ${it.bundle}` }),
       el("div", { cls: it.status === "failed" ? "bad" : it.status === "done" ? "ok" : "", textContent: label(it) }));
-    if (it.status === "failed") {
-      row.append(el("div", { cls: "row" },
-        el("button", { type: "button", cls: "sub", textContent: "다시 시도", on: { click: () => act("POST", `/api/items/${encodeURIComponent(it.id)}/retry`) } }),
-        el("button", { type: "button", cls: "sub", textContent: "삭제", on: { click: () => act("DELETE", `/api/items/${encodeURIComponent(it.id)}`) } })));
-    }
+    // 삭제는 서버 DELETABLE(실패·대기)과 맞춘다. 다시 시도는 실패만.
+    const buttons = [];
+    if (it.status === "failed") buttons.push(el("button", { type: "button", cls: "sub", textContent: "다시 시도", on: { click: () => act("POST", `/api/items/${encodeURIComponent(it.id)}/retry`) } }));
+    if (["failed", "download-wait", "transcribe-wait"].includes(it.status)) buttons.push(el("button", { type: "button", cls: "sub", textContent: "삭제", on: { click: () => act("DELETE", `/api/items/${encodeURIComponent(it.id)}`) } }));
+    if (buttons.length) row.append(el("div", { cls: "row" }, ...buttons));
     box.append(row);
   }
   const pending = s.items.some((it) => it.status !== "done");
