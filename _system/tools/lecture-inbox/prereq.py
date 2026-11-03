@@ -11,12 +11,18 @@ def ffmpeg_path(env=os.environ, which=shutil.which) -> "str | None":
     found = which("ffmpeg")
     if found:
         return found
-    # winget으로 방금 설치했다면 이 프로세스의 PATH에는 아직 없고 Links 폴더에만 있다
+    # winget으로 방금 설치했다면 이 프로세스의 PATH에는 아직 없다. Links 폴더에 있거나,
+    # 패키지에 따라 Links 없이 Packages 아래 bin만 User PATH에 추가될 수 있다.
     local = env.get("LOCALAPPDATA")
     if local:
-        link = Path(local) / "Microsoft" / "WinGet" / "Links" / "ffmpeg.exe"
+        winget = Path(local) / "Microsoft" / "WinGet"
+        link = winget / "Links" / "ffmpeg.exe"
         if link.is_file():
             return str(link)
+        # 버전 폴더 이름이 ffmpeg-9.0.2-full_build 꼴이라 정렬 마지막(가장 높은 버전 추정)을 쓴다
+        found = sorted((winget / "Packages").glob("Gyan.FFmpeg*/*/bin/ffmpeg.exe"))
+        if found:
+            return str(found[-1])
     return None
 
 

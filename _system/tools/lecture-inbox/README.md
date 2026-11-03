@@ -8,7 +8,7 @@
 
 1. [uv](https://docs.astral.sh/uv/)를 설치한다.
 2. 저장소 루트에서 처음 실행한다. 가상환경이 `%LOCALAPPDATA%\lecture-inbox\venv`에 만들어진다.
-3. ffmpeg가 없으면 터미널이 설치 명령(`winget install --id Gyan.FFmpeg -e`)을 보여 주고 `지금 설치할까요? [y/N]`를 묻는다. `y`일 때만 설치한다. 거절해도 실행되고, 파일 업로드 전사는 ffmpeg 없이 된다. 이캠퍼스 영상 다운로드에는 필요하다.
+3. ffmpeg가 없으면 터미널이 설치 명령(`winget install --id Gyan.FFmpeg -e`)을 보여 주고 `지금 설치할까요? [y/N]`를 묻는다. `y`일 때만 설치한다. 거절해도 실행되고, 파일 업로드 전사는 ffmpeg 없이 된다. 이캠퍼스 영상 다운로드에는 필요하다. 설치 직후 `ffmpeg`가 없다고 나오면 PATH가 갱신되지 않은 것이다. 도구는 WinGet `Links`와 `Packages` 폴더도 찾아보므로 대부분 그대로 인식하고, 그래도 안 되면 새 창에서 다시 실행한다.
 4. 모델은 첫 전사 때 약 3 GB(`large-v3`)를 자동으로 받는다. 받는 동안 화면에 "모델 준비 중"으로 보인다.
 
 ## 실행

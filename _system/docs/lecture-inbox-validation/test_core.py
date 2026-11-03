@@ -773,6 +773,16 @@ def group_p():
         (links / "ffmpeg.exe").write_bytes(b"")
         check("P", "WinGet Links 대체", prereq.ffmpeg_path({"LOCALAPPDATA": t}, which=lambda n: None) == str(links / "ffmpeg.exe"))
         check("P", "없으면 None", prereq.ffmpeg_path({"LOCALAPPDATA": t2}, which=lambda n: None) is None)
+        # winget 일부 패키지는 Links를 만들지 않고 Packages 아래 bin을 User PATH에만 추가한다
+        with tmpdir() as t3:
+            pkg = pathlib.Path(t3, "Microsoft/WinGet/Packages/Gyan.FFmpeg_x/ffmpeg-9.0.2-full_build/bin")
+            pkg.mkdir(parents=True)
+            (pkg / "ffmpeg.exe").write_bytes(b"")
+            check("P", "Packages 폴더 대체", prereq.ffmpeg_path({"LOCALAPPDATA": t3}, which=lambda n: None) == str(pkg / "ffmpeg.exe"))
+            lk = pathlib.Path(t3, "Microsoft/WinGet/Links")
+            lk.mkdir(parents=True)
+            (lk / "ffmpeg.exe").write_bytes(b"")
+            check("P", "Links가 Packages보다 우선", prereq.ffmpeg_path({"LOCALAPPDATA": t3}, which=lambda n: None) == str(lk / "ffmpeg.exe"))
         check("P", "LOCALAPPDATA 없어도 None", prereq.ffmpeg_path({}, which=lambda n: None) is None)
         check("P", "winget 명령 고정", prereq.WINGET_COMMAND == ["winget", "install", "--id", "Gyan.FFmpeg", "-e"])
         ran = []
