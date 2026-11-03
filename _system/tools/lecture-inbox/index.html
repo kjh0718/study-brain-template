@@ -12,8 +12,9 @@
     --g50:#f9fafb; --g100:#f2f4f6; --g200:#e5e8eb; --g300:#d1d6db; --g400:#b0b8c1; --g500:#8b95a1; --g600:#6b7684; --g700:#4e5968; --g900:#191f28;
     --b50:#e8f3ff; --b500:#3182f6; --b600:#2272eb; --b700:#1b64da;
     --r500:#f04452; --r50:#ffeeee; --green:#03b26c;
-    --gutter:24px;
+    --gutter:24px; --side:260px; --gap:20px;
   }
+  @media (min-width: 1600px) { :root { --gutter:32px; --side:280px; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--g100); color:var(--g900); font:400 15px/22.5px "Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif; -webkit-text-size-adjust:100%; }
   h1 { font-size:17px; line-height:25.5px; font-weight:700; letter-spacing:-0.2px; margin:0; }
@@ -23,17 +24,20 @@
   :focus-visible { outline:2px solid var(--b500); outline-offset:2px; }
   .hide { display:none !important; }
 
-  /* 위 막대, 본문 틀 */
+  /* 위 막대, 본문 틀: 화면 폭 전체를 쓴다. 위 막대 제목과 왼쪽 목록은 같은 여백(--gutter)에서 시작한다. */
   .top { position:sticky; top:0; z-index:5; background:#fff; border-bottom:1px solid var(--g200); }
-  .top-in { max-width:1200px; height:56px; margin:0 auto; padding:0 var(--gutter); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .top-in { height:56px; padding:0 var(--gutter); display:flex; align-items:center; justify-content:space-between; gap:12px; }
   #login-head { display:none; align-items:center; gap:12px; min-width:0; }
   #login-head.on { display:flex; }
   #login-state { color:var(--g600); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .shell { max-width:1200px; margin:0 auto; padding:24px var(--gutter) 48px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:20px; align-items:start; }
-  .side { position:sticky; top:80px; max-height:calc(100vh - 104px); overflow:auto; }
-  .col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .shell { padding:var(--gap) var(--gutter) 48px; display:grid; grid-template-columns:var(--side) minmax(0,1fr); gap:var(--gap); align-items:start; }
+  /* 위 막대 높이 57px(56 + 테두리 1) + 블록 사이 간격 */
+  .side { position:sticky; top:calc(57px + var(--gap)); max-height:calc(100vh - 57px - 2 * var(--gap)); overflow:auto; }
+  /* 오른쪽 칸은 남는 폭을 다 쓰되, 안쪽 내용만 1280px까지(왼쪽 정렬). 강의 열 수는 이 칸의 폭으로 정한다. */
+  .main { min-width:0; container-type:inline-size; }
+  .col { display:flex; flex-direction:column; gap:var(--gap); max-width:1280px; }
   section, aside { background:#fff; border-radius:16px; padding:24px; }
-  .head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin-bottom:16px; }
+  .head { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:8px 16px; margin-bottom:16px; }
   .head h2 { margin:0; }
 
   /* 글자 */
@@ -118,7 +122,7 @@
   /* 이캠퍼스 강의: 2열. 안 고른 강의는 오른쪽에 상태, 고르면 주차·차시 칸 */
   .lec-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 32px; align-items:start; }
   .lec { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:12px 0; }
-  .lec::before { content:""; position:absolute; top:0; left:32px; right:0; height:1px; background:var(--g200); }
+  .lec::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background:var(--g200); }
   .lec:first-child::before, .lec:nth-child(2)::before { display:none; }
   .lec-head { flex:1 1 0; min-width:0; display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
   .lec .t { font-size:15px; line-height:22.5px; }
@@ -128,6 +132,10 @@
   .lec-detail .confirm { display:flex; gap:8px; align-items:center; cursor:pointer; font-size:14px; }
   .lec-detail .confirm input { margin:0; }
   .empty { padding:24px 0 8px; text-align:center; }
+  @container (min-width: 1400px) {
+    .lec-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .lec:nth-child(3)::before { display:none; }
+  }
 
   /* 드롭 영역과 실행: 위 줄에 드롭 둘과 실행, 아래 줄에 각 드롭 아래로 파일 */
   .up { display:grid; grid-template-columns:1fr 1fr 160px; gap:0 12px; }
@@ -157,6 +165,7 @@
   /* 960px 미만: 한 단. 드롭 영역은 세로로 쌓고 실행은 맨 아래 */
   @media (max-width: 959px) {
     .shell { grid-template-columns:minmax(0,1fr); gap:16px; }
+    .col { gap:16px; }
     .side { position:static; max-height:none; overflow:visible; }
     .up { grid-template-columns:1fr; }
     .up .primary { order:5; margin-top:16px; height:56px; }
@@ -174,7 +183,7 @@
   }
   /* 720px 미만: 한 줄 배치 */
   @media (max-width: 719px) {
-    :root { --gutter:16px; }
+    :root { --gutter:16px; --gap:16px; }
     section, aside { border-radius:20px; padding:20px; }
     .lec-grid { grid-template-columns:1fr; }
     .lec:nth-child(2)::before { display:block; }
@@ -215,7 +224,7 @@
     </div>
   </aside>
 
-  <main class="col">
+  <main class="main"><div class="col">
     <div id="banner-login" class="banner"></div>
     <div id="banner-ffmpeg" class="banner"></div>
 
@@ -252,7 +261,7 @@
       <div id="item-msg" class="msg bad"></div>
       <div id="done-msg" class="callout hide"></div>
     </section>
-  </main>
+  </div></main>
 </div>
 
 <script>
