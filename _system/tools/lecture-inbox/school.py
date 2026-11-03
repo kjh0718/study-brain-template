@@ -207,6 +207,15 @@ class SchoolSession:
         return extract_stream(self.authenticated_page("/mod/vod/viewer.php?" + urlencode({"id": identifier})))
 
 
+_COURSE_CODE = re.compile(r"^(.*\S)\s*\(([0-9]{4,10})-([0-9]{1,4})\)$")  # [0-9]: \d는 전각 숫자도 받는다
+
+
+def split_course_name(name: str) -> tuple[str, str | None, str | None]:
+    """`일반물리학1 (002639-002)` -> (과목명, 학수번호, 분반). 형식이 다르면 추측하지 않고 그대로 돌려준다."""
+    m = _COURSE_CODE.match(name)
+    return (m.group(1), m.group(2), m.group(3)) if m else (name, None, None)
+
+
 _TERMS = {"1학기": "1", "10": "1", "2학기": "2", "20": "2", "11": "summer", "21": "winter"}
 
 

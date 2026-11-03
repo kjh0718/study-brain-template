@@ -49,7 +49,7 @@ def group_h():
         def courses(self):
             if FakeSchool.expired:
                 raise SchoolExpired("학교 로그인이 만료되었습니다.")
-            return [{"id": "123", "name": "자료구조", "year": "2026", "semester": "2학기"}]
+            return [{"id": "123", "name": "자료구조 (002639-002)", "year": "2026", "semester": "2학기"}]
 
         def lectures(self, identifier):
             return [{"id": "9001", "title": "3주차 1차시 트리", "url": "https://x/9001"}]
@@ -109,6 +109,8 @@ def group_h():
         r = c.post("/api/login", json={"studentId": "20261234", "password": "pw-secret-123"}, headers=H)
         check("H", "로그인 성공", r.status_code == 200 and worker.school is not None)
         check("H", "term 변환", c.get("/api/courses", headers=H).json()["courses"][0]["term"] == "2026-2")
+        got = c.get("/api/courses", headers=H).json()["courses"][0]
+        check("H", "과목명·학수번호·분반 분리", (got["id"], got["name"], got["code"], got["section"]) == ("123", "자료구조", "002639", "002"))
         lec = c.get("/api/courses/123/lectures", headers=H).json()["lectures"][0]
         check("H", "주차 제안", (lec["week"], lec["session"]) == (3, 1))
         check("H", "상태에 학번 없음", "20261234" not in c.get("/api/status", headers=H).text)

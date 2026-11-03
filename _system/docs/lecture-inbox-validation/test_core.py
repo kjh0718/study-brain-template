@@ -558,6 +558,7 @@ LECTURES_HTML = """<ul><li class="activity vod modtype_vod" id="module-123">
 
 
 def group_f():
+    import bundle
     import html as htmllib
     import json
     import school
@@ -630,6 +631,16 @@ def group_f():
                            ("2026", "11"): "2026-summer", ("2026", "21"): "2026-winter",
                            ("26", "2학기"): None, ("2026", "특별학기"): None, ("2026", "all"): None}.items():
         check("F", f"term {y}/{sem}", school.to_term(y, sem) == want)
+    for raw, want in {"일반물리학1 (002639-002)": ("일반물리학1", "002639", "002"),
+                      "컴퓨터게임과메타버스 (011317-001)": ("컴퓨터게임과메타버스", "011317", "001"),
+                      "자료구조": ("자료구조", None, None),
+                      "물리학 (영어강의)": ("물리학 (영어강의)", None, None),
+                      "물리학 (００２６３９-００２)": ("물리학 (００２６３９-００２)", None, None),
+                      "물리학 (123-002)": ("물리학 (123-002)", None, None)}.items():
+        check("F", f"과목명 분리 {raw}", school.split_course_name(raw) == want)
+    guide = bundle.render_guide({**META, "course": "일반물리학1", "code": "002639", "section": "002"}, [], set())
+    check("F", "안내에 과목명·학수번호·분반", "- 과목명: 일반물리학1\n" in guide and "- 학수번호: 002639\n" in guide
+          and "- 분반: 002\n" in guide and "(002639" not in guide)
     check("F", "주차 제안", school.suggest_week("3주차 1차시 자료구조 개요") == (3, 1) and school.suggest_week("1주차 소개") == (1, None)
           and school.suggest_week("오리엔테이션") == (None, None))
     check("F", "주차 제안 세 자리 숫자 거절", school.suggest_week("112주차 105차시") == (None, None)

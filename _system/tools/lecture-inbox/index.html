@@ -314,7 +314,7 @@ termOptions($("m-term"));
 
 /* ---------- 상태 ---------- */
 let loggedIn = false;
-let courses = [];          // 서버 목록 [{id,name,year,semester,term}]
+let courses = [];          // 서버 목록 [{id,name,code,section,year,semester,term}]
 let choice = null;         // null(아직 안 골랐어요), "manual", 또는 courses 인덱스(문자열)
 let termPick = "";         // term이 null인 목록 과목에 대해 고른 학기
 let loginId = "";          // 위 막대에 보여 줄 학번. 입력칸에는 남기지 않는다
@@ -336,7 +336,11 @@ function currentCourse() {
   }
   const c = choice === null ? null : courses[Number(choice)];
   const term = c && (c.term || termPick);
-  return term ? { course: c.name, term, ecampusId: String(c.id) } : null;
+  if (!term) return null;
+  const r = { course: c.name, term, ecampusId: String(c.id) };
+  if (c.code) r.code = c.code;
+  if (c.section) r.section = c.section;
+  return r;
 }
 
 const TERM = { "1": "1학기", "2": "2학기", summer: "여름", winter: "겨울" };
@@ -393,7 +397,8 @@ function renderCourses() {
     const radio = el("input", { type: "radio", name: "course", value: String(i), checked: choice === String(i),
       on: { change: () => selectCourse(String(i)) } });
     box.append(el("label", { cls: "pick" }, radio, el("span", { cls: "t", textContent: c.name }),
-      el("span", { cls: "d", textContent: c.term ? termText(c.term) : `학기를 알 수 없어요 (${c.year} ${c.semester})` })));
+      el("span", { cls: "d", textContent: (c.term ? termText(c.term) : `학기를 알 수 없어요 (${c.year} ${c.semester})`)
+        + (c.code ? `, ${c.code}${c.section ? "-" + c.section + "분반" : ""}` : "") })));
   });
 }
 

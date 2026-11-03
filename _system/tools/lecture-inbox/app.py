@@ -25,7 +25,7 @@ from bundle import bundle_dir_name, safe_name, transcript_name, write_new_file
 from config import HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
 from hls import download_hls
 from jobs import (DONE, DOWNLOAD_WAIT, FAILED, TRANSCRIBE_WAIT, ConflictError, StateError, Store, Worker, waiting_login)
-from school import SchoolExpired, SchoolSession, UserError, suggest_week, to_term
+from school import SchoolExpired, SchoolSession, UserError, split_course_name, suggest_week, to_term
 from transcriber import WhisperEngine, load_audio as default_load_audio
 
 log = logging.getLogger(__name__)
@@ -203,7 +203,11 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
     @app.get("/api/courses")
     def courses():
         found = school_call(lambda s: s.courses())
-        return {"courses": [{**c, "term": to_term(c["year"], c["semester"])} for c in found]}
+        out = []
+        for c in found:
+            name, code, section = split_course_name(c["name"])
+            out.append({**c, "name": name, "code": code, "section": section, "term": to_term(c["year"], c["semester"])})
+        return {"courses": out}
 
     @app.get("/api/courses/{course_id}/lectures")
     def lectures(course_id: Annotated[str, ApiPath(pattern=LECTURE_ID)]):
