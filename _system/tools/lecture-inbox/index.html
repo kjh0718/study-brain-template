@@ -12,28 +12,32 @@
     --g50:#f9fafb; --g100:#f2f4f6; --g200:#e5e8eb; --g300:#d1d6db; --g400:#b0b8c1; --g500:#8b95a1; --g600:#6b7684; --g700:#4e5968; --g900:#191f28;
     --b50:#e8f3ff; --b500:#3182f6; --b600:#2272eb; --b700:#1b64da;
     --r500:#f04452; --r50:#ffeeee; --green:#03b26c;
-    --gutter:20px;
+    --gutter:24px;
   }
-  @media (max-width: 479px) { :root { --gutter:16px; } }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--g100); color:var(--g900); font:400 15px/22.5px "Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif; -webkit-text-size-adjust:100%; }
-  main { max-width:calc(640px + var(--gutter) * 2); margin:0 auto; padding:32px var(--gutter) 48px; }
-  h1 { font-size:26px; line-height:36px; font-weight:700; letter-spacing:-0.4px; margin:0 0 20px 4px; }
+  h1 { font-size:17px; line-height:25.5px; font-weight:700; letter-spacing:-0.2px; margin:0; }
   h2 { font-size:20px; line-height:29px; font-weight:700; letter-spacing:-0.2px; margin:0 0 16px; }
-  h3 { font-size:17px; line-height:25.5px; font-weight:600; letter-spacing:-0.2px; margin:0; }
-  section { background:#fff; border-radius:20px; padding:24px; margin-bottom:12px; }
-  fieldset { border:0; padding:0; margin:0; min-width:0; }
   p { margin:0; }
   input, select, button { font:inherit; color:inherit; }
   :focus-visible { outline:2px solid var(--b500); outline-offset:2px; }
   .hide { display:none !important; }
-  .sub { margin-top:28px; }
-  .sub:first-child { margin-top:0; }
-  .sub > h3 + * { margin-top:4px; }
+
+  /* 위 막대, 본문 틀 */
+  .top { position:sticky; top:0; z-index:5; background:#fff; border-bottom:1px solid var(--g200); }
+  .top-in { max-width:1200px; height:56px; margin:0 auto; padding:0 var(--gutter); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #login-head { display:none; align-items:center; gap:12px; min-width:0; }
+  #login-head.on { display:flex; }
+  #login-state { color:var(--g600); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .shell { max-width:1200px; margin:0 auto; padding:24px var(--gutter) 48px; display:grid; grid-template-columns:260px minmax(0,1fr); gap:20px; align-items:start; }
+  .side { position:sticky; top:80px; max-height:calc(100vh - 104px); overflow:auto; }
+  .col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  section, aside { background:#fff; border-radius:16px; padding:24px; }
+  .head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; margin-bottom:16px; }
+  .head h2 { margin:0; }
 
   /* 글자 */
   .minor { font-size:13px; line-height:19.5px; color:var(--g600); }
-  #login-head.on { display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .minor:empty, .msg:empty { display:none; }
   .msg { margin-top:8px; font-size:15px; }
   .bad { color:var(--r500); } .ok { color:var(--green); }
@@ -52,20 +56,25 @@
   input[type=number] { width:84px; }
   input[type=date] { width:164px; }
   select { padding-right:10px; }
+  /* 촘촘한 줄(강의, 파일, 학기 고르기)은 작게 */
+  .lec input[type=number], .lec input[type=date], .file input[type=number], .file input[type=date], .file select, .head select { height:40px; border-radius:10px; padding:0 10px; }
+  .lec input[type=number], .file input[type=number] { width:60px; -moz-appearance:textfield; appearance:textfield; }
+  .lec input[type=date], .file input[type=date] { width:150px; }
+  .lec input[type=number]::-webkit-inner-spin-button, .file input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+  .mini { display:flex; align-items:center; gap:6px; }
+  .mini > span { font-size:13px; color:var(--g700); white-space:nowrap; }
+  .head .mini select { width:200px; }
 
-  /* 체크·라디오(기본 모양을 걷어내고 같은 크기로 그린다) */
-  input[type=checkbox], input[type=radio] { appearance:none; -webkit-appearance:none; flex:0 0 20px; width:20px; height:20px; margin:2px 0 0; background:#fff; border:1.5px solid var(--g300); cursor:pointer; position:relative; }
-  input[type=checkbox] { border-radius:6px; }
-  input[type=radio] { border-radius:50%; }
+  /* 체크박스(기본 모양을 걷어내고 같은 크기로 그린다) */
+  input[type=checkbox] { appearance:none; -webkit-appearance:none; flex:0 0 20px; width:20px; height:20px; margin:2px 0 0; background:#fff; border:1.5px solid var(--g300); border-radius:6px; cursor:pointer; position:relative; }
   input[type=checkbox]:checked { background:var(--b500); border-color:var(--b500); }
   input[type=checkbox]:checked::after { content:""; position:absolute; left:5.5px; top:2px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
-  input[type=radio]:checked { border:6px solid var(--b500); }
 
   /* 버튼 */
   button { border:0; cursor:pointer; font-weight:500; }
   .btn { height:48px; padding:0 20px; border-radius:12px; background:var(--b500); color:#fff; font-size:16px; font-weight:600; }
   .btn:hover { background:var(--b600); }
-  .primary { width:100%; height:56px; border-radius:16px; background:var(--b500); color:#fff; font-size:17px; line-height:25.5px; font-weight:600; letter-spacing:-0.2px; margin-top:16px; }
+  .primary { width:100%; height:56px; border-radius:16px; background:var(--b500); color:#fff; font-size:17px; line-height:25.5px; font-weight:600; letter-spacing:-0.2px; }
   .primary:hover:not(:disabled) { background:var(--b600); }
   .primary:disabled { background:var(--g200); color:var(--g500); cursor:not-allowed; }
   .weak, .gray { height:34px; padding:0 12px; border-radius:8px; font-size:14px; white-space:nowrap; }
@@ -74,134 +83,177 @@
   .gray { background:var(--g100); color:var(--g700); }
   .gray:hover { background:var(--g200); }
 
+  /* 왼쪽 과목 목록: 라디오는 숨기고 줄 전체를 고르는 칸으로 쓴다 */
+  #login-msg { margin-bottom:8px; }
+  #courses { margin-top:12px; }
+  .pick { display:block; position:relative; margin:2px -12px; padding:10px 12px; border-radius:10px; cursor:pointer; }
+  .pick:hover { background:var(--g50); }
+  .pick:has(input:checked) { background:var(--b50); }
+  .pick:has(input:checked) .t { color:var(--b700); }
+  .pick:has(:focus-visible) { outline:2px solid var(--b500); outline-offset:0; }
+  .pick input { position:absolute; opacity:0; pointer-events:none; }
+  .pick .t { font-size:15px; line-height:22.5px; }
+  .pick .d { font-size:13px; line-height:19.5px; }
+  .manual-row .t { color:var(--b500); }
+
   /* 목록 행: 위 글자(제목), 아래 글자(설명), 오른쪽(상태나 작은 버튼) */
-  .lr { --ind:0px; --end:0px; position:relative; display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px 12px; padding:12px 0; }
-  .lr ~ .lr::before, #course-list:not(:empty) + .manual-row::before { content:""; position:absolute; top:0; left:var(--ind); right:var(--end); height:1px; background:var(--g200); }
+  .lr { position:relative; display:flex; flex-wrap:wrap; align-items:flex-start; gap:4px 12px; padding:12px 0; }
+  .lr ~ .lr::before { content:""; position:absolute; top:0; left:0; right:0; height:1px; background:var(--g200); }
   .lr-main { flex:1 1 0; min-width:0; }
   .lr-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
   .lr-top .t { flex:1 1 0; min-width:0; }
-  .lr-top button { flex:0 0 auto; margin-top:2px; }
+  .lr-top button { flex:0 0 auto; }
   .lr-side { flex:0 0 auto; max-width:50%; display:flex; flex-direction:column; align-items:flex-end; gap:8px; text-align:right; }
   .t { display:block; font-size:17px; line-height:25.5px; font-weight:600; letter-spacing:-0.2px; word-break:keep-all; overflow-wrap:anywhere; }
   .d { display:block; color:var(--g600); font-size:15px; line-height:22.5px; word-break:keep-all; overflow-wrap:anywhere; }
   .d.bad { color:var(--r500); }
   .status { font-weight:500; color:var(--g600); white-space:nowrap; }
-  .status.run { color:var(--b500); } .status.done { color:var(--green); } .status.fail { color:var(--r500); }
+  .status.run { color:var(--b500); } .status.done { color:var(--green); } .status.fail { color:var(--r500); } .status.none { color:var(--g500); font-weight:400; }
   .acts { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
   .bar { flex:none; width:100%; height:6px; border-radius:999px; background:var(--g200); overflow:hidden; margin:4px 0 4px; }
   .bar > i { display:block; height:100%; width:0; border-radius:999px; background:var(--b500); transition:width 300ms ease; }
   @media (prefers-reduced-motion: reduce) { .bar > i { transition:none; } }
-  .lr .fields { margin-top:12px; align-items:flex-end; }
+  #items { max-height:60vh; overflow:auto; }
 
-  /* 고르는 행(과목, 강의) */
-  .pick { --ind:44px; --end:12px; margin:0 -12px; padding:12px; border-radius:12px; flex-wrap:nowrap; cursor:pointer; }
-  .pick:has(input:checked) { background:var(--b50); }
-  .pick:has(input:checked) .t { color:var(--b700); }
-  .pick:has(input:checked)::before, .pick:has(input:checked) + .pick::before, .pick:has(input:checked) + .course-extra + .pick::before { display:none; }
-  #course-list:empty + .manual-row { background:none; margin:0; padding:0 0 4px; }
-  #course-list:empty + .manual-row input { display:none; }
-  #course-list:empty + .manual-row .t { color:var(--g900); }
-  .course-extra { padding:0 0 12px 32px; }
-  .course-extra .f { max-width:260px; }
-
-  .lec { --ind:32px; flex-direction:column; flex-wrap:nowrap; gap:0; }
-  .lec-head { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
-  .lec-detail { margin-left:32px; }
-  .lec-detail .confirm { display:flex; gap:10px; align-items:center; margin-top:12px; cursor:pointer; font-size:15px; }
+  /* 이캠퍼스 강의: 2열. 안 고른 강의는 오른쪽에 상태, 고르면 주차·차시 칸 */
+  .lec-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 32px; align-items:start; }
+  .lec { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:12px 0; }
+  .lec::before { content:""; position:absolute; top:0; left:32px; right:0; height:1px; background:var(--g200); }
+  .lec:first-child::before, .lec:nth-child(2)::before { display:none; }
+  .lec-head { flex:1 1 0; min-width:0; display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
+  .lec .t { font-size:15px; line-height:22.5px; }
+  .lec .status { flex:none; font-size:14px; }
+  .lec-nums { flex:none; display:flex; align-items:center; gap:10px; }
+  .lec-detail { flex:1 1 100%; margin-left:32px; display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+  .lec-detail .confirm { display:flex; gap:8px; align-items:center; cursor:pointer; font-size:14px; }
   .lec-detail .confirm input { margin:0; }
+  .empty { padding:24px 0 8px; text-align:center; }
 
-  /* 드롭 영역 */
-  .drop { display:block; margin-top:12px; padding:22px 16px; text-align:center; color:var(--g600); background:var(--g50); border:1.5px dashed var(--g300); border-radius:16px; cursor:pointer; }
-  .drop .t { color:var(--g900); }
+  /* 드롭 영역과 실행: 위 줄에 드롭 둘과 실행, 아래 줄에 각 드롭 아래로 파일 */
+  .up { display:grid; grid-template-columns:1fr 1fr 160px; gap:0 12px; }
+  .lec-box:not(.hide) + .up { margin-top:20px; }
+  .drop { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:2px; min-height:104px; padding:18px 16px; text-align:center; color:var(--g600); background:var(--g50); border:1.5px dashed var(--g300); border-radius:16px; cursor:pointer; }
+  .drop .t { color:var(--g900); font-size:15px; line-height:22.5px; }
+  .drop .d { font-size:13px; line-height:19.5px; }
   .drop:hover { border-color:var(--g400); }
   .drop:focus-within { outline:2px solid var(--b500); outline-offset:2px; }
   .drop.over { background:var(--b50); border-color:var(--b500); }
-
-  /* 안내 */
-  .banner { background:var(--g50); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
-  .banner:empty { display:none; }
-  .callout { margin-top:12px; padding:14px 16px; border-radius:12px; background:var(--g50); font-weight:500; }
-  #run-log { margin-top:12px; }
+  .up .primary { height:auto; min-height:56px; align-self:stretch; }
+  .file .t { font-size:15px; line-height:22.5px; }
+  .file .fields { margin-top:8px; align-items:flex-end; gap:8px 10px; }
+  .file .fields .f > span { font-size:12px; line-height:18px; }
+  #why, #run-log { grid-column:1 / -1; }
+  #why { margin-top:12px; }
+  #run-log { margin-top:8px; }
   #run-log > div { padding:2px 0; }
 
-  @media (max-width: 479px) {
-    section { padding:20px; }
-    .li { flex-direction:column; align-items:stretch; }
+  /* 안내 */
+  .banner { background:#fff; border-radius:12px; padding:14px 20px; }
+  .banner:empty { display:none; }
+  .callout { margin-top:12px; padding:14px 16px; border-radius:12px; background:var(--g50); font-weight:500; }
+
+  .mgrid { display:grid; grid-template-columns:2fr 1.5fr 1fr 1fr; gap:12px; margin-bottom:20px; }
+
+  /* 960px 미만: 한 단. 드롭 영역은 세로로 쌓고 실행은 맨 아래 */
+  @media (max-width: 959px) {
+    .shell { grid-template-columns:minmax(0,1fr); gap:16px; }
+    .side { position:static; max-height:none; overflow:visible; }
+    .up { grid-template-columns:1fr; }
+    .up .primary { order:5; margin-top:16px; height:56px; }
+    #drop-rec { order:1; } #recs { order:2; } #drop-pdf { order:3; margin-top:12px; } #pdf-col { order:4; }
+    #why, #run-log { order:6; }
+    .mgrid { grid-template-columns:1fr 1fr; }
+  }
+  /* 720~959px: 과목은 가로로 넘겨 보는 칩 */
+  @media (min-width: 720px) and (max-width: 959px) {
+    #courses { display:flex; gap:8px; overflow-x:auto; padding:2px 12px 4px; margin:8px -12px 0; }
+    #course-list { display:contents; }
+    .pick { flex:none; margin:0; padding:8px 14px; background:var(--g100); white-space:nowrap; }
+    .pick:hover { background:var(--g200); }
+    .pick:has(input:checked) { background:var(--b50); }
+  }
+  /* 720px 미만: 한 줄 배치 */
+  @media (max-width: 719px) {
+    :root { --gutter:16px; }
+    section, aside { border-radius:20px; padding:20px; }
+    .lec-grid { grid-template-columns:1fr; }
+    .lec:nth-child(2)::before { display:block; }
+    .pick { margin:2px -8px; padding:10px 8px; }
+    .lr.li { flex-direction:column; align-items:stretch; }
     .li .lr-side { max-width:none; align-items:flex-start; text-align:left; gap:8px; }
     .li .acts { justify-content:flex-start; }
     .li .lr-main { flex:1 1 auto; }
-    input[type=date] { width:100%; }
     .fields .f.date { flex:1 1 100%; }
   }
+  @media (max-width: 479px) { .mgrid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
-<main>
+<header class="top"><div class="top-in">
   <h1>강의 수집 도구</h1>
+  <div id="login-head">
+    <span id="login-state"></span>
+    <button id="logout-btn" type="button" class="gray hide">로그아웃</button>
+  </div>
+</div></header>
 
-  <section id="s-course">
+<div class="shell">
+  <aside id="s-course" class="side">
     <h2>과목</h2>
-    <div id="banner-login" class="banner"></div>
-    <div id="login-head">
-      <p id="login-state" class="d">학교 계정으로 로그인해 주세요</p>
-      <button id="logout-btn" type="button" class="gray hide">로그아웃</button>
-    </div>
     <form id="login" autocomplete="off">
+      <p class="d">학교 계정으로 로그인해 주세요</p>
       <div id="login-fields" class="fields">
         <label class="f grow"><span>학번</span><input id="sid" type="text" inputmode="numeric" autocomplete="off"></label>
         <label class="f grow"><span>비밀번호</span><input id="pw" type="password" autocomplete="off"></label>
       </div>
-      <button id="login-btn" type="submit" class="btn" style="margin-top:12px">로그인</button>
+      <button id="login-btn" type="submit" class="btn" style="margin-top:12px;width:100%">로그인</button>
     </form>
     <div id="login-msg" class="msg bad"></div>
-    <fieldset id="courses" style="margin-top:24px">
+    <div id="courses" role="radiogroup" aria-label="과목">
       <div id="course-list"></div>
-      <label class="lr pick manual-row"><input type="radio" name="course" value="manual" checked>
-        <span class="lr-main"><span class="t">직접 입력</span><span class="d">과목명과 학기를 적어 주세요</span></span></label>
-      <div id="manual" class="fields" style="margin-top:4px">
-        <label class="f" style="flex:1 1 100%"><span>과목명</span><input id="m-name" type="text" maxlength="100"></label>
-        <label class="f" style="flex:1 1 100%"><span>학기</span><select id="m-term"></select></label>
-        <label class="f grow"><span>학수번호 (선택)</span><input id="m-code" type="text" maxlength="30"></label>
-        <label class="f grow"><span>분반 (선택)</span><input id="m-section" type="text" maxlength="10"></label>
-      </div>
-    </fieldset>
-  </section>
+      <label class="pick manual-row"><input type="radio" name="course" value="manual"><span class="t">직접 입력하기</span></label>
+    </div>
+  </aside>
 
-  <section id="s-items">
-    <h2>넣을 것</h2>
+  <main class="col">
+    <div id="banner-login" class="banner"></div>
     <div id="banner-ffmpeg" class="banner"></div>
-    <div id="lec-box" class="sub hide">
-      <h3>이캠퍼스 강의</h3>
-      <div id="lec-msg" class="minor"></div>
-      <div id="lectures"></div>
-    </div>
-    <div class="sub">
-      <h3>녹음·영상</h3>
-      <label class="drop" id="drop-rec"><span class="t">녹음이나 영상을 여기에 놓아 주세요</span><span class="d">또는 눌러서 골라 주세요</span>
-        <input id="in-rec" type="file" multiple hidden></label>
-      <div id="recs"></div>
-    </div>
-    <div class="sub">
-      <h3>PDF</h3>
-      <div class="minor">자료, 족보, 과제</div>
-      <label class="drop" id="drop-pdf"><span class="t">PDF를 여기에 놓아 주세요</span><span class="d">또는 눌러서 골라 주세요</span>
-        <input id="in-pdf" type="file" multiple hidden></label>
-      <div id="pdf-note" class="msg bad"></div>
-      <div id="pdfs"></div>
-    </div>
-    <p id="why" class="minor" style="margin-top:24px"></p>
-    <button id="run" class="primary" style="margin-top:8px" disabled>실행하기</button>
-    <div id="run-log"></div>
-  </section>
 
-  <section>
-    <h2>진행</h2>
-    <div id="conn" class="msg bad" style="margin:0 0 8px"></div>
-    <div id="items"><p class="d">아직 항목이 없어요.</p></div>
-    <div id="item-msg" class="msg bad"></div>
-    <div id="done-msg" class="callout hide"></div>
-  </section>
-</main>
+    <section id="s-items">
+      <div class="head"><h2 id="items-title">강의</h2><div id="term-pick"></div></div>
+      <p id="empty-note" class="d empty">왼쪽에서 과목을 골라 주세요</p>
+      <div id="manual" class="mgrid hide">
+        <label class="f"><span>과목명</span><input id="m-name" type="text" maxlength="100"></label>
+        <label class="f"><span>학기</span><select id="m-term"></select></label>
+        <label class="f"><span>학수번호 (선택)</span><input id="m-code" type="text" maxlength="30"></label>
+        <label class="f"><span>분반 (선택)</span><input id="m-section" type="text" maxlength="10"></label>
+      </div>
+      <div id="lec-box" class="lec-box hide">
+        <div id="lec-msg" class="minor" style="margin-bottom:4px"></div>
+        <div id="lectures" class="lec-grid"></div>
+      </div>
+      <div id="up" class="up hide">
+        <label class="drop" id="drop-rec"><span class="t">녹음이나 영상을 여기에 놓아 주세요</span><span class="d">또는 눌러서 골라 주세요</span>
+          <input id="in-rec" type="file" multiple hidden></label>
+        <label class="drop" id="drop-pdf"><span class="t">PDF를 여기에 놓아 주세요</span><span class="d">자료, 족보, 과제를 눌러서 골라도 돼요</span>
+          <input id="in-pdf" type="file" multiple hidden></label>
+        <button id="run" class="primary" disabled>실행하기</button>
+        <div id="recs"></div>
+        <div id="pdf-col"><div id="pdf-note" class="msg bad" style="margin-top:0"></div><div id="pdfs"></div></div>
+        <p id="why" class="minor"></p>
+        <div id="run-log"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>진행</h2>
+      <div id="conn" class="msg bad" style="margin:0 0 8px"></div>
+      <div id="items"><p class="d">아직 항목이 없어요.</p></div>
+      <div id="item-msg" class="msg bad"></div>
+      <div id="done-msg" class="callout hide"></div>
+    </section>
+  </main>
+</div>
 
 <script>
 "use strict";
@@ -254,9 +306,11 @@ termOptions($("m-term"));
 /* ---------- 상태 ---------- */
 let loggedIn = false;
 let courses = [];          // 서버 목록 [{id,name,year,semester,term}]
-let choice = "manual";     // "manual" 또는 courses 인덱스(문자열)
+let choice = null;         // null(아직 안 골랐어요), "manual", 또는 courses 인덱스(문자열)
 let termPick = "";         // term이 null인 목록 과목에 대해 고른 학기
-let lectures = [];         // [{lec, on, ok, week, session, date}]
+let loginId = "";          // 위 막대에 보여 줄 학번. 입력칸에는 남기지 않는다
+let statusItems = [];      // 마지막으로 받은 /api/status 항목
+let lectures = [];         // [{lec, on, ok, week, session, date, stat}]
 let recs = [];             // [{file, week, session, date, error}]
 let pdfs = [];             // [{file, kind, error}]
 let busy = false;
@@ -271,28 +325,35 @@ function currentCourse() {
     if ($("m-section").value.trim()) c.section = $("m-section").value.trim();
     return c;
   }
-  const c = courses[Number(choice)];
+  const c = choice === null ? null : courses[Number(choice)];
   const term = c && (c.term || termPick);
   return term ? { course: c.name, term, ecampusId: String(c.id) } : null;
 }
 
+const TERM = { "1": "1학기", "2": "2학기", summer: "여름", winter: "겨울" };
+const termText = (t) => { const [y, s] = t.split("-"); return TERM[s] ? `${y}년 ${TERM[s]}` : t; };
+
 /* ---------- 로그인·과목 ---------- */
 function setLogin(on) {
   loggedIn = on;
+  if (!on) loginId = "";
   $("login").classList.toggle("hide", on);
+  $("course-list").classList.toggle("hide", !on);
   $("logout-btn").classList.toggle("hide", !on);
   $("login-head").classList.toggle("on", on);
-  $("login-state").textContent = on ? "세종대 이캠퍼스에 로그인했어요" : "학교 계정으로 로그인해 주세요";
+  $("login-state").textContent = on ? (loginId ? `${loginId} 로그인됨` : "로그인됨") : "";
 }
 
 $("login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  const body = JSON.stringify({ studentId: $("sid").value.trim(), password: $("pw").value });
+  const sid = $("sid").value.trim();
+  const body = JSON.stringify({ studentId: sid, password: $("pw").value });
   const pending = api("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body });
-  $("pw").value = ""; $("sid").value = ""; // 요청을 보낸 직후 비운다(학번도 화면에 남기지 않는다)
+  $("pw").value = ""; $("sid").value = ""; // 요청을 보낸 직후 비운다(입력칸에는 학번도 남기지 않는다)
   $("login-msg").textContent = "";
   const r = await pending;
   if (!r.ok) { $("login-msg").textContent = r.detail || "로그인하지 못했어요."; return; }
+  loginId = sid;
   setLogin(true);
   loadCourses();
 });
@@ -301,7 +362,7 @@ $("logout-btn").addEventListener("click", async () => {
   await api("/api/logout", { method: "POST" });
   setLogin(false);
   courses = [];
-  selectCourse("manual");
+  selectCourse(choice === "manual" ? "manual" : null);
   renderCourses();
 });
 
@@ -322,17 +383,30 @@ function renderCourses() {
   courses.forEach((c, i) => {
     const radio = el("input", { type: "radio", name: "course", value: String(i), checked: choice === String(i),
       on: { change: () => selectCourse(String(i)) } });
-    const row = el("label", { cls: "lr pick" }, radio,
-      el("span", { cls: "lr-main" }, el("span", { cls: "t", textContent: c.name }),
-        el("span", { cls: "d", textContent: c.term || `학기를 알 수 없어요 (${c.year} ${c.semester})` })));
-    box.append(row);
-    if (c.term === null && choice === String(i)) {
-      const sel = el("select", { on: { change: (e) => { termPick = e.target.value; update(); } } });
-      termOptions(sel);
-      sel.value = termPick;
-      box.append(el("div", { cls: "course-extra" }, field("학기", sel)));
-    }
+    box.append(el("label", { cls: "pick" }, radio, el("span", { cls: "t", textContent: c.name }),
+      el("span", { cls: "d", textContent: c.term ? termText(c.term) : `학기를 알 수 없어요 (${c.year} ${c.semester})` })));
   });
+}
+
+/** 현재 고른 이캠퍼스 과목. 직접 입력이거나 안 골랐으면 null. */
+const listed = () => (choice === null || choice === "manual" ? null : courses[Number(choice)] || null);
+
+/** 오른쪽 위 블록의 제목과 그 아래 어떤 칸을 보일지. */
+function renderHead() {
+  const c = listed(), manual = choice === "manual";
+  $("items-title").textContent = manual ? "직접 입력한 과목" : c ? `${c.name} 강의` : "강의";
+  $("empty-note").classList.toggle("hide", choice !== null);
+  $("manual").classList.toggle("hide", !manual);
+  $("lec-box").classList.toggle("hide", !c);
+  $("up").classList.toggle("hide", choice === null);
+  const box = $("term-pick");
+  box.replaceChildren();
+  if (c && c.term === null) { // 학교가 학기를 알려 주지 않은 과목은 여기서 고른다
+    const sel = el("select", { on: { change: (e) => { termPick = e.target.value; update(); } } });
+    termOptions(sel);
+    sel.value = termPick;
+    box.append(el("label", { cls: "mini" }, el("span", { textContent: "학기" }), sel));
+  }
 }
 
 function selectCourse(value) {
@@ -342,9 +416,8 @@ function selectCourse(value) {
   renderLectures();
   document.querySelectorAll("input[name=course]").forEach((r) => { r.checked = r.value === value; });
   renderCourses();
-  $("manual").classList.toggle("hide", value !== "manual");
-  if (value !== "manual") loadLectures(courses[Number(value)].id);
-  else $("lec-box").classList.add("hide");
+  renderHead();
+  if (listed()) loadLectures(listed().id);
   update();
 }
 document.querySelector("input[name=course][value=manual]").addEventListener("change", () => selectCourse("manual"));
@@ -352,10 +425,9 @@ for (const id of ["m-name", "m-term", "m-code", "m-section"]) $(id).addEventList
 
 /* ---------- 이캠퍼스 강의 ---------- */
 async function loadLectures(courseId) {
-  $("lec-box").classList.remove("hide");
   $("lec-msg").textContent = "강의 목록을 불러오고 있어요";
   const r = await api(`/api/courses/${encodeURIComponent(courseId)}/lectures`);
-  if (choice === "manual" || String(courses[Number(choice)].id) !== String(courseId)) return; // 그 사이 다른 과목을 골랐다
+  if (!listed() || String(listed().id) !== String(courseId)) return; // 그 사이 다른 과목을 골랐다
   if (!r.ok) {
     $("lec-msg").textContent = r.detail || "강의 목록을 불러오지 못했어요.";
     if (r.status === 401 || r.status === 409) setLogin(false);
@@ -368,6 +440,9 @@ async function loadLectures(courseId) {
   update();
 }
 
+/** 이름표가 왼쪽에 붙는 작은 입력칸. */
+function mini(text, input) { return el("label", { cls: "mini" }, el("span", { textContent: text }), input); }
+
 function renderLectures() {
   const box = $("lectures");
   box.replaceChildren();
@@ -376,14 +451,33 @@ function renderLectures() {
     const session = el("input", { type: "number", min: 1, max: 99, value: m.session, on: { input: (e) => { m.session = e.target.value; update(); } } });
     const date = el("input", { type: "date", value: m.date, on: { input: (e) => { m.date = e.target.value; update(); } } });
     const ok = el("input", { type: "checkbox", checked: m.ok, on: { change: (e) => { m.ok = e.target.checked; update(); } } });
+    m.stat = el("span", { cls: "status" });
+    const nums = el("div", { cls: "lec-nums" + (m.on ? "" : " hide") }, mini("주차", week), mini("차시", session));
     const detail = el("div", { cls: "lec-detail" + (m.on ? "" : " hide") },
-      el("div", { cls: "fields" }, field("주차", week), field("차시", session), field("수업일 (비워도 돼요)", date, "date")),
-      el("label", { cls: "confirm" }, ok, "주차와 차시를 확인했어요"));
+      el("label", { cls: "confirm" }, ok, "주차와 차시를 확인했어요"), mini("수업일 (비워도 돼요)", date));
     const on = el("input", { type: "checkbox", checked: m.on, on: { change: (e) => {
       m.on = e.target.checked; if (!m.on) m.ok = false;
-      detail.classList.toggle("hide", !m.on); ok.checked = m.ok; update(); } } });
-    box.append(el("div", { cls: "lr lec" },
-      el("label", { cls: "lec-head" }, on, el("span", { cls: "t", textContent: m.lec.title })), detail));
+      nums.classList.toggle("hide", !m.on); detail.classList.toggle("hide", !m.on); m.stat.classList.toggle("hide", m.on);
+      ok.checked = m.ok; update(); } } });
+    box.append(el("div", { cls: "lec" },
+      el("label", { cls: "lec-head" }, on, el("span", { cls: "t", textContent: m.lec.title })), m.stat, nums, detail));
+  }
+  paintLectureStatus();
+}
+
+/** 강의마다 이미 등록된 항목의 최신 상태를 오른쪽에 보인다. 입력 중인 칸은 건드리지 않는다. */
+function paintLectureStatus() {
+  for (const m of lectures) {
+    const mine = statusItems.filter((it) => it.source && it.source.type === "ecampus" && String(it.source.lecture_id) === String(m.lec.id));
+    let text = "아직 안 받았어요", tone = "none";
+    if (mine.length) {
+      const it = mine.reduce((a, b) => ((b.created || "") > (a.created || "") ? b : a));
+      [text, tone] = label(it);
+      if (it.status === "done") text = "받았어요";
+      else if (it.status === "downloading") tone = "run";
+    }
+    m.stat.textContent = text;
+    m.stat.className = "status" + (tone ? " " + tone : "") + (m.on ? " hide" : "");
   }
 }
 
@@ -426,7 +520,7 @@ function renderRecs() {
     // 파일 수정일은 수업일이 아닐 수 있으므로 사용자가 눌렀을 때만 채운다.
     const useFileDate = el("button", { type: "button", cls: "weak", textContent: `파일 날짜 사용 (${m.fileDate})`,
       on: { click: () => { m.date = m.fileDate; renderRecs(); } } });
-    box.append(el("div", { cls: "lr" },
+    box.append(el("div", { cls: "lr file" },
       el("div", { cls: "lr-main" },
         el("div", { cls: "lr-top" }, el("span", { cls: "t", textContent: m.file.name }), removeBtn(recs, m, renderRecs)),
         el("div", { cls: "fields" }, field("주차", week), field("차시", session), field("수업일 (비워도 돼요)", date, "date"),
@@ -444,7 +538,7 @@ function renderPdfs() {
       el("option", { value: "past-exam", textContent: "족보" }),
       el("option", { value: "assignment", textContent: "과제" }));
     kind.value = m.kind;
-    box.append(el("div", { cls: "lr" },
+    box.append(el("div", { cls: "lr file" },
       el("div", { cls: "lr-main" },
         el("div", { cls: "lr-top" }, el("span", { cls: "t", textContent: m.file.name }), removeBtn(pdfs, m, renderPdfs)),
         el("div", { cls: "fields" }, field("종류", kind, "grow")),
@@ -551,6 +645,8 @@ function renderStatus(s) {
   if (!s.loggedIn && s.waitingLogin > 0) $("banner-login").textContent = `다시 로그인하면 남은 ${s.waitingLogin}개를 받아요`;
   if (s.loggedIn !== loggedIn) { setLogin(s.loggedIn); if (s.loggedIn && !courses.length) loadCourses(); }
 
+  statusItems = s.items;
+  paintLectureStatus();
   const sig = JSON.stringify(s.items);
   if (sig === lastSig) return;
   lastSig = sig;
