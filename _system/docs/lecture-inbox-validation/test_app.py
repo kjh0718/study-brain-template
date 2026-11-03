@@ -302,6 +302,30 @@ def group_h():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def group_r():
+    # Real faster-whisper + PyAV decode, no model needed. Catches library version
+    # mismatches the fake engines in test_core can't see (av 19 broke decode_audio).
+    import wave
+    import transcriber
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    try:
+        wav = tmp / "tone.wav"
+        with wave.open(str(wav), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(16000)
+            w.writeframes(b"\x00\x00" * 16000)
+        audio = transcriber.load_audio(wav)
+        check("R", "실제 라이브러리로 소리 추출", abs(len(audio) - 16000) < 200)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+try:
+    group_r()
+except Exception:
+    check("R", "그룹 실행", False, traceback.format_exc().strip().splitlines()[-1])
+
 try:
     group_h()
 except Exception:
