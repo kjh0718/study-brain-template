@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field, SecretStr
 
 from bundle import bundle_dir_name, safe_name, transcript_name, write_new_file
-from config import HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
+from config import DEFAULT_DEVICE, HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
 from hls import download_hls
 from jobs import (DONE, DOWNLOAD_WAIT, FAILED, TRANSCRIBE_WAIT, ConflictError, StateError, Store, Worker, waiting_login)
 from school import SchoolExpired, SchoolSession, UserError, split_course_name, suggest_week, to_term
@@ -97,10 +97,13 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
     def model() -> str:
         return load_settings(paths.settings_file)["model"]
 
+    def device() -> str:
+        return load_settings(paths.settings_file).get("device", DEFAULT_DEVICE)
+
     def default_engine(name: str):
         import prereq  # Task 10
 
-        return WhisperEngine(prereq.ensure_model(name, paths.models))
+        return WhisperEngine(prereq.ensure_model(name, paths.models), device())
 
     def download(stream: str, dest: Path) -> None:
         ffmpeg = _ffmpeg()
@@ -180,8 +183,15 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             model_name = model()
         except (ValueError, OSError):
             model_name = ""
+        # 이미 올라간 엔진이 실제로 쓰는 장치가 우선이다. 없으면 설정값("auto"일 수 있다)
+        loaded = getattr(worker._engine, "device", None)
+        try:
+            device_name = loaded or device()
+        except (ValueError, OSError):
+            device_name = ""
         items = store.all_items()
-        return {"ffmpeg": _ffmpeg() is not None, "model": model_name, "loggedIn": worker.school is not None,
+        return {"ffmpeg": _ffmpeg() is not None, "model": model_name, "device": device_name,
+                "loggedIn": worker.school is not None,
                 "waitingLogin": waiting_login(items), "items": [public(i) for i in items]}
 
     @app.post("/api/login")

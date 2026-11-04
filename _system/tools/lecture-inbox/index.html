@@ -27,6 +27,7 @@
   /* 위 막대, 본문 틀: 화면 폭 전체를 쓴다. 위 막대 제목과 왼쪽 목록은 같은 여백(--gutter)에서 시작한다. */
   .top { position:sticky; top:0; z-index:5; background:#fff; border-bottom:1px solid var(--g200); }
   .top-in { height:56px; padding:0 var(--gutter); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #device { margin-right:auto; white-space:nowrap; }
   #login-head { display:none; align-items:center; gap:12px; min-width:0; }
   #login-head.on { display:flex; }
   #login-state { color:var(--g600); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -200,6 +201,7 @@
 <body>
 <header class="top"><div class="top-in">
   <h1>강의 수집 도구</h1>
+  <span id="device" class="minor"></span>
   <div id="login-head">
     <span id="login-state"></span>
     <button id="logout-btn" type="button" class="gray hide">로그아웃</button>
@@ -655,6 +657,7 @@ let lastSig = "";
 function renderStatus(s) {
   $("banner-ffmpeg").replaceChildren();
   $("banner-login").replaceChildren();
+  $("device").textContent = s.device === "cuda" ? "GPU로 전사해요" : s.device === "cpu" ? "CPU로 전사해요" : "";  // auto·모름은 표시하지 않는다
   if (s.ffmpeg === false) $("banner-ffmpeg").append("이캠퍼스 영상을 받으려면 ffmpeg를 설치해 주세요: ", el("code", { textContent: "winget install Gyan.FFmpeg" }));
   if (!s.loggedIn && s.waitingLogin > 0) $("banner-login").textContent = `다시 로그인하면 남은 ${s.waitingLogin}개를 받아요`;
   if (s.loggedIn !== loggedIn) { setLogin(s.loggedIn); if (s.loggedIn && !courses.length) loadCourses(); }

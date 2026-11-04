@@ -21,11 +21,28 @@ BASE_OPTIONS = {"language": "ko", "vad_filter": True, "condition_on_previous_tex
 RETRY_OPTIONS = ({}, {"temperature": 0.5, "compression_ratio_threshold": 2.6})
 
 
+def resolve_device(requested: str, cuda_count: "Callable[[], int] | None" = None) -> tuple[str, str]:
+    """(device, compute_type). auto는 CUDA GPU가 보이면 cuda, 아니면 cpu. 감지가 실패해도 cpu로 간다."""
+    if requested not in ("auto", "cuda", "cpu"):
+        raise ValueError(f"알 수 없는 device: {requested}")
+    if requested == "auto":
+        try:
+            if cuda_count is None:
+                import ctranslate2  # faster-whisper가 끌고 오는 의존성
+
+                cuda_count = ctranslate2.get_cuda_device_count
+            requested = "cuda" if cuda_count() > 0 else "cpu"
+        except Exception:
+            requested = "cpu"
+    return ("cuda", "float16") if requested == "cuda" else ("cpu", "int8")
+
+
 class WhisperEngine:
-    def __init__(self, model_dir: Path):
+    def __init__(self, model_dir: Path, device: str = "auto"):
         from faster_whisper import WhisperModel  # 무거운 import라 엔진을 만들 때만 한다
 
-        self.model = WhisperModel(str(model_dir), device="cpu", compute_type="int8")
+        self.device, compute_type = resolve_device(device)
+        self.model = WhisperModel(str(model_dir), device=self.device, compute_type=compute_type)
 
     def segments(self, audio, offset: float, **options):
         """offset을 더한 원본 기준 타임스탬프의 Segment를 낸다. text는 strip된 상태."""

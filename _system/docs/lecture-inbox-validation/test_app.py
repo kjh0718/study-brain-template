@@ -95,7 +95,8 @@ def group_h():
               and r.headers.get("referrer-policy") == "no-referrer")
         check("H", "프레임 차단 헤더", r.headers.get("x-frame-options") == "DENY"
               and "frame-ancestors 'none'" in r.headers.get("content-security-policy", ""))
-        check("H", "health", c.get("/api/health", headers=H).json() == {"app": "lecture-inbox"})
+        check("H", "상태에 device 설정값", r.json().get("device") == "auto", str(r.json().get("device")))
+        check("H", "health",c.get("/api/health", headers=H).json() == {"app": "lecture-inbox"})
 
         r = c.post("/api/login", json={"studentId": "20261234", "password": "pw-secret-123"}, headers=H)
         check("H", "로그인 실패 401·비번 비노출", r.status_code == 401 and "pw-secret-123" not in r.text)

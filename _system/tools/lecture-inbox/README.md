@@ -29,6 +29,23 @@ _system\tools\lecture-inbox\start.cmd
 
 `settings.json`의 `"model"` 하나로 바꾼다. 값은 `large-v3`(기본), `large-v3-turbo`, `medium`, `small` 중 하나다. 다음 전사부터 적용된다.
 
+## GPU로 빠르게 전사하기 (NVIDIA)
+
+기본값(`"device": "auto"`)은 NVIDIA GPU가 보이면 GPU(float16), 없으면 CPU(int8)로 전사한다. GPU는 CPU보다 훨씬 빠르지만 이 저장소에서는 속도를 재 보지 못했다.
+
+필요한 것(faster-whisper 문서 기준):
+
+- NVIDIA GPU와 드라이버
+- cuBLAS(CUDA 12)와 cuDNN 9. 둘 중 하나로 맞춘다.
+  - CUDA 12 툴킷과 cuDNN 9를 설치한다.
+  - 또는 [Purfview whisper-standalone-win](https://github.com/Purfview/whisper-standalone-win)의 `libs` 압축 파일 DLL을 한 폴더에 풀고 그 폴더를 `PATH`에 추가한다.
+
+`settings.json`의 `"device"`로 고른다. 값은 `auto`(기본), `cuda`(GPU 고정), `cpu`(CPU 고정)다. 엔진을 새로 만들 때 적용되므로, 바꾼 뒤에는 서버를 다시 켜는 것이 확실하다.
+
+확인: 전사가 시작되면 화면 위쪽에 "GPU로 전사해요" 또는 "CPU로 전사해요"가 보인다. 엔진이 뜨기 전에 `auto`이면 아무것도 보이지 않는다.
+
+전사를 시작할 때 서버가 cudnn·cublas DLL을 찾지 못한다는 메시지와 함께 죽으면 위 라이브러리를 설치하거나 `"device": "cpu"`로 바꾼다.
+
 ## 검사
 
 ```powershell

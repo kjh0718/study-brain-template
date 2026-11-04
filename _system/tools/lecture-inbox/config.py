@@ -15,6 +15,8 @@ DOWNLOAD_TIMEOUT_S = 7200
 
 DEFAULT_MODEL = "large-v3"
 KNOWN_MODELS = ("large-v3", "large-v3-turbo", "medium", "small")
+DEVICES = ("auto", "cuda", "cpu")
+DEFAULT_DEVICE = "auto"
 
 
 @dataclass(frozen=True)
@@ -48,4 +50,6 @@ def load_settings(path: Path) -> dict:
     settings = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(settings, dict) or settings.get("model") not in KNOWN_MODELS:
         raise ValueError(f"settings.json의 model은 {', '.join(KNOWN_MODELS)} 중 하나여야 합니다")
+    if settings.get("device", DEFAULT_DEVICE) not in DEVICES:  # 키가 없으면 auto. 기존 파일은 다시 쓰지 않는다
+        raise ValueError(f"settings.json의 device는 {', '.join(DEVICES)} 중 하나여야 합니다")
     return settings

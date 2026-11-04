@@ -8,6 +8,7 @@
 import contextlib
 import datetime
 import http.client
+import json
 import logging
 import pathlib
 import shutil
@@ -100,6 +101,16 @@ def group_a():
         for bad in ('"large-v3"', "[]", "null", "3"):
             p.settings_file.write_text(bad, encoding="utf-8")
             check("A", f"객체가 아닌 settings 거절 {bad}", raises(ValueError, config.load_settings, p.settings_file))
+        p.settings_file.write_text('{"model": "small"}', encoding="utf-8")
+        check("A", "device 없으면 통과·파일 그대로", config.load_settings(p.settings_file) == {"model": "small"}
+              and p.settings_file.read_text(encoding="utf-8") == '{"model": "small"}')
+        for dev in config.DEVICES:
+            p.settings_file.write_text(json.dumps({"model": "small", "device": dev}), encoding="utf-8")
+            check("A", f"device {dev} 허용", config.load_settings(p.settings_file)["device"] == dev)
+        for bad in ('"gpu"', "null", "1"):
+            p.settings_file.write_text('{"model": "small", "device": %s}' % bad, encoding="utf-8")
+            check("A", f"모르는 device 거절 {bad}", raises(ValueError, config.load_settings, p.settings_file))
+    check("A", "DEVICES 기본 auto", config.DEVICES == ("auto", "cuda", "cpu") and config.DEFAULT_DEVICE == "auto")
     check("A", "LECTURE_INBOX_HOME 우선", config.data_home({"LECTURE_INBOX_HOME": "X:/h", "LOCALAPPDATA": "Y:/"}) == pathlib.Path("X:/h"))
     check("A", "LOCALAPPDATA 기본", config.data_home({"LOCALAPPDATA": "Y:/a"}) == pathlib.Path("Y:/a/lecture-inbox"))
     check("A", "ROOT는 저장소 루트", (config.ROOT / "SECOND-BRAIN.md").is_file())
@@ -316,6 +327,18 @@ def _group_d_checks():
         w10.mkdir()
         segs10, _ = transcriber.transcribe(audio, w10, Fake(lambda i, o: [S(0, 1, ""), S(1, 2, "내용")]))
         check("D", "빈 텍스트 무시", [s.text for s in segs10] == ["내용"] and len(read_checkpoint(w10 / "segments.jsonl")) == 1)
+    # D11 장치 선택: GPU가 없는 이 환경에서도 돌도록 cuda_count를 주입한다
+    rd = transcriber.resolve_device
+
+    def broken():
+        raise OSError("no cuda runtime")
+
+    check("D", "cpu는 int8", rd("cpu", lambda: 1) == ("cpu", "int8"))
+    check("D", "cuda는 float16", rd("cuda", lambda: 0) == ("cuda", "float16"))
+    check("D", "auto + GPU 있음", rd("auto", lambda: 1) == ("cuda", "float16"))
+    check("D", "auto + GPU 없음", rd("auto", lambda: 0) == ("cpu", "int8"))
+    check("D", "auto + 감지 예외는 cpu", rd("auto", broken) == ("cpu", "int8"))
+    check("D", "모르는 장치는 거절", raises(ValueError, rd, "tpu", lambda: 0))
 
 
 def group_e():
