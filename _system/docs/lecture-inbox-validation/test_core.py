@@ -510,11 +510,13 @@ def group_e():
         hooks.clear()
         check("E", "전사 중 삭제: 파일·work 없음", not (bdir / "week_03_12.md").exists() and not (work / g1).exists())
         g1b, seen = add("week_03_19.md", 19), []
-        hooks["segment"] = lambda: (seen.append(1), st.remove(g1b))  # 첫 구간 뒤에 사용자가 취소한다
-        w.run_once()
+        hooks["segment"] = lambda: (seen.append(1), st.remove(g1b))  # 첫 구간 뒤에 사용자가 취소한다. app.delete는 진행 중이면 work를 지우지 않는다
+        with captured_logs("jobs") as cancel_logs:
+            w.run_once()
         hooks.clear()
         check("E", "전사 중 취소: 다음 구간에서 멈춤·파일·work 없음", len(seen) == 1 and not (bdir / "week_03_19.md").exists()
               and not (work / g1b).exists() and not [i for i in st.all_items() if i["id"] == g1b])
+        check("E", "전사 중 취소는 작업 실패로 기록하지 않음", not any("작업 실패" in m for m in cancel_logs), str(cancel_logs))
         g2, orig_find = add("week_03_13.md", 13), st.find
         st.find = lambda i: (lambda r: (st.remove(i), r)[1])(orig_find(i))  # 쓰기 직전 점검 직후에 지워진다
         try:

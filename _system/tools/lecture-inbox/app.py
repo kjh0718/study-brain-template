@@ -378,7 +378,8 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
         if removed is None:
             raise HTTPException(409, "끝난 항목은 지울 수 없습니다.")
-        shutil.rmtree(paths.work / item_id, ignore_errors=True)  # 진행 중이면 파일이 잠겨 있을 수 있어 워커가 _Gone에서 다시 지운다
+        if removed["status"] not in (DOWNLOADING, TRANSCRIBING):  # 진행 중이면 여기서 지우지 않는다: 워커가 쓰는 도중 폴더가 사라지면 취소가 작업 실패로 기록된다. 워커가 _Gone에서 지운다
+            shutil.rmtree(paths.work / item_id, ignore_errors=True)
         guide(item["bundle"])
         return {"deleted": item_id}
 

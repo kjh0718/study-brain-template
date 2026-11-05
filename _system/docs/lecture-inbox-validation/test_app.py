@@ -186,7 +186,9 @@ def group_h():
                                  error=None, source={"type": "ecampus", "lecture_id": "1", "title": "t"})
             (paths.work / run["id"]).mkdir()
             check("H", f"{running} 항목 취소", c.delete(f"/api/items/{run['id']}", headers=H).status_code == 200
-                  and not any(i["id"] == run["id"] for i in store.all_items()) and not (paths.work / run["id"]).exists())
+                  and not any(i["id"] == run["id"] for i in store.all_items()))  # 폴더는 워커가 _Gone에서 지우므로 API는 남겨 둔다
+            check("H", f"{running} 취소는 work 폴더를 건드리지 않음", (paths.work / run["id"]).is_dir())
+            shutil.rmtree(paths.work / run["id"], ignore_errors=True)  # 실제로는 워커가 지운다. 아래 work 목록 검사를 위해 치운다
         store.update(rid, status=jobs.DOWNLOAD_WAIT)
         check("H", "대기 항목 삭제", c.delete(f"/api/items/{rid}", headers=H).status_code == 200
               and not (paths.work / rid).exists())
