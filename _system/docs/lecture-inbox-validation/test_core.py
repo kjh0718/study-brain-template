@@ -553,6 +553,19 @@ def group_e():
         w.run_once()
         check("E", "만료 처리가 새 로그인 세션을 지우지 않음", w.school is other and st.find(d2)["status"] == DOWNLOAD_WAIT)
         st.remove(d2)
+        # 다운로드가 끝나면 길이(초)를 기록한다. 읽지 못해도 항목은 실패하지 않는다
+        real_probe, g6 = w.probe, mk("week_03_20.md", 20, "ok")
+        w.probe = lambda path: 125
+        w._download(st.find(g6))
+        check("E", "다운로드 뒤 길이 기록", st.find(g6)["status"] == TRANSCRIBE_WAIT and st.find(g6)["duration"] == 125)
+        g7 = mk("week_03_21.md", 21, "ok")
+        w.probe = lambda path: None
+        w._download(st.find(g7))
+        check("E", "길이를 못 읽으면 duration 없이 전사 대기", st.find(g7)["status"] == TRANSCRIBE_WAIT and "duration" not in st.find(g7))
+        w.probe = real_probe
+        for gid in (g6, g7):
+            st.remove(gid)
+            shutil.rmtree(work / gid, ignore_errors=True)
         g5 = mk("week_03_18.md", 18, "ok")
         hooks["download"] = lambda: st.remove(g5)
         w.run_once()

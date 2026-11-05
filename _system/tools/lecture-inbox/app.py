@@ -26,7 +26,7 @@ from config import DEFAULT_DEVICE, HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, dat
 from hls import download_hls
 from jobs import (DONE, DOWNLOAD_WAIT, DOWNLOADING, FAILED, TRANSCRIBE_WAIT, TRANSCRIBING, ConflictError, StateError, Store, Worker, waiting_login)
 from school import SchoolExpired, SchoolSession, UserError, split_course_name, suggest_week, to_term
-from transcriber import WhisperEngine, load_audio as default_load_audio
+from transcriber import WhisperEngine, load_audio as default_load_audio, media_seconds
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ def _ffmpeg() -> "str | None":
 
 
 def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factory=SchoolSession,
-               engine_factory=None, load_audio=None, start_worker: bool = True,
+               engine_factory=None, load_audio=None, probe=None, start_worker: bool = True,
                allowed_hosts: frozenset = frozenset({f"127.0.0.1:{PORT}", f"localhost:{PORT}"})) -> FastAPI:
     if not (root / "SECOND-BRAIN.md").is_file():
         raise RuntimeError(f"Study Brain 저장소 루트가 아닙니다: {root}")
@@ -113,7 +113,8 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
 
     store = Store(paths.state_file)
     worker = Worker(store, inbox, paths.work, model=model, download=download,
-                    engine_factory=engine_factory or default_engine, load_audio=load_audio or default_load_audio)
+                    engine_factory=engine_factory or default_engine, load_audio=load_audio or default_load_audio,
+                    probe=probe or media_seconds)
     register = threading.Lock()  # "이름이 비었는지 확인 → 항목 추가"를 한 덩어리로 묶는다
 
     @asynccontextmanager
@@ -191,6 +192,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             device_name = ""
         items = store.all_items()
         return {"ffmpeg": _ffmpeg() is not None, "model": model_name, "device": device_name,
+                "maxUploadBytes": MAX_MEDIA_BYTES,  # 화면의 드롭 영역 안내가 쓴다
                 "loggedIn": worker.school is not None,
                 "waitingLogin": waiting_login(items), "items": [public(i) for i in items]}
 
@@ -321,7 +323,9 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             try:
                 tmp.rename(work)
                 (work / "upload.part").rename(work / name)
-                if store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name)) is None:
+                seconds = worker.probe(work / name)  # 길이를 못 읽어도 업로드는 받는다
+                if store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name),
+                               **({"duration": seconds} if seconds else {})) is None:
                     raise HTTPException(409, "업로드 항목이 그 사이에 바뀌었습니다. 다시 올려 주세요.")
             except BaseException:
                 with contextlib.suppress(KeyError):  # 그 사이 항목이 지워졌어도 폴더는 치워야 한다

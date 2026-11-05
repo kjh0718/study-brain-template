@@ -59,6 +59,18 @@ def load_audio(path: Path):
     return decode_audio(str(path), sampling_rate=SAMPLE_RATE)
 
 
+def media_seconds(path: Path) -> "int | None":
+    """미디어 길이(초). 컨테이너 메타데이터만 읽고 디코딩하지 않는다. 읽지 못하면 None(남은 시간 표시만 빠진다)."""
+    try:
+        import av  # faster-whisper가 끌고 오는 의존성. 시스템 Python 검사에는 없다
+
+        with av.open(str(path)) as container:
+            seconds = round(container.duration / av.time_base) if container.duration else 0
+    except Exception:
+        return None
+    return seconds or None
+
+
 def transcribe(audio: Sequence[float], work: Path, engine, on_progress: Callable[[float], None] = lambda f: None) -> tuple[list[Segment], int]:
     """(최종 구간, 미해결 반복 수). 이미 디코딩한 만큼은 체크포인트에서 읽고 나머지만 디코딩한다."""
     duration = len(audio) / SAMPLE_RATE

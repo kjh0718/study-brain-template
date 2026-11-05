@@ -18,6 +18,18 @@ for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
+def wav_bytes(seconds):
+    import io
+    import wave
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(16000)
+        w.writeframes(b"\x00\x00" * 16000 * seconds)
+    return buf.getvalue()
+
+
 HERE = pathlib.Path(__file__).resolve().parent
 TOOL = HERE.parents[2] / "_system/tools/lecture-inbox"
 sys.path.insert(0, str(TOOL))
@@ -139,6 +151,15 @@ def group_h():
               and pathlib.Path(rec["media"]).read_bytes() == b"\x00" * 10
               and pathlib.Path(rec["media"]).parent == paths.work / rec["id"])
         check("H", "상태에 media 비노출", "media" not in c.get("/api/status", headers=H).json()["items"][0])
+        check("H", "읽을 수 없는 녹음은 duration 없이도 대기", "duration" not in rec and rec["status"] == jobs.TRANSCRIBE_WAIT)
+        r = upload("recording", "진짜 녹음.wav", wav_bytes(3), week=5, session=1)
+        wav_item = next(i for i in store.all_items() if i["filename"] == "week_05_01.md")
+        shown = next(i for i in c.get("/api/status", headers=H).json()["items"] if i["id"] == wav_item["id"])
+        check("H", "업로드 뒤 길이(초) 기록·상태에 노출", r.status_code == 202 and wav_item["duration"] == 3 and shown["duration"] == 3
+              and "media" not in shown)
+        check("H", "상태에 업로드 한도 노출", c.get("/api/status", headers=H).json()["maxUploadBytes"] == app_mod.MAX_MEDIA_BYTES)
+        store.remove(wav_item["id"])
+        shutil.rmtree(paths.work / wav_item["id"], ignore_errors=True)
         check("H", "같은 주차·차시 409", upload("recording", "b.m4a", b"\x00", week=3, session=1).status_code == 409)
         check("H", "녹음 주차 누락 422", upload("recording", "b.m4a", b"\x00").status_code == 422)
         check("H", "업로드 임시 폴더 정리", sorted(p.name for p in paths.work.iterdir()) == [rec["id"]])
@@ -311,6 +332,25 @@ def group_h():
               and 'date: localDate(file.lastModified)' not in page.text and "파일 날짜 사용" in page.text)
         check("H", "화면: 과목을 학기 탭으로 나누고 학기 모름 탭을 마지막에 둠",
               'id="term-tabs"' in page.text and '"학기 모름"' in page.text and "tabs.length < 2" in page.text)
+        html = page.text
+        check("H", "화면: 진행 중 버튼은 멈추기, 확인창은 직접 만든 것(confirm 호출 없음)",
+              'textContent: "멈추기"' in html and 'textContent: "취소"' not in html and "confirm(" not in html
+              and 'id="modal"' in html and 'role="dialog"' in html and "전사를 멈출까요?" in html and "받기를 멈출까요?" in html
+              and "지금까지 한 부분도 지워져요." in html and "멈추고 지우기" in html and "목록에서 지울까요?" in html
+              and 'e.key === "Escape"' in html and "e.target === $(\"modal\")" in html and '$("modal-no").focus()' in html)
+        check("H", "화면: 지우거나 멈춘 뒤 4초 알림",
+              'id="toast"' in html and "setTimeout(() => t.classList.add(\"hide\"), 4000)" in html
+              and "를 ${done}" in html and '"멈췄어요"' in html and '"지웠어요"' in html and "toast(r.detail" in html)
+        check("H", "화면: 탭 제목 규칙", "document.title = tabTitle(items, left)" in html
+              and "(${left}개 남음) ${base}" in html and "✓ 다 했어요 · ${base}" in html and "(실패 ${failed}) ${head}" in html)
+        check("H", "화면: 진행 목록 순서는 실패, 진행 중, 대기, 끝남",
+              "const RANK = { failed: 0, downloading: 1, transcribing: 1, done: 3 }" in html and "(RANK[a.status] ?? 2) - (RANK[b.status] ?? 2)" in html)
+        check("H", "화면: 남은 시간 문구와 5분 단위 반올림",
+              "남았어요`" in html and "분량`" in html and "Math.round(m / 5) * 5" in html and "시간 ${r}분" in html
+              and "Math.max(peak[id] || 0, pct)" in html)
+        check("H", "화면: 드롭 영역 규칙은 서버 한도로 채움", 'id="rule-rec"' in html and 'id="rule-pdf"' in html
+              and "s.maxUploadBytes" in html and "PDF만 · 파일당" in html)
+        check("H", "화면: 다 했어요 문구", "다 했어요" in html and "다 됐어요" not in html)
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
               and "https://" not in page.text and 'src="' not in page.text)
     finally:
@@ -332,6 +372,10 @@ def group_r():
             w.writeframes(b"\x00\x00" * 16000)
         audio = transcriber.load_audio(wav)
         check("R", "실제 라이브러리로 소리 추출", abs(len(audio) - 16000) < 200)
+        (tmp / "junk.bin").write_bytes(b"\x00" * 10)
+        check("R", "media_seconds: 메타데이터에서 길이(초)", transcriber.media_seconds(wav) == 1)
+        check("R", "media_seconds: 깨진 파일·없는 파일은 None",
+              transcriber.media_seconds(tmp / "junk.bin") is None and transcriber.media_seconds(tmp / "none.wav") is None)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

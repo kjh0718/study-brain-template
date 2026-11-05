@@ -13,7 +13,7 @@ from typing import Callable, Sequence
 from bundle import GUIDE_LOCK, write_guide, write_new_file
 from school import SchoolExpired, UserError
 from transcript import to_markdown
-from transcriber import transcribe
+from transcriber import media_seconds, transcribe
 
 log = logging.getLogger(__name__)
 
@@ -178,10 +178,11 @@ class _Gone(Exception):
 class Worker:
     def __init__(self, store: Store, inbox: Path, work_root: Path, *, model: Callable[[], str],
                  download: Callable[[str, Path], None], engine_factory: Callable[[str], object],
-                 load_audio: Callable[[Path], Sequence[float]], set_state=None):
+                 load_audio: Callable[[Path], Sequence[float]], set_state=None,
+                 probe: "Callable[[Path], int | None]" = media_seconds):
         self.store, self.inbox, self.work_root = store, inbox, work_root
         self.model, self.download = model, download
-        self.engine_factory, self.load_audio, self.set_state = engine_factory, load_audio, set_state
+        self.engine_factory, self.load_audio, self.set_state, self.probe = engine_factory, load_audio, set_state, probe
         self.school = None  # school.SchoolSession | None. 로그인하면 app이 채운다
         self.progress: dict[str, str] = {}
         self._engine, self._engine_model = None, None
@@ -281,7 +282,9 @@ class Worker:
         except UserError as e:
             self._set(item["id"], status=FAILED, error=str(e))
         else:
-            self._set(item["id"], status=TRANSCRIBE_WAIT, media=str(work / "video.mp4"))
+            media = work / "video.mp4"
+            seconds = self.probe(media)  # 길이를 못 읽어도 항목은 실패시키지 않는다
+            self._set(item["id"], status=TRANSCRIBE_WAIT, media=str(media), **({"duration": seconds} if seconds else {}))
 
     def _transcribe(self, item: dict) -> None:
         item_id, work = item["id"], self.work_root / item["id"]
