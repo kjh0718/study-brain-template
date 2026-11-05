@@ -178,8 +178,15 @@ def group_h():
         store.update(rid, status=jobs.FAILED, media=str(paths.work / rid / "video.mp4"))
         c.post(f"/api/items/{rid}/retry", headers=H)
         check("H", "미디어 있는 실패는 전사 재시도", store.find(rid)["status"] == jobs.TRANSCRIBE_WAIT)
-        store.update(rid, status=jobs.TRANSCRIBING)
-        check("H", "진행 중 삭제 409", c.delete(f"/api/items/{rid}", headers=H).status_code == 409)
+        store.update(rid, status=jobs.DONE)
+        check("H", "끝난 항목 삭제 409", c.delete(f"/api/items/{rid}", headers=H).status_code == 409
+              and store.find(rid)["status"] == jobs.DONE)
+        for running in (jobs.DOWNLOADING, jobs.TRANSCRIBING):  # 진행 중 취소는 허용한다(워커가 _Gone으로 멈춘다)
+            run = store.add_item(kind="transcript", bundle=rec["bundle"], filename=f"week_06_{running[:2]}.md", status=running,
+                                 error=None, source={"type": "ecampus", "lecture_id": "1", "title": "t"})
+            (paths.work / run["id"]).mkdir()
+            check("H", f"{running} 항목 취소", c.delete(f"/api/items/{run['id']}", headers=H).status_code == 200
+                  and not any(i["id"] == run["id"] for i in store.all_items()) and not (paths.work / run["id"]).exists())
         store.update(rid, status=jobs.DOWNLOAD_WAIT)
         check("H", "대기 항목 삭제", c.delete(f"/api/items/{rid}", headers=H).status_code == 200
               and not (paths.work / rid).exists())
@@ -208,14 +215,14 @@ def group_h():
         check("H", "조건부 remove는 상태가 다르면 None", store.remove(hole["id"], from_statuses=(jobs.DONE,)) is None
               and store.remove(hole["id"], from_statuses=(jobs.FAILED,))["id"] == hole["id"])
         busy = store.add_item(kind="transcript", bundle=rec["bundle"], filename="week_09_01.md",
-                              status=jobs.TRANSCRIBING, error=None, source={"type": "ecampus", "lecture_id": "1", "title": "t"})
+                              status=jobs.DONE, error=None, source={"type": "ecampus", "lecture_id": "1", "title": "t"})
         real_find = store.find
-        store.find = lambda i: {**real_find(i), "status": jobs.FAILED}  # 확인 뒤에 워커가 집은 상황
+        store.find = lambda i: {**real_find(i), "status": jobs.FAILED}  # 확인 때는 지울 수 있는 상태로 보였지만 실제로는 끝난 항목
         try:
             r = c.delete(f"/api/items/{busy['id']}", headers=H)
         finally:
             store.find = real_find
-        check("H", "삭제 확인 뒤 상태 바뀌면 409·보존", r.status_code == 409 and store.find(busy["id"])["status"] == jobs.TRANSCRIBING)
+        check("H", "삭제 확인 뒤 상태 바뀌면 409·보존", r.status_code == 409 and store.find(busy["id"])["status"] == jobs.DONE)
         store.remove(busy["id"])
 
         # 시작 정리: 비정상 종료로 남은 up-* 임시 폴더와 업로드 자리표시자를 치운다
@@ -295,8 +302,9 @@ def group_h():
         page = c.get("/")
         check("H", "화면 제공", "강의 수집 도구" in page.text and "frame-ancestors 'none'" in page.headers["content-security-policy"])
         # 브라우저 없이 확인할 수 있는 최소한: 화면 코드에 해당 규칙이 들어 있다(동작은 수동 확인)
-        check("H", "화면: 대기 삭제·로그인 배너 조건·수업일 자동 입력 없음",
+        check("H", "화면: 대기 삭제·진행 중 취소·로그인 배너 조건·수업일 자동 입력 없음",
               '["failed", "download-wait", "transcribe-wait"].includes(it.status)' in page.text
+              and '["downloading", "transcribing"].includes(it.status)' in page.text
               and "!s.loggedIn && s.waitingLogin > 0" in page.text
               and 'date: localDate(file.lastModified)' not in page.text and "파일 날짜 사용" in page.text)
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text

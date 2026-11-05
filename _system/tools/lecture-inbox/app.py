@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field, SecretStr
 from bundle import bundle_dir_name, safe_name, transcript_name, write_new_file
 from config import DEFAULT_DEVICE, HOST, MAX_MEDIA_BYTES, PORT, ROOT, Paths, data_home, load_settings
 from hls import download_hls
-from jobs import (DONE, DOWNLOAD_WAIT, FAILED, TRANSCRIBE_WAIT, ConflictError, StateError, Store, Worker, waiting_login)
+from jobs import (DONE, DOWNLOAD_WAIT, DOWNLOADING, FAILED, TRANSCRIBE_WAIT, TRANSCRIBING, ConflictError, StateError, Store, Worker, waiting_login)
 from school import SchoolExpired, SchoolSession, UserError, split_course_name, suggest_week, to_term
 from transcriber import WhisperEngine, load_audio as default_load_audio
 
@@ -35,7 +35,7 @@ NOT_LOCAL = "로컬 화면에서만 사용할 수 있습니다."
 INVALID = "입력 형식을 확인해 주세요."
 NEED_PDF = "PDF만 받습니다. PPT·HWP·이미지는 PDF로 변환해 주세요."
 SAVING = "업로드를 저장하는 중입니다."
-DELETABLE = (DOWNLOAD_WAIT, TRANSCRIBE_WAIT, FAILED)
+DELETABLE = (DOWNLOAD_WAIT, TRANSCRIBE_WAIT, FAILED, DOWNLOADING, TRANSCRIBING)  # 진행 중은 취소: 워커가 _Gone으로 멈춘다
 
 TERM = r"^[0-9]{4}-(1|2|summer|winter)$"  # \d는 전각 숫자도 받으므로 [0-9]를 쓴다
 LECTURE_ID = r"^[0-9]{1,12}$"
@@ -371,14 +371,14 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
         if item["status"] not in DELETABLE or is_upload_placeholder(item):
-            raise HTTPException(409, "진행 중이거나 끝난 항목은 지울 수 없습니다.")
+            raise HTTPException(409, "끝난 항목은 지울 수 없습니다.")
         try:
-            removed = store.remove(item_id, DELETABLE)  # 확인과 삭제를 한 번에 해야 워커가 집은 항목을 지우지 않는다
+            removed = store.remove(item_id, DELETABLE)  # 확인과 삭제를 한 번에 해야 그 사이 끝난 항목(DONE)을 지우지 않는다
         except KeyError:
             raise HTTPException(404, "항목을 찾을 수 없습니다.") from None
         if removed is None:
-            raise HTTPException(409, "진행 중이거나 끝난 항목은 지울 수 없습니다.")
-        shutil.rmtree(paths.work / item_id, ignore_errors=True)  # 파일이 잠겨 있으면 워커가 _Gone에서 다시 지운다
+            raise HTTPException(409, "끝난 항목은 지울 수 없습니다.")
+        shutil.rmtree(paths.work / item_id, ignore_errors=True)  # 진행 중이면 파일이 잠겨 있을 수 있어 워커가 _Gone에서 다시 지운다
         guide(item["bundle"])
         return {"deleted": item_id}
 

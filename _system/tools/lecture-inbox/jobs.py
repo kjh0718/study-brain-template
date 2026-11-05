@@ -272,6 +272,7 @@ class Worker:
         try:
             stream, _ = school.stream(item["source"]["lecture_id"])
             work.mkdir(parents=True, exist_ok=True)
+            # ponytail: 취소해도 ffmpeg는 끝까지 받고 나서 _set이 _Gone을 내며 정리한다. 즉시 취소가 필요하면 ffmpeg를 kill한다.
             self.download(stream, work / "video.mp4")
         except SchoolExpired:
             if self.school is school:  # 그 사이 새로 로그인했다면 그 세션은 지우지 않는다
@@ -291,8 +292,15 @@ class Worker:
             self._engine, self._engine_model = self.engine_factory(model), model
         audio = self.load_audio(Path(item["media"]))
         work.mkdir(parents=True, exist_ok=True)
-        segments, unresolved = transcribe(
-            audio, work, self._engine, lambda f: self.progress.__setitem__(item_id, f"전사 중 {int(f * 100)}%"))
+
+        def on_progress(fraction: float) -> None:
+            try:
+                self.store.find(item_id)  # 사용자가 취소(삭제)했으면 한 구간 안에 멈춘다. 체크포인트 파일은 append마다 닫힌다
+            except KeyError:
+                raise _Gone from None
+            self.progress[item_id] = f"전사 중 {int(fraction * 100)}%"
+
+        segments, unresolved = transcribe(audio, work, self._engine, on_progress)
         if not segments:
             self._set(item_id, status=FAILED, error=NO_SPEECH)  # work는 남긴다
             return

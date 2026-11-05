@@ -364,6 +364,8 @@ def group_e():
         def segments(self, audio, offset, **options):
             if self.mode == "speech":
                 yield S(offset, offset + 5, "안녕하세요")
+                if hooks.get("segment"):
+                    hooks["segment"]()
                 yield S(offset + 5, offset + 10, "다음입니다")
 
     class FakeSchool:
@@ -507,6 +509,12 @@ def group_e():
         w.run_once()
         hooks.clear()
         check("E", "전사 중 삭제: 파일·work 없음", not (bdir / "week_03_12.md").exists() and not (work / g1).exists())
+        g1b, seen = add("week_03_19.md", 19), []
+        hooks["segment"] = lambda: (seen.append(1), st.remove(g1b))  # 첫 구간 뒤에 사용자가 취소한다
+        w.run_once()
+        hooks.clear()
+        check("E", "전사 중 취소: 다음 구간에서 멈춤·파일·work 없음", len(seen) == 1 and not (bdir / "week_03_19.md").exists()
+              and not (work / g1b).exists() and not [i for i in st.all_items() if i["id"] == g1b])
         g2, orig_find = add("week_03_13.md", 13), st.find
         st.find = lambda i: (lambda r: (st.remove(i), r)[1])(orig_find(i))  # 쓰기 직전 점검 직후에 지워진다
         try:
