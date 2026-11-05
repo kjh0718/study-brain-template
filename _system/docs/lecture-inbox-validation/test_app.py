@@ -160,6 +160,14 @@ def group_h():
         check("H", "상태에 업로드 한도 노출", c.get("/api/status", headers=H).json()["maxUploadBytes"] == app_mod.MAX_MEDIA_BYTES)
         store.remove(wav_item["id"])
         shutil.rmtree(paths.work / wav_item["id"], ignore_errors=True)
+        real_probe, held = worker.probe, []
+        worker.probe = lambda path: (held.append(app.state.register.locked()), 7)[1]
+        r = upload("recording", "락 확인.wav", b"\x00" * 10, week=6, session=1)
+        lock_item = next(i for i in store.all_items() if i["filename"] == "week_06_01.md")
+        worker.probe = real_probe
+        check("H", "길이 읽기는 전역 락 밖에서 하고 결과만 기록", r.status_code == 202 and held == [False] and lock_item["duration"] == 7)
+        store.remove(lock_item["id"])
+        shutil.rmtree(paths.work / lock_item["id"], ignore_errors=True)
         check("H", "같은 주차·차시 409", upload("recording", "b.m4a", b"\x00", week=3, session=1).status_code == 409)
         check("H", "녹음 주차 누락 422", upload("recording", "b.m4a", b"\x00").status_code == 422)
         check("H", "업로드 임시 폴더 정리", sorted(p.name for p in paths.work.iterdir()) == [rec["id"]])
@@ -350,6 +358,9 @@ def group_h():
               and "Math.max(peak[id] || 0, pct)" in html)
         check("H", "화면: 드롭 영역 규칙은 서버 한도로 채움", 'id="rule-rec"' in html and 'id="rule-pdf"' in html
               and "s.maxUploadBytes" in html and "PDF만 · 파일당" in html)
+        check("H", "화면: 첫 속도 표본은 심은 직후를 건너뛰고 확인창은 포커스를 되돌림",
+              "seeded: true" in html and "!mark.seeded && run.duration" in html and "function restoreFocus(from, key)" in html
+              and 'id="items" tabindex="-1"' in html and "b.dataset.act = b.textContent" in html)
         check("H", "화면: 다 했어요 문구", "다 했어요" in html and "다 됐어요" not in html)
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
               and "https://" not in page.text and 'src="' not in page.text)

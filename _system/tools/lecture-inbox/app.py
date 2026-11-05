@@ -124,7 +124,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
         yield
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
-    app.state.store, app.state.worker = store, worker
+    app.state.store, app.state.worker, app.state.register = store, worker, register
 
     @app.middleware("http")
     async def local_only(request: Request, call_next):
@@ -299,6 +299,7 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
                 if f.read(5) != b"%PDF-":
                     raise HTTPException(400, NEED_PDF)
         folder = inbox / bundle
+        seconds = worker.probe(part) if recording else None  # 느릴 수 있어 전역 락 밖에서 읽는다. 길이를 못 읽어도 업로드는 받는다
         with register:
             try:
                 store.add_bundle(bundle, q.meta())
@@ -323,7 +324,6 @@ def create_app(*, root: Path = ROOT, paths: "Paths | None" = None, school_factor
             try:
                 tmp.rename(work)
                 (work / "upload.part").rename(work / name)
-                seconds = worker.probe(work / name)  # 길이를 못 읽어도 업로드는 받는다
                 if store.claim(item["id"], (FAILED,), status=TRANSCRIBE_WAIT, error=None, media=str(work / name),
                                **({"duration": seconds} if seconds else {})) is None:
                     raise HTTPException(409, "업로드 항목이 그 사이에 바뀌었습니다. 다시 올려 주세요.")

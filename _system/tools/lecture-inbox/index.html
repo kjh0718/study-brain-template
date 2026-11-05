@@ -127,6 +127,7 @@
   .bar > i { display:block; height:100%; width:0; border-radius:999px; background:var(--b500); transition:width 300ms ease; }
   @media (prefers-reduced-motion: reduce) { .bar > i { transition:none; } }
   #items { flex:1 1 auto; min-height:0; overflow:auto; }
+  #items:focus { outline:none; }
   #summary { margin:-8px 0 8px; font-weight:500; color:var(--g700); }
   #summary:empty { display:none; }
   .eta { color:var(--b700); }
@@ -283,7 +284,7 @@
     <h2>진행</h2>
     <div id="conn" class="msg bad" style="margin:0 0 8px"></div>
     <div id="summary"></div>
-    <div id="items"><p class="d">항목을 넣으면 여기에 진행이 보여요.</p></div>
+    <div id="items" tabindex="-1"><p class="d">항목을 넣으면 여기에 진행이 보여요.</p></div>
     <div id="done-msg" class="callout hide"></div>
   </aside>
 </div>
@@ -696,14 +697,20 @@ let closeModal = null;  // 열려 있는 확인창을 닫는 함수(없으면 nu
 function ask(title, body, yes) {
   if (closeModal) closeModal(false);
   return new Promise((resolve) => {
-    const from = document.activeElement;
+    const from = document.activeElement, key = from && from.dataset ? { item: from.dataset.item, act: from.dataset.act } : {};
     $("modal-title").textContent = title;
     $("modal-body").textContent = body;
     $("modal-yes").textContent = yes;
     $("modal").classList.remove("hide");
     $("modal-no").focus();
-    closeModal = (ok) => { closeModal = null; $("modal").classList.add("hide"); if (from && from.isConnected) from.focus(); resolve(ok); };
+    closeModal = (ok) => { closeModal = null; $("modal").classList.add("hide"); restoreFocus(from, key); resolve(ok); };
   });
+}
+/** 닫은 뒤 포커스를 되돌린다. 그 사이 목록이 다시 그려졌으면 같은 항목의 같은 버튼을, 그것도 없으면 목록 칸을 찾는다. */
+function restoreFocus(from, key) {
+  if (from && from.isConnected) { from.focus(); return; }
+  const same = key.item && [...document.querySelectorAll("#items button")].find((b) => b.dataset.item === key.item && b.dataset.act === key.act);
+  (same || $("items")).focus();
 }
 $("modal-no").addEventListener("click", () => closeModal && closeModal(false));
 $("modal-yes").addEventListener("click", () => closeModal && closeModal(true));
@@ -757,16 +764,17 @@ function trackSpeed(items, now) {
   const run = items.find((i) => i.status === "transcribing");
   if (!run) { mark = null; return; }
   const pct = pctOf(run) ?? 0;
-  if (!mark || mark.id !== run.id || pct < mark.pct) { mark = { id: run.id, pct, t: now }; return; }
+  // 새로 심은 mark(페이지를 연 직후, 항목이 바뀜, 진행률이 내려감)는 그 진행률에 언제 닿았는지 모른다.
+  // 0%에서 첫 구간까지는 모델·소리 준비 시간도 섞인다. 그래서 심은 뒤 처음 바뀐 시점은 표본으로 쓰지 않고 다시 심기만 한다.
+  if (!mark || mark.id !== run.id || pct < mark.pct) { mark = { id: run.id, pct, t: now, seeded: true }; return; }
   if (pct === mark.pct) return;
   const dt = (now - mark.t) / 1000;
-  // 0%에서 첫 구간까지는 모델·소리 준비 시간이 섞여 있어 표본으로 쓰지 않는다
-  if (mark.pct > 0 && run.duration && dt >= 1) {
+  if (!mark.seeded && run.duration && dt >= 1) {
     const sample = ((pct - mark.pct) / 100) * run.duration / dt;
     speed = speed === null ? sample : 0.7 * speed + 0.3 * sample;
     speedN++;
   }
-  mark = { id: run.id, pct, t: now };
+  mark = { id: run.id, pct, t: now, seeded: false };
 }
 
 /** 초 -> "7분", "1시간 20분". 30분이 넘으면 5분 단위로 맞춰 숫자가 계속 흔들리지 않게 한다. */
@@ -852,12 +860,13 @@ function renderStatus(s) {
     if (eta[it.id]) main.append(el("span", { cls: "d eta", textContent: eta[it.id] }));
     if (it.status === "failed") main.append(el("span", { cls: "d bad", textContent: it.error || "알 수 없는 오류가 생겼어요" }));
     // 삭제·멈추기는 서버 DELETABLE(실패·대기·진행 중)과 맞춘다. 다시 시도는 실패만.
-    const buttons = [];
+    const buttons = [];  // data-item·data-act: 확인창을 닫은 뒤 목록이 다시 그려져도 같은 버튼으로 포커스를 돌리는 데 쓴다
     if (it.status === "failed") buttons.push(el("button", { type: "button", cls: "weak", textContent: "다시 시도", on: { click: () => act("POST", `/api/items/${encodeURIComponent(it.id)}/retry`) } }));
     if (["failed", "download-wait", "transcribe-wait"].includes(it.status)) buttons.push(el("button", { type: "button", cls: "gray", textContent: "삭제",
       on: { click: () => removeItem(it, "목록에서 지울까요?", "지우면 되돌릴 수 없어요.", "지우기", "지웠어요") } }));
     if (["downloading", "transcribing"].includes(it.status)) buttons.push(el("button", { type: "button", cls: "gray", textContent: "멈추기",
       on: { click: () => removeItem(it, it.status === "downloading" ? "받기를 멈출까요?" : "전사를 멈출까요?", "지금까지 한 부분도 지워져요.", "멈추고 지우기", "멈췄어요") } }));
+    for (const b of buttons) { b.dataset.item = it.id; b.dataset.act = b.textContent; }
     const row = el("div", { cls: "lr li" }, main, el("div", { cls: "lr-side" }, el("span", { cls: "status " + tone, textContent: text }),
       ...(buttons.length ? [el("div", { cls: "acts" }, ...buttons)] : [])));
     if (pct !== null) {
