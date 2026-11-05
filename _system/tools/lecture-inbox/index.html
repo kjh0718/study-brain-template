@@ -92,6 +92,13 @@
   #login-msg { margin-bottom:8px; }
   #courses { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-top:12px; }
   #course-list { display:contents; }
+  /* 학기 탭: 회색 바탕에 고른 탭만 흰 알약. 좁으면 가로로 넘긴다 */
+  .tabs { display:flex; gap:4px; width:fit-content; max-width:100%; margin-top:12px; padding:4px; background:var(--g100); border-radius:12px; overflow-x:auto; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { flex:none; height:36px; padding:0 14px; border-radius:9px; background:transparent; color:var(--g600); font-size:14px; font-weight:500; white-space:nowrap; }
+  .tab:hover { color:var(--g900); }
+  .tab[aria-selected=true] { background:#fff; color:var(--g900); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .tabs + #courses { margin-top:8px; }
   .pick { display:block; position:relative; padding:10px 12px; border-radius:10px; background:var(--g50); cursor:pointer; }
   .pick:hover { background:var(--g100); }
   .pick:has(input:checked) { background:var(--b50); }
@@ -175,7 +182,7 @@
   }
   /* 720~959px: 과목은 가로로 넘겨 보는 칩 */
   @media (min-width: 720px) and (max-width: 959px) {
-    #courses { display:flex; gap:8px; overflow-x:auto; padding:2px 12px 4px; margin:8px -12px 0; }
+    #courses, .tabs + #courses { display:flex; gap:8px; overflow-x:auto; padding:2px 12px 4px; margin:8px -12px 0; }
     .pick { flex:none; padding:8px 14px; background:var(--g100); white-space:nowrap; }
     .pick:hover { background:var(--g200); }
     .pick:has(input:checked) { background:var(--b50); }
@@ -223,6 +230,7 @@
         <button id="login-btn" type="submit" class="btn" style="margin-top:12px;width:100%">로그인</button>
       </form>
       <div id="login-msg" class="msg bad"></div>
+      <div id="term-tabs" class="tabs hide" role="tablist" aria-label="학기"></div>
       <div id="courses" role="radiogroup" aria-label="과목">
         <div id="course-list"></div>
         <label class="pick manual-row"><input type="radio" name="course" value="manual"><span class="t">직접 입력하기</span></label>
@@ -317,6 +325,7 @@ termOptions($("m-term"));
 let loggedIn = false;
 let courses = [];          // 서버 목록 [{id,name,code,section,year,semester,term}]
 let choice = null;         // null(아직 안 골랐어요), "manual", 또는 courses 인덱스(문자열)
+let termTab = null;        // 과목 목록에서 보고 있는 학기 탭("" = 학기 모름, null = 아직 안 정했어요). 폴링·다시 그리기에도 유지한다
 let termPick = "";         // term이 null인 목록 과목에 대해 고른 학기
 let loginId = "";          // 위 막대에 보여 줄 학번. 입력칸에는 남기지 않는다
 let statusItems = [];      // 마지막으로 받은 /api/status 항목
@@ -346,6 +355,9 @@ function currentCourse() {
 
 const TERM = { "1": "1학기", "2": "2학기", summer: "여름", winter: "겨울" };
 const termText = (t) => { const [y, s] = t.split("-"); return TERM[s] ? `${y}년 ${TERM[s]}` : t; };
+// 같은 해 안의 시간 순서: 1학기 < 여름 < 2학기 < 겨울
+const TERM_RANK = { "1": 1, summer: 2, "2": 3, winter: 4 };
+const termKey = (t) => { const [y, s] = t.split("-"); return Number(y) * 10 + (TERM_RANK[s] || 0); };
 
 /* ---------- 로그인·과목 ---------- */
 function setLogin(on) {
@@ -388,13 +400,34 @@ async function loadCourses() {
     return;
   }
   courses = r.data.courses;
+  syncTermTab();
   renderCourses();
 }
 
+/** 학기 탭을 정한다: 고른 과목이 있으면 그 학기, 아니면 지금 탭을 유지하고, 탭이 없어졌으면 가장 최근 학기. */
+function termTabs() {
+  const set = new Set(courses.map((c) => c.term || ""));
+  const known = [...set].filter(Boolean).sort((a, b) => termKey(b) - termKey(a));
+  return set.has("") ? [...known, ""] : known;
+}
+function syncTermTab() {
+  const tabs = termTabs(), c = listed();
+  if (c) termTab = c.term || "";
+  else if (!tabs.includes(termTab)) termTab = tabs[0] ?? null;
+}
+
 function renderCourses() {
+  const tabs = termTabs(), bar = $("term-tabs");
+  if (!tabs.includes(termTab)) termTab = tabs[0] ?? null;
+  bar.replaceChildren(...tabs.map((t) => el("button", { type: "button", cls: "tab", role: "tab", textContent: t ? termText(t) : "학기 모름",
+    ariaSelected: String(t === termTab), on: { click: () => { termTab = t; renderCourses(); bar.querySelector("[aria-selected=true]").focus(); } } })));
+  bar.classList.toggle("hide", tabs.length < 2);
+  const on = bar.querySelector("[aria-selected=true]"); // 페이지는 움직이지 않고 탭 줄만 가로로 맞춘다
+  if (on) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;
   const box = $("course-list");
   box.replaceChildren();
   courses.forEach((c, i) => {
+    if ((c.term || "") !== termTab) return; // 인덱스 i는 courses 기준이라 걸러도 그대로 쓴다
     const radio = el("input", { type: "radio", name: "course", value: String(i), checked: choice === String(i),
       on: { change: () => selectCourse(String(i)) } });
     box.append(el("label", { cls: "pick" }, radio, el("span", { cls: "t", textContent: c.name }),
@@ -430,6 +463,7 @@ function selectCourse(value) {
   lectures = [];
   renderLectures();
   document.querySelectorAll("input[name=course]").forEach((r) => { r.checked = r.value === value; });
+  syncTermTab();
   renderCourses();
   renderHead();
   if (listed()) loadLectures(listed().id);

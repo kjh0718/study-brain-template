@@ -307,6 +307,8 @@ def group_h():
               and '["downloading", "transcribing"].includes(it.status)' in page.text
               and "!s.loggedIn && s.waitingLogin > 0" in page.text
               and 'date: localDate(file.lastModified)' not in page.text and "파일 날짜 사용" in page.text)
+        check("H", "화면: 과목을 학기 탭으로 나누고 학기 모름 탭을 마지막에 둠",
+              'id="term-tabs"' in page.text and '"학기 모름"' in page.text and "tabs.length < 2" in page.text)
         check("H", "화면은 외부 리소스·innerHTML 없음", "innerHTML" not in page.text and "http://" not in page.text
               and "https://" not in page.text and 'src="' not in page.text)
     finally:
